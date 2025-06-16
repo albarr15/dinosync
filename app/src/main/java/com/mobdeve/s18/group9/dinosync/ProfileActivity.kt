@@ -37,6 +37,8 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -48,6 +50,7 @@ import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.googlefonts.GoogleFont
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -58,6 +61,7 @@ import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeDailyStudy
 import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeMoods
 import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeUsers
 import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeStudyGroups
+import kotlin.math.ceil
 
 
 class ProfileActivity : ComponentActivity() {
@@ -322,27 +326,84 @@ fun ProfileActivityScreen(userId : Int) {
             Spacer(modifier = Modifier.height(30.dp))
 
             // Mood Log Section
-            Text("Mood Log", fontWeight = FontWeight.Medium, fontSize = 18.sp)
-            Spacer(modifier = Modifier.height(10.dp))
 
-            val moodRows = moodEntries.chunked(9)
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                moodRows.forEach { rowColors ->
-                    LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        items(rowColors.size) { index ->
-                            Box(
-                                modifier = Modifier
-                                    .size(30.dp)
-                                    .background(rowColors[index], shape = RoundedCornerShape(8.dp))
-                            )
-                        }
-                    }
-                }
-            }
+
+            Text("Mood Log", fontWeight = FontWeight.Medium, fontSize = 18.sp)
+            Spacer(modifier = Modifier.height(5.dp))
+            MoodTrackerGrid()
 
             Spacer(modifier = Modifier.weight(1f))
         }
     }
 }
 
+fun getMoodColor(moodLevel: Int): Color {
+    return when (moodLevel) {
+        0 -> Color.Gray
+        1 -> Color(0xFFD32F2F) // Terrible - Red
+        2 -> Color(0xFFF57C00) // Bad - Orange
+        3 -> Color(0xFFFBC02D) // Meh - Yellow
+        4 -> Color(0xFF8BC34A) // Good - Light Green
+        5 -> Color(0xFF388E3C) // Great - Green
+        else -> Color.Gray
+    }
+}
 
+fun generateMoodSampleData(): List<Int> {
+    // Random mood levels from 0 to 5
+    return List(365) { (0..5).random() }
+}
+
+@Composable
+fun MoodTrackerGrid(
+    modifier: Modifier = Modifier
+) {
+    // val moods = listOf(0, 1, 0, 2, 2, 0, 0), latest mood at end of list
+    val moods = generateMoodSampleData()
+    val daysToShow = 60
+    val columns = 15
+    val rows = 4
+
+    // Pad moods to always be full grid
+    val recentMoods = moods.takeLast(daysToShow)
+        .let {
+            if (it.size < daysToShow) List(daysToShow - it.size) { 0 } + it else it
+        }
+
+    // Fill grid in top-down, right-to-left row-major order
+    val moodGrid = Array(rows) { Array(columns) { 0 } }
+
+    for (i in recentMoods.indices) {
+        val row = i / columns
+        val col = columns - 1 - (i % columns) // reverse column order
+        if (row < rows) {
+            moodGrid[row][col] = recentMoods[recentMoods.size - 1 - i]
+        }
+    }
+
+    Column(
+        modifier = modifier
+            .fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        for (row in 0 until rows) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                for (col in 0 until columns) {
+                    val mood = moodGrid[row][col]
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .aspectRatio(1f)
+                            .background(
+                                color = getMoodColor(mood),
+                                shape = RoundedCornerShape(3.dp)
+                            )
+                    )
+                }
+            }
+        }
+    }
+}
