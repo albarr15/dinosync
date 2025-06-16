@@ -172,7 +172,9 @@ fun MainScreen(context : Context) {
                     context.startActivity(intent)
                                  },
                 onNotificationsClick = { /* Show notifications */ },
-                onSettingsClick = { /* Show settings */ }
+                onSettingsClick = { val intent = Intent(context, SettingsActivity::class.java)
+                    intent.putExtra("userId", selectedUser.userId)
+                    context.startActivity(intent) }
             )
 
             /******** Course Box *********/

@@ -22,18 +22,37 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.NavigateNext
+import androidx.compose.material.icons.outlined.DarkMode
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.FrontHand
+import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.outlined.Mail
+import androidx.compose.material.icons.outlined.ManageAccounts
+import androidx.compose.material.icons.outlined.Notifications
+import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.TextFields
+import androidx.compose.material.icons.outlined.Timer
 import androidx.compose.material3.*
 import androidx.compose.material3.Icon
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeUsers
 import com.mobdeve.s18.group9.dinosync.components.TopActionBar
+import com.mobdeve.s18.group9.dinosync.ui.theme.DarkGreen
+import com.mobdeve.s18.group9.dinosync.ui.theme.DirtyGreen
 import com.mobdeve.s18.group9.dinosync.ui.theme.DirtyWhite
 import com.mobdeve.s18.group9.dinosync.ui.theme.Lime
 
@@ -144,30 +163,30 @@ fun SettingsActivityScreen() {
                     Spacer(modifier = Modifier.height(10.dp))
                     // Appearance Section
                     SettingsSection(title = "Appearance") {
-                        SettingRow("Enable Dark Mode", R.drawable.moon ,hasSwitch = false)
-                        SettingRow("Font size preferences", R.drawable.fontsize)
+                        SettingRow("Enable Dark Mode", Icons.Outlined.DarkMode ,hasSwitch = true)
+                        SettingRow("Font size preferences", Icons.Outlined.TextFields)
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
 
                     // Account & Profile Section
                     SettingsSection(title = "Account & Profile") {
-                        SettingRow("Edit Profile", R.drawable.editprofile)
-                        SettingRow("Spotify / YouTube connection", R.drawable.spotifyyoutuberecom)
-                        SettingRow("Profile Visibility", R.drawable.profilevisibility)
-                        SettingRow("Change Password", R.drawable.changepassword)
-                        SettingRow("Change Email", R.drawable.changeemail)
-                        SettingRow("Delete Account", R.drawable.deleteaccount)
+                        SettingRow("Edit Profile", Icons.Outlined.ManageAccounts)
+                        SettingRow("Spotify / YouTube connection", Icons.Outlined.Person)
+                        SettingRow("Profile Visibility", Icons.Outlined.Person)
+                        SettingRow("Change Password", Icons.Outlined.Lock)
+                        SettingRow("Change Email", Icons.Outlined.Mail)
+                        SettingRow("Delete Account", Icons.Outlined.Delete)
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
 
                     // Timer & Focus Section
                     SettingsSection(title = "Timer & Focus") {
-                        SettingRow("Default timer durations", R.drawable.timer)
-                        SettingRow("Break reminders", R.drawable.breakreminder )
-                        SettingRow("Lock apps on Focus", R.drawable.lockapp )
-                        SettingRow("App blocking whitelist", R.drawable.appblock )
+                        SettingRow("Default timer durations", Icons.Outlined.Timer)
+                        SettingRow("Break reminders", Icons.Outlined.Notifications)
+                        SettingRow("Lock apps on Focus", Icons.Outlined.FrontHand, true)
+                        SettingRow("App blocking whitelist", Icons.Outlined.FrontHand)
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
@@ -205,7 +224,6 @@ fun SettingsSection(title: String, content: @Composable () -> Unit) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(DirtyWhite)
-                    .padding(top = 8.dp)
             ) {
                 content()
             }
@@ -215,7 +233,9 @@ fun SettingsSection(title: String, content: @Composable () -> Unit) {
 }
 
 @Composable
-fun SettingRow(label: String, iconResId: Int? = null, hasSwitch: Boolean = false) {
+fun SettingRow(label: String, icon: ImageVector? = null, hasSwitch: Boolean = false) {
+    var checked by remember { mutableStateOf(false) }
+
     Row(
         modifier = Modifier.drawBehind {
             drawLine(
@@ -225,19 +245,21 @@ fun SettingRow(label: String, iconResId: Int? = null, hasSwitch: Boolean = false
                 strokeWidth = 1.dp.toPx()
             )
             }.fillMaxWidth()
+            .height(56.dp)
             .clickable { /* Handle item click */ }
-            .padding(vertical = 12.dp, horizontal = 8.dp),
+            .padding(horizontal = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Spacer(modifier = Modifier.width(10.dp))
-            iconResId?.let { resId ->
+            icon?.let { iconVector ->
                 Icon(
-                    painter = painterResource(id = resId),
+                    imageVector = iconVector,
                     contentDescription = null,
-                    modifier = Modifier.size(24.dp).padding(end = 4.dp),
-                    tint = Color.Unspecified  // keep original drawable color
+                    modifier = Modifier.size(28.dp).padding(end = 5.dp),
+                    tint = Color.DarkGray,
+
                 )
             }
             Spacer(modifier = Modifier.width(15.dp))
@@ -245,10 +267,17 @@ fun SettingRow(label: String, iconResId: Int? = null, hasSwitch: Boolean = false
         }
 
         if (hasSwitch) {
-            Switch(checked = false, onCheckedChange = { /* Handle toggle */ })
+            Switch(modifier = Modifier.padding(end = 5.dp),
+                checked = checked, onCheckedChange = { checked = it },
+                colors = SwitchDefaults.colors(
+                    checkedThumbColor = Color.White,
+                    checkedTrackColor = DarkGreen,
+                    uncheckedThumbColor = Color.DarkGray,
+                    uncheckedTrackColor = DirtyWhite,
+                ))
         } else {
             Icon(
-                imageVector = Icons.Default.NavigateNext,
+                imageVector = Icons.Filled.ChevronRight,
                 contentDescription = null,
                 tint = Color.Gray
             )
