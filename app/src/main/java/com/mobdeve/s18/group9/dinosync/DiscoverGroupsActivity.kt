@@ -68,7 +68,7 @@ class DiscoverGroupsActivity : ComponentActivity() {
 
         setContent {
             DinoSyncTheme {
-                DiscoverGroupsScreen(/*userId = userId*/)
+                DiscoverGroupsScreen(userId)
             }
         }
     }
@@ -82,10 +82,9 @@ class DiscoverGroupsActivity : ComponentActivity() {
     override fun onDestroy() { super.onDestroy(); println("onDestroy()") }
 }
 
-@Preview
 @Composable
 
-fun DiscoverGroupsScreen() {
+fun DiscoverGroupsScreen(userId: Int) {
     val context = LocalContext.current
 
     val studyGroups = remember { initializeStudyGroups() }
@@ -104,10 +103,21 @@ fun DiscoverGroupsScreen() {
         bottomBar = {
             BottomNavigationBar(
                 selectedItem = "Groups",
-                onGroupsClick = { /* Handle navigation */ },
-                onHomeClick = { val intent = Intent(context, MainActivity::class.java)
-                    context.startActivity(intent) },
-                onStatsClick = { /* Handle navigation */ }
+                onGroupsClick = {
+                    val intent = Intent(context, DiscoverGroupsActivity::class.java)
+                    intent.putExtra("userId", userId)
+                    context.startActivity(intent)
+                },
+                onHomeClick = {
+                    val intent = Intent(context, MainActivity::class.java)
+                    intent.putExtra("userId", userId)
+                    context.startActivity(intent)
+                },
+                onStatsClick = {
+                    val intent = Intent(context, StatisticsActivity::class.java)
+                    intent.putExtra("userId", userId)
+                    context.startActivity(intent)
+                }
             )
         },
         containerColor = Color.White
@@ -122,9 +132,9 @@ fun DiscoverGroupsScreen() {
             TopActionBar(
                 onProfileClick = {
                     val intent = Intent(context, ProfileActivity::class.java)
+                    intent.putExtra("userId", userId)
                     context.startActivity(intent)
-                                 },
-                onNotificationsClick = { },
+                 },
                 onSettingsClick = { }
             )
 

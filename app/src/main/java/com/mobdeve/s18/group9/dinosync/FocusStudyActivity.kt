@@ -48,14 +48,14 @@ import com.mobdeve.s18.group9.dinosync.ui.theme.YellowGreen
 class FocusStudyActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
+        val userId = intent.getIntExtra("userId", 0)
         val hours = intent.getIntExtra("hours", 0)
         val minutes = intent.getIntExtra("minutes", 0)
         val selectedSubject = intent.getStringExtra("selected_subject") ?: ""
 
         setContent {
             DinoSyncTheme {
-                FocusStudyScreen(hours = hours, minutes = minutes, subject = selectedSubject)
+                FocusStudyScreen(userId = userId, hours = hours, minutes = minutes, subject = selectedSubject)
             }
         }
     }
@@ -95,7 +95,7 @@ class FocusStudyActivity : ComponentActivity() {
 
 
 @Composable
-fun FocusStudyScreen(hours: Int, minutes: Int, subject: String) {
+fun FocusStudyScreen(userId :Int, hours: Int, minutes: Int, subject: String) {
 
     val context = LocalContext.current
 
@@ -172,8 +172,11 @@ fun FocusStudyScreen(hours: Int, minutes: Int, subject: String) {
         ) {
             Spacer(modifier = Modifier.height(16.dp))
             TopActionBar(
-                onProfileClick = { },
-                onNotificationsClick = {  },
+                onProfileClick = {
+                    val intent = Intent(context, ProfileActivity::class.java)
+                    intent.putExtra("userId", userId)
+                    context.startActivity(intent)
+                },
                 onSettingsClick = { }
             )
 

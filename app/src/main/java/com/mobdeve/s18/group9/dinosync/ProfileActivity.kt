@@ -64,12 +64,10 @@ class ProfileActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        //val userId = intent.getIntExtra("userId", -1)
-
-
+        val userId = intent.getIntExtra("userId", -1)
         setContent {
             DinoSyncTheme {
-                ProfileActivityScreen()
+                ProfileActivityScreen(userId = userId)
             }
         }
     }
@@ -104,10 +102,10 @@ class ProfileActivity : ComponentActivity() {
         println("onDestroy()")
     }
 }
-@Preview
+
 @Composable
-fun ProfileActivityScreen() {
-    val userId = initializeUsers().random().userId
+fun ProfileActivityScreen(userId : Int) {
+    val userId = userId
     val feelingEntries = initializeFeelingEntry()
     val dailyStudyHistory = initializeDailyStudyHistory()
     val studyGroups = initializeStudyGroups()
@@ -164,11 +162,21 @@ fun ProfileActivityScreen() {
         bottomBar = {
             BottomNavigationBar(
                 selectedItem = "Profile",
-                onGroupsClick = { /* Handle navigation */ },
-                onHomeClick = {
-                    /* Handle navigation */
+                onGroupsClick = {
+                    val intent = Intent(context, DiscoverGroupsActivity::class.java)
+                    intent.putExtra("userId", userId)
+                    context.startActivity(intent)
                 },
-                onStatsClick = { /* Handle navigation */ }
+                onHomeClick = {
+                    val intent = Intent(context, MainActivity::class.java)
+                    intent.putExtra("userId", userId)
+                    context.startActivity(intent)
+                },
+                onStatsClick = {
+                    val intent = Intent(context, StatisticsActivity::class.java)
+                    intent.putExtra("userId", userId)
+                    context.startActivity(intent)
+                }
             )
         }
     ) { padding ->
@@ -180,8 +188,11 @@ fun ProfileActivityScreen() {
         ) {
 
             TopActionBar(
-                onProfileClick = { },
-                onNotificationsClick = { },
+                onProfileClick = {
+                    val intent = Intent(context, ProfileActivity::class.java)
+                    intent.putExtra("userId", userId)
+                    context.startActivity(intent)
+                },
                 onSettingsClick = { }
             )
 

@@ -106,6 +106,7 @@ class GroupActivity : ComponentActivity() {
         setContent {
             DinoSyncTheme {
                 GroupActivityScreen(
+                    userId = userId,
                     group = selectedGroup,
                     groupMembers = groupMembers,
                     allUsers = userList,
@@ -149,6 +150,7 @@ class GroupActivity : ComponentActivity() {
 
 @Composable
 fun GroupActivityScreen(
+    userId: Int,
     group: StudyGroup,
     groupMembers: List<GroupMember>,
     allUsers: List<User>,
@@ -189,13 +191,19 @@ fun GroupActivityScreen(
         bottomBar = {
             BottomNavigationBar(
                 selectedItem = "Groups",
-                onGroupsClick = {},
+                onGroupsClick = {
+                    val intent = Intent(context, DiscoverGroupsActivity::class.java)
+                    intent.putExtra("userId", userId)
+                    context.startActivity(intent)
+                },
                 onHomeClick = {
                     val intent = Intent(context, MainActivity::class.java)
+                    intent.putExtra("userId", userId)
                     context.startActivity(intent)
                 },
                 onStatsClick = {
                     val intent = Intent(context, StatisticsActivity::class.java)
+                    intent.putExtra("userId", userId)
                     context.startActivity(intent)
                 }
             )
@@ -209,8 +217,10 @@ fun GroupActivityScreen(
                 .padding(16.dp)
         ) {
             TopActionBar(
-                onProfileClick = { },
-                onNotificationsClick = { },
+                onProfileClick = {
+                    val intent = Intent(context, ProfileActivity::class.java)
+                    //intent.putExtra("USER_ID", currentUserId)
+                    context.startActivity(intent)},
                 onSettingsClick = { }
             )
             Spacer(modifier = Modifier.height(5.dp))
