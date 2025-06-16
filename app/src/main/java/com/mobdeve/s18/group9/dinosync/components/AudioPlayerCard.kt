@@ -94,7 +94,7 @@ fun AudioPlayerCard(
                         maxLines = 1
                     )
                 }
-
+                Spacer(modifier = Modifier.height(15.dp))
                 LinearProgressIndicator(
                     progress = { progress },
                     modifier = Modifier
@@ -103,7 +103,7 @@ fun AudioPlayerCard(
                     color = Color.Black,
                     trackColor = Color.Gray
                 )
-                Spacer(modifier = Modifier.height(5.dp))
+                Spacer(modifier = Modifier.height(10.dp))
                 Row(
                     horizontalArrangement = Arrangement.SpaceEvenly,
                     modifier = Modifier.fillMaxWidth()
