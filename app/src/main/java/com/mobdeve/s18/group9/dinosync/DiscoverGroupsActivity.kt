@@ -58,6 +58,7 @@ import androidx.compose.ui.unit.dp
 import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeGroupMembers
 import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeStudyGroups
 import com.mobdeve.s18.group9.dinosync.model.StudyGroup
+import com.mobdeve.s18.group9.dinosync.ui.theme.Lime
 
 class DiscoverGroupsActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -116,7 +117,7 @@ fun DiscoverGroupsScreen() {
             modifier = Modifier
                 .padding(padding)
                 .fillMaxSize()
-                .padding(16.dp)
+                .padding(top = 25.dp, start = 25.dp, end = 25.dp, bottom = 5.dp)
         ) {
             TopActionBar(
                 onProfileClick = { },
@@ -133,7 +134,7 @@ fun DiscoverGroupsScreen() {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            /** Your Groups **/
+            /** Groups **/
             Text(
                 text = "Your Groups",
                 style = MaterialTheme.typography.titleMedium,
@@ -183,11 +184,11 @@ fun DiscoverGroupsScreen() {
                 TextField(
                     value = searchQuery,
                     onValueChange = { searchQuery = it },
-                    placeholder = { Text("Search...") },
+                    placeholder = { Text("Search") },
                     modifier = Modifier
-                        .width(200.dp)
+                        .width(250.dp)
                         .height(50.dp)
-                        .background(Color(0xFFF0F0F0), shape = RoundedCornerShape(12.dp)),
+                        .background(Color.LightGray.copy(alpha = 0.3f), shape = RoundedCornerShape(12.dp)),
                     shape = RoundedCornerShape(12.dp),
                     singleLine = true,
                     colors = TextFieldDefaults.colors(
