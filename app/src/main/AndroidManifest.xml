@@ -23,6 +23,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity android:name=".FocusStudyActivity" />
+        <activity android:name=".GroupActivity" />
+        <activity android:name=".ProfileActivity" />
+        <activity android:name=".StatisticsActivity" />
+        <activity android:name=".DiscoverGroupsActivity" />
     </application>
 
 </manifest>
