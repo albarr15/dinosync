@@ -106,7 +106,8 @@ fun DiscoverGroupsScreen() {
             BottomNavigationBar(
                 selectedItem = "Groups",
                 onGroupsClick = { /* Handle navigation */ },
-                onHomeClick = { /* Handle navigation */ },
+                onHomeClick = { val intent = Intent(context, MainActivity::class.java)
+                    context.startActivity(intent) },
                 onStatsClick = { /* Handle navigation */ }
             )
         },
