@@ -102,6 +102,7 @@ fun FocusStudyScreen(hours: Int, minutes: Int, subject: String) {
     var timeLeft by remember { mutableIntStateOf(totalTime) }
     var isRunning by remember { mutableStateOf(true) }
     var isStopped by remember { mutableStateOf(false) }
+    val musicList = remember { initializeMusic() }
     val progress = if (totalTime > 0) timeLeft / totalTime.toFloat() else 0f
     val hours = timeLeft / 3600
     val minutes = (timeLeft % 3600) / 60
@@ -121,8 +122,8 @@ fun FocusStudyScreen(hours: Int, minutes: Int, subject: String) {
         providerPackage = "com.google.android.gms",
         certificates = R.array.com_google_android_gms_fonts_certs
     )
-
     val interFontName = GoogleFont("Inter")
+    val currentMusic = musicList[1]
 
     val fontFamily = FontFamily(
         Font(
@@ -287,7 +288,6 @@ fun FocusStudyScreen(hours: Int, minutes: Int, subject: String) {
                         .clip(RoundedCornerShape(12.dp))
                         .background(Color.LightGray)
                 ) {
-                    val currentMusic = initializeMusic()[1]
                     AudioPlayerCard(
                         currentMusic = currentMusic,
                         progress = 0.5f,
