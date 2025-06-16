@@ -13,7 +13,7 @@
         android:theme="@style/Theme.DinoSync"
         tools:targetApi="31">
         <activity
-            android:name=".MainActivity"
+            android:name=".RegisterActivity"
             android:exported="true"
             android:label="@string/app_name"
             android:theme="@style/Theme.DinoSync">
@@ -28,6 +28,7 @@
         <activity android:name=".ProfileActivity" />
         <activity android:name=".StatisticsActivity" />
         <activity android:name=".DiscoverGroupsActivity" />
+        <activity android:name=".MainActivity" />
     </application>
 
 </manifest>
