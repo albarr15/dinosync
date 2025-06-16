@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.sp
 import com.mobdeve.s18.group9.dinosync.ui.theme.DarkGreen
 import android.content.Intent
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.border
 import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -38,6 +39,7 @@ import com.mobdeve.s18.group9.dinosync.components.BottomNavigationBar
 import com.mobdeve.s18.group9.dinosync.components.TopActionBar
 import kotlinx.coroutines.delay
 import com.mobdeve.s18.group9.dinosync.ui.theme.DinoSyncTheme
+import com.mobdeve.s18.group9.dinosync.ui.theme.DirtyGreen
 import com.mobdeve.s18.group9.dinosync.ui.theme.Orange
 import com.mobdeve.s18.group9.dinosync.ui.theme.YellowGreen
 
@@ -47,7 +49,6 @@ class FocusStudyActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Get the data passed via Intent
         val hours = intent.getIntExtra("hours", 0)
         val minutes = intent.getIntExtra("minutes", 0)
         val selectedSubject = intent.getStringExtra("selected_subject") ?: ""
@@ -181,20 +182,21 @@ fun FocusStudyScreen(hours: Int, minutes: Int, subject: String) {
             /******** Course Box *********/
             Box(
                 modifier = Modifier
-                    .background(Color.LightGray, RoundedCornerShape(10.dp))
-                    .padding(horizontal = 90.dp, vertical = 15.dp)
-            ){
-                Text(subject, fontWeight = FontWeight.ExtraBold, fontFamily = fontFamily)
+                    .background(Color.Transparent, RoundedCornerShape(10.dp))
+                    .border(1.dp, Color.White, shape = RoundedCornerShape(8.dp))
+                    .padding(horizontal = 50.dp, vertical = 10.dp)
+            ) {
+                Text(subject, fontWeight = FontWeight.ExtraBold, fontFamily = fontFamily, color = Color.White)
             }
-            Spacer(modifier = Modifier.height(30.dp))
+            Spacer(modifier = Modifier.height(50.dp))
 
             /*** Circular progress and timer ***/
             Box(
                 contentAlignment = Alignment.Center,
-                modifier = Modifier.size(300.dp)
+                modifier = Modifier.size(360.dp)
             ) {
                 Canvas(modifier = Modifier.fillMaxSize()) {
-                    val strokeWidth = 35f
+                    val strokeWidth = 50f
 
                     drawArc(
                         color = Color.LightGray,
@@ -229,7 +231,7 @@ fun FocusStudyScreen(hours: Int, minutes: Int, subject: String) {
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .align(Alignment.CenterHorizontally)
-                    .offset(y = (-100).dp)
+                    .offset(y = (-190).dp)
             ) {
                 OutlinedButton(
                     onClick = {
@@ -240,7 +242,7 @@ fun FocusStudyScreen(hours: Int, minutes: Int, subject: String) {
                     },
                     colors = ButtonDefaults.outlinedButtonColors(Color.Transparent),
                     modifier = Modifier
-                        .width(130.dp)
+                        .width(100.dp)
                         .height(35.dp)
                 ) {
                     Text("Stop", color = Color.White, fontFamily = fontFamily)
@@ -264,7 +266,7 @@ fun FocusStudyScreen(hours: Int, minutes: Int, subject: String) {
                         contentColor = Color.DarkGray
                     ),
                     modifier = Modifier
-                        .width(130.dp)
+                        .width(100.dp)
                         .height(35.dp)
                 ) {
                     Text(text = when {
@@ -276,11 +278,10 @@ fun FocusStudyScreen(hours: Int, minutes: Int, subject: String) {
                 }
             }
 
-            HorizontalDivider(modifier = Modifier.offset(y = (-50).dp), thickness = 1.dp, color = Color.White)
 
             Box(
                 modifier = Modifier
-                    .fillMaxSize().offset(y = (-40).dp),
+                    .fillMaxSize().offset(y = (-120).dp),
                 contentAlignment = Alignment.Center
             ) {
                 Box(
