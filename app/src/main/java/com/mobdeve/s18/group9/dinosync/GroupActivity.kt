@@ -64,6 +64,8 @@ import com.patrykandpatrick.vico.core.cartesian.axis.VerticalAxis
 import com.patrykandpatrick.vico.core.cartesian.data.CartesianChartModelProducer
 import com.patrykandpatrick.vico.core.cartesian.data.lineSeries
 import androidx.compose.runtime.LaunchedEffect
+import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeAchievements
+import com.mobdeve.s18.group9.dinosync.components.TopActionBar
 import com.mobdeve.s18.group9.dinosync.model.StudySession
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -157,6 +159,7 @@ fun GroupActivityScreen(
 
     val studySessionList = initializeStudySessions()
 
+
     // Merge GroupMember with User
     val memberUsers = groupMembers.mapNotNull { gm ->
         val user = allUsers.find { it.userId == gm.userId }
@@ -205,6 +208,12 @@ fun GroupActivityScreen(
                 .background(Color.White)
                 .padding(16.dp)
         ) {
+            TopActionBar(
+                onProfileClick = { },
+                onNotificationsClick = { },
+                onSettingsClick = { }
+            )
+            Spacer(modifier = Modifier.height(5.dp))
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -212,6 +221,7 @@ fun GroupActivityScreen(
                     .background(Color(0xFF2F6437))
                     .padding(20.dp)
             ) {
+
                 Column {
                     Box(
                         modifier = Modifier

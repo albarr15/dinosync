@@ -90,7 +90,6 @@ fun DiscoverGroupsScreen() {
 
     val studyGroups = remember { initializeStudyGroups() }
     val groupMembers = remember { initializeGroupMembers() }
-
     var searchQuery by remember { mutableStateOf("") }
 
     val filteredGroups = remember(searchQuery) {
