@@ -73,7 +73,10 @@ fun ProfileActivityScreen(){
                     val intent = Intent(context, DiscoverGroupsActivity::class.java)
                     context.startActivity(intent)
                 },
-                onProfileClick = {},
+                onHomeClick = {
+                    val intent = Intent(context, MainActivity::class.java)
+                    context.startActivity(intent)
+                              },
                 onStatsClick = {
                     val intent = Intent(context, StatisticsActivity::class.java)
                     context.startActivity(intent)

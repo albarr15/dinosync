@@ -9,6 +9,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
@@ -36,7 +37,7 @@ import com.mobdeve.s18.group9.dinosync.ui.theme.YellowGreen
 @Composable
 fun BottomNavigationBar(selectedItem: String?,
                         onGroupsClick: () -> Unit,
-                        onProfileClick: () -> Unit,
+                        onHomeClick: () -> Unit,
                         onStatsClick: () -> Unit) {
     val context = LocalContext.current
 
@@ -72,26 +73,26 @@ fun BottomNavigationBar(selectedItem: String?,
                 Text("Groups", fontSize = 15.sp)
             }
 
-            // PROFILE
+            // HOME
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                val bgColor = if (selectedItem == "Profile") Color(0xFF9ACD32) else Color.White
+                val bgColor = if (selectedItem == "Home") Color(0xFF9ACD32) else Color.White
                 Box(
                     modifier = Modifier
                         .size(50.dp)
                         .clip(CircleShape)
                         .background(bgColor)
                         .clickable {
-                            onProfileClick()
+                            onHomeClick()
                         },
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = Icons.Filled.Person,
-                        contentDescription = "Profile",
+                        imageVector = Icons.Filled.Home,
+                        contentDescription = "Home",
                         tint = Color.Black
                     )
                 }
-                Text("Profile", fontSize = 15.sp)
+                Text("Home", fontSize = 15.sp)
             }
 
             // STATS

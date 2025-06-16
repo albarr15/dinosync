@@ -187,8 +187,8 @@ fun GroupActivityScreen(
             BottomNavigationBar(
                 selectedItem = "Groups",
                 onGroupsClick = {},
-                onProfileClick = {
-                    val intent = Intent(context, ProfileActivity::class.java)
+                onHomeClick = {
+                    val intent = Intent(context, MainActivity::class.java)
                     context.startActivity(intent)
                 },
                 onStatsClick = {

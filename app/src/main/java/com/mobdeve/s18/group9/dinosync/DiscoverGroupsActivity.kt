@@ -106,7 +106,7 @@ fun DiscoverGroupsScreen() {
             BottomNavigationBar(
                 selectedItem = "Groups",
                 onGroupsClick = { /* Handle navigation */ },
-                onProfileClick = { /* Handle navigation */ },
+                onHomeClick = { /* Handle navigation */ },
                 onStatsClick = { /* Handle navigation */ }
             )
         },
@@ -120,7 +120,10 @@ fun DiscoverGroupsScreen() {
                 .padding(top = 25.dp, start = 25.dp, end = 25.dp, bottom = 5.dp)
         ) {
             TopActionBar(
-                onProfileClick = { },
+                onProfileClick = {
+                    val intent = Intent(context, ProfileActivity::class.java)
+                    context.startActivity(intent)
+                                 },
                 onNotificationsClick = { },
                 onSettingsClick = { }
             )

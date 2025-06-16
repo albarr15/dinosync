@@ -129,8 +129,8 @@ fun MainScreen(context : Context) {
                     intent.putExtra("userId", selectedUser.userId)
                     context.startActivity(intent)
                 },
-                onProfileClick = {
-                    val intent = Intent(context, ProfileActivity::class.java)
+                onHomeClick = {
+                    val intent = Intent(context, MainActivity::class.java)
                     intent.putExtra("userId", selectedUser.userId)
                     context.startActivity(intent)
                 },
@@ -166,7 +166,11 @@ fun MainScreen(context : Context) {
             }*/
 
             TopActionBar(
-                onProfileClick = { /* Navigate to profile */ },
+                onProfileClick = {
+                    val intent = Intent(context, ProfileActivity::class.java)
+                    intent.putExtra("userId", selectedUser.userId)
+                    context.startActivity(intent)
+                                 },
                 onNotificationsClick = { /* Show notifications */ },
                 onSettingsClick = { /* Show settings */ }
             )

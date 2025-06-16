@@ -153,8 +153,8 @@ fun FocusStudyScreen(hours: Int, minutes: Int, subject: String) {
                 val intent = Intent(context, DiscoverGroupsActivity::class.java)
                 context.startActivity(intent)
             },
-            onProfileClick  = {
-                val intent = Intent(context, ProfileActivity::class.java)
+            onHomeClick  = {
+                val intent = Intent(context, MainActivity::class.java)
                 context.startActivity(intent)
             },
             onStatsClick    = {
