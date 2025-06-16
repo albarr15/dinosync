@@ -1,24 +1,71 @@
 package com.mobdeve.s18.group9.dinosync
 
-import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.googlefonts.Font
+import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeGroupMembers
+import com.mobdeve.s18.group9.dinosync.components.BottomNavigationBar
+import com.mobdeve.s18.group9.dinosync.components.TopActionBar
+import com.mobdeve.s18.group9.dinosync.model.Achievement
+import com.mobdeve.s18.group9.dinosync.model.DailyStudyHistory
+import com.mobdeve.s18.group9.dinosync.model.FeelingEntry
+import com.mobdeve.s18.group9.dinosync.model.Mood
+import com.mobdeve.s18.group9.dinosync.model.StudyGroup
+import com.mobdeve.s18.group9.dinosync.model.User
+import com.mobdeve.s18.group9.dinosync.ui.theme.DarkGreen
+import com.mobdeve.s18.group9.dinosync.ui.theme.DinoSyncTheme
+import java.util.Calendar
+import android.content.Intent
+import android.os.Build
+import androidx.annotation.RequiresApi
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import com.mobdeve.s18.group9.dinosync.components.BottomNavigationBar
-import com.mobdeve.s18.group9.dinosync.ui.theme.DinoSyncTheme
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.googlefonts.GoogleFont
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeFeelingEntry
+import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeAchievements
+import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeDailyStudyHistory
+import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeMoods
+import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeUsers
+import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeStudyGroups
+
 
 class ProfileActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val userId = intent.getIntExtra("userId", -1)
+        //val userId = intent.getIntExtra("userId", -1)
+
 
         setContent {
             DinoSyncTheme {
@@ -57,28 +104,234 @@ class ProfileActivity : ComponentActivity() {
         println("onDestroy()")
     }
 }
-
+@Preview
 @Composable
-fun ProfileActivityScreen(){
+fun ProfileActivityScreen() {
+    val userId = initializeUsers().random().userId
+    val feelingEntries = initializeFeelingEntry()
+    val dailyStudyHistory = initializeDailyStudyHistory()
+    val studyGroups = initializeStudyGroups()
+    val achievements = initializeAchievements()
+    val users = initializeUsers()
+    val moods = initializeMoods()
+
     val context = LocalContext.current
-    Box(modifier = Modifier.fillMaxSize()) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .align(Alignment.BottomCenter)
-        ) {
+    val groupMembers = initializeGroupMembers()
+
+    val provider = GoogleFont.Provider(
+        providerAuthority = "com.google.android.gms.fonts",
+        providerPackage = "com.google.android.gms",
+        certificates = R.array.com_google_android_gms_fonts_certs
+    )
+    val interFontName = GoogleFont("Inter")
+    val fontFamily = FontFamily(
+        Font(
+            googleFont = interFontName,
+            fontProvider = provider,
+            weight = FontWeight.Medium
+        )
+    )
+
+    val selectedUser = users.find { it.userId == userId }
+
+    // Prepare data for mood log (only for current month)
+    val currentMonth = Calendar.getInstance().get(Calendar.MONTH)
+    val currentYear = Calendar.getInstance().get(Calendar.YEAR)
+
+    val userFeelingsThisMonth = feelingEntries.filter { it.userId == userId &&
+            it.entryDate.month == currentMonth && it.entryDate.year + 1900 == currentYear
+    }
+
+    val moodMap = moods.associateBy { it.moodId }
+    val totalDaysInMonth = Calendar.getInstance().getActualMaximum(Calendar.DAY_OF_MONTH)
+    val moodEntries = MutableList(totalDaysInMonth) { Color.LightGray }
+
+    userFeelingsThisMonth.forEach { feelingEntry ->
+        val day = feelingEntry.entryDate.date - 1 // day of month is 1-based
+        val mood = moodMap[feelingEntry.moodId]
+        moodEntries[day] = when (mood?.name) {
+            "Happy" -> Color.Yellow
+            "Sad" -> Color.Blue
+            "Angry" -> Color.Red
+            "Neutral" -> Color.Gray
+            "Productive" -> Color.Green
+            else -> Color.LightGray
+        }
+    }
+
+    Scaffold(
+        containerColor = DarkGreen,
+        bottomBar = {
             BottomNavigationBar(
                 selectedItem = "Profile",
-                onGroupsClick = {
-                    val intent = Intent(context, DiscoverGroupsActivity::class.java)
-                    context.startActivity(intent)
+                onGroupsClick = { /* Handle navigation */ },
+                onHomeClick = {
+                    /* Handle navigation */
                 },
-                onProfileClick = {},
-                onStatsClick = {
-                    val intent = Intent(context, StatisticsActivity::class.java)
-                    context.startActivity(intent)
-                }
+                onStatsClick = { /* Handle navigation */ }
             )
+        }
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.White)
+                .padding(horizontal = 24.dp, vertical = 16.dp)
+        ) {
+
+            TopActionBar(
+                onProfileClick = { },
+                onNotificationsClick = { },
+                onSettingsClick = { }
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Profile Info Section
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(1.dp, Color.Transparent, RoundedCornerShape(4.dp))
+                    .padding(8.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Image(
+                        painter = painterResource(id = selectedUser?.userProfileImage ?: R.drawable.althea),
+                        contentDescription = null,
+                        modifier = Modifier
+                            .size(120.dp)
+                            .clip(RoundedCornerShape(4.dp))
+                            .border(1.dp, Color.Gray, shape = RoundedCornerShape(8.dp))
+                    )
+                    Column {
+                        Text(
+                            selectedUser?.userName ?: "User",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 18.sp,
+                            fontFamily = fontFamily
+                        )
+                        Text(
+                            selectedUser?.userBio ?: "user bio user bio",
+                            fontSize = 14.sp,
+                            color = Color.Gray,
+                            fontFamily = fontFamily
+                        )
+                        Spacer(modifier = Modifier.height(15.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            repeat(3) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(30.dp)
+                                        .background(Color.LightGray, shape = CircleShape)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+            HorizontalDivider(modifier = Modifier, thickness = 1.dp, color = Color.Gray)
+            Spacer(modifier = Modifier.height(30.dp))
+
+            // Achievements Section (Filtered by userId)
+            Text("Collection", fontWeight = FontWeight.Medium, fontSize = 18.sp)
+            Spacer(modifier = Modifier.height(5.dp))
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                contentPadding = PaddingValues(horizontal = 4.dp)
+            ) {
+                val userAchievements = achievements.filter { it.userId == userId }
+                items(userAchievements.size) { index ->
+                    val achievement = userAchievements[index]
+                    Box(
+                        modifier = Modifier
+                            .size(80.dp)
+                            .background(Color.LightGray, RoundedCornerShape(10.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Image(
+                            painter = painterResource(id = achievement.image),
+                            contentDescription = null,
+                            modifier = Modifier.size(60.dp)
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(30.dp))
+
+            // Groups Section (Filtered)
+            Text("Groups", fontWeight = FontWeight.Medium, fontSize = 18.sp)
+            Spacer(modifier = Modifier.height(5.dp))
+
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                contentPadding = PaddingValues(horizontal = 4.dp)
+            ) {
+                val userGroups = groupMembers
+                    .filter { it.userId == userId }
+                    .mapNotNull { member -> studyGroups.find { it.groupId == member.groupId } }
+
+                items(userGroups.size) { index ->
+                    Box(
+                        modifier = Modifier
+                            .size(80.dp)
+                            .background(Color.LightGray, RoundedCornerShape(10.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center,
+                            modifier = Modifier.padding(4.dp)
+                        ) {
+                            Image(
+                                painter = painterResource(id = userGroups[index].image),
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .size(50.dp)
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = userGroups[index].name,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+
+                }
+            }
+
+            Spacer(modifier = Modifier.height(30.dp))
+
+            // Mood Log Section
+            Text("Mood Log", fontWeight = FontWeight.Medium, fontSize = 18.sp)
+            Spacer(modifier = Modifier.height(10.dp))
+
+            val moodRows = moodEntries.chunked(9)
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                moodRows.forEach { rowColors ->
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        items(rowColors.size) { index ->
+                            Box(
+                                modifier = Modifier
+                                    .size(30.dp)
+                                    .background(rowColors[index], shape = RoundedCornerShape(8.dp))
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.weight(1f))
         }
     }
 }
+
+
