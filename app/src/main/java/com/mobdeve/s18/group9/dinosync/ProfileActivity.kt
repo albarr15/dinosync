@@ -326,9 +326,16 @@ fun ProfileActivityScreen(userId : Int) {
             Spacer(modifier = Modifier.height(30.dp))
 
             // Mood Log Section
+            Row {
+                Text("Mood Log", fontWeight = FontWeight.Medium, fontSize = 18.sp)
+                Text(
+                    text = "Latest Mood",
+                    fontSize = 12.sp,
+                    textAlign = TextAlign.End,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
 
-
-            Text("Mood Log", fontWeight = FontWeight.Medium, fontSize = 18.sp)
             Spacer(modifier = Modifier.height(5.dp))
             MoodTrackerGrid()
 
