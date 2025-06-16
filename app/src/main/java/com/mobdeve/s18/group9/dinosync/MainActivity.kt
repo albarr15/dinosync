@@ -35,31 +35,17 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material.icons.filled.SentimentVeryDissatisfied
 import androidx.compose.material.icons.filled.SentimentDissatisfied
 import androidx.compose.material.icons.filled.SentimentNeutral
 import androidx.compose.material.icons.filled.SentimentSatisfied
 import androidx.compose.material.icons.filled.SentimentVerySatisfied
-import androidx.compose.material.icons.filled.Group
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.BarChart
-import androidx.compose.material.icons.filled.Mood
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.TextField
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.Text
-
-import androidx.compose.material3.TextField
 import androidx.compose.foundation.lazy.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalContext
 import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeCourses
@@ -73,6 +59,7 @@ import com.mobdeve.s18.group9.dinosync.model.Music
 import com.mobdeve.s18.group9.dinosync.model.TodoItem
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.zIndex
 
 class MainActivity : ComponentActivity() {
@@ -271,7 +258,7 @@ fun MainScreen(context : Context) {
                             onIconSelected = { selectedMoodIcon = it }
                         )
                     },
-                    containerColor = Color.LightGray,
+                    containerColor = Color.White,
                     shape = RoundedCornerShape(15.dp)
                 )
             }
@@ -336,7 +323,7 @@ fun MoodInput(
         modifier = Modifier
             .fillMaxWidth()
             .height(100.dp)
-            .padding(20.dp).background(Color.LightGray)
+            .padding(20.dp).background(Color.White)
     ) {
         Column (modifier = Modifier.align(Alignment.Center),
                 horizontalAlignment = Alignment.CenterHorizontally){
@@ -364,9 +351,9 @@ fun MoodInput(
                     val isSelected = selectedIcon == icon
                     Box(
                         modifier = Modifier
-                            .size(25.dp)
-                            .clip(CircleShape)
-                            .background(if (isSelected) YellowGreen else Color.White)
+                            .size(20.dp).scale(1.5f)
+                            .clip(RoundedCornerShape(28.dp))
+                            .background(if (isSelected) YellowGreen else Color.LightGray)
                             .clickable {
                                 onIconSelected(if (isSelected) null else icon)
                             },
@@ -375,10 +362,12 @@ fun MoodInput(
                         Icon(
                             imageVector = icon,
                             contentDescription = null,
-                            tint = if (isSelected) Color.White else Color.DarkGray
+                            tint = if (isSelected) Color.White else Color.DarkGray,
+                            modifier = Modifier.size(50.dp)
                         )
                     }
                 }
+
             }
         }
     }
@@ -426,39 +415,37 @@ fun TimerInput(
                 horizontalArrangement = Arrangement.Center
             ) {
                 // HOURS
-                    OutlinedTextField(
-                        value = hoursSet,
-                        onValueChange = {
-                            if (it.all { char -> char.isDigit() } && it.length <= 2) onHoursChange(it)
-                        },
-                        placeholder = {
-                            Text(
-                                "00",
-                                fontSize = 50.sp,
-                                color = Color.Black.copy(alpha = 0.6f),
-                                fontWeight = FontWeight.Medium,
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                        },
-                        singleLine = true,
-                        textStyle = LocalTextStyle.current.copy(
-                            fontSize = 50.sp, textAlign = TextAlign.Center, color = if (isHoursFocused) DarkGreen else Color.Black, fontWeight = FontWeight.Medium
-                        ),
-                        modifier = Modifier
-                            .width(150.dp)
-                            .onFocusChanged { focusState -> isHoursFocused = focusState.isFocused }
-                            .background(if (isHoursFocused) Lime else Color.LightGray, RoundedCornerShape(10.dp))
-                            .border(
-                                width = 2.dp,
-                                color = if (isHoursFocused) DarkGreen else Color.LightGray,
-                                shape = RoundedCornerShape(10.dp)
-                            )
-                        ,
-                        shape = RoundedCornerShape(10.dp),
-                    )
-
-
+                OutlinedTextField(
+                    value = hoursSet,
+                    onValueChange = {
+                        if (it.all { char -> char.isDigit() } && it.length <= 2) onHoursChange(it)
+                    },
+                    placeholder = {
+                        Text(
+                            "00",
+                            fontSize = 50.sp,
+                            color = Color.Black.copy(alpha = 0.6f),
+                            fontWeight = FontWeight.Medium,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    },
+                    singleLine = true,
+                    textStyle = LocalTextStyle.current.copy(
+                        fontSize = 50.sp, textAlign = TextAlign.Center, color = if (isHoursFocused) DarkGreen else Color.Black, fontWeight = FontWeight.Medium
+                    ),
+                    modifier = Modifier
+                        .width(150.dp)
+                        .onFocusChanged { focusState -> isHoursFocused = focusState.isFocused }
+                        .background(if (isHoursFocused) Lime else Color.LightGray, RoundedCornerShape(10.dp))
+                        .border(
+                            width = 2.dp,
+                            color = if (isHoursFocused) DarkGreen else Color.LightGray,
+                            shape = RoundedCornerShape(10.dp)
+                        )
+                    ,
+                    shape = RoundedCornerShape(10.dp),
+                )
 
                 Text(":", fontSize = 50.sp, color = Color.Black, modifier = Modifier.padding(horizontal = 8.dp))
 
@@ -557,7 +544,6 @@ fun SubjectInputDropdown(
     Box(
         modifier = Modifier
             .width(250.dp)
-            .border(1.dp, Color.Gray, shape = RoundedCornerShape(8.dp))
             .clip(RoundedCornerShape(8.dp))
             .padding(8.dp)
     ) {
