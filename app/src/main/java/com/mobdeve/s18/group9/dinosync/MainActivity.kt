@@ -59,7 +59,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalContext
@@ -73,6 +72,7 @@ import com.mobdeve.s18.group9.dinosync.components.TopActionBar
 import com.mobdeve.s18.group9.dinosync.model.Music
 import com.mobdeve.s18.group9.dinosync.model.TodoItem
 import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.zIndex
 
 class MainActivity : ComponentActivity() {
@@ -395,8 +395,6 @@ fun TimerInput(
 ) {
     var isHoursFocused by remember { mutableStateOf(false) }
     var isMinutesFocused by remember { mutableStateOf(false) }
-    var showMoodDialog by remember { mutableStateOf(false) }
-    var selectedMoodIcon by remember { mutableStateOf<ImageVector?>(null) }
 
     val context = LocalContext.current
     //Font Dependency
@@ -428,30 +426,39 @@ fun TimerInput(
                 horizontalArrangement = Arrangement.Center
             ) {
                 // HOURS
-                OutlinedTextField(
-                    value = hoursSet,
-                    onValueChange = {
-                        if (it.all { char -> char.isDigit() } && it.length <= 2) onHoursChange(it)
-                    },
-                    placeholder = {
-                        Text(" 00", fontSize = 50.sp, color = Color.Black.copy(alpha = 0.6f), fontWeight = FontWeight.Medium )
-                    },
-                    singleLine = true,
-                    textStyle = LocalTextStyle.current.copy(
-                        fontSize = 50.sp, textAlign = TextAlign.Center, color = if (isHoursFocused) DarkGreen else Color.Black, fontWeight = FontWeight.Medium
-                    ),
-                    modifier = Modifier
-                        .width(150.dp)
-                        .onFocusChanged { focusState -> isHoursFocused = focusState.isFocused }
-                        .background(if (isHoursFocused) Lime else Color.LightGray, RoundedCornerShape(10.dp))
-                        .border(
-                            width = 2.dp,
-                            color = if (isHoursFocused) DarkGreen else Color.LightGray,
-                            shape = RoundedCornerShape(10.dp)
-                        )
-                    ,
-                    shape = RoundedCornerShape(10.dp),
-                )
+                    OutlinedTextField(
+                        value = hoursSet,
+                        onValueChange = {
+                            if (it.all { char -> char.isDigit() } && it.length <= 2) onHoursChange(it)
+                        },
+                        placeholder = {
+                            Text(
+                                "00",
+                                fontSize = 50.sp,
+                                color = Color.Black.copy(alpha = 0.6f),
+                                fontWeight = FontWeight.Medium,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        },
+                        singleLine = true,
+                        textStyle = LocalTextStyle.current.copy(
+                            fontSize = 50.sp, textAlign = TextAlign.Center, color = if (isHoursFocused) DarkGreen else Color.Black, fontWeight = FontWeight.Medium
+                        ),
+                        modifier = Modifier
+                            .width(150.dp)
+                            .onFocusChanged { focusState -> isHoursFocused = focusState.isFocused }
+                            .background(if (isHoursFocused) Lime else Color.LightGray, RoundedCornerShape(10.dp))
+                            .border(
+                                width = 2.dp,
+                                color = if (isHoursFocused) DarkGreen else Color.LightGray,
+                                shape = RoundedCornerShape(10.dp)
+                            )
+                        ,
+                        shape = RoundedCornerShape(10.dp),
+                    )
+
+
 
                 Text(":", fontSize = 50.sp, color = Color.Black, modifier = Modifier.padding(horizontal = 8.dp))
 
@@ -462,8 +469,14 @@ fun TimerInput(
                         if (it.all { char -> char.isDigit() } && it.length <= 2) onMinutesChange(it)
                     },
                     placeholder = {
-                        Text("00", fontSize = 50.sp, color = Color.Black.copy(alpha = 0.6f), fontWeight = FontWeight.Medium,
-                            textAlign = TextAlign.Center)
+                        Text(
+                            "00",
+                            fontSize = 50.sp,
+                            color = Color.Black.copy(alpha = 0.6f),
+                            fontWeight = FontWeight.Medium,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth()
+                        )
                     },
                     singleLine = true,
                     textStyle = LocalTextStyle.current.copy(
@@ -472,6 +485,7 @@ fun TimerInput(
                     modifier = Modifier
                         .width(150.dp)
                         .onFocusChanged { focusState -> isMinutesFocused = focusState.isFocused }
+                        .align(Alignment.CenterVertically)
                         .background(if (isMinutesFocused) Lime else Color.LightGray, RoundedCornerShape(10.dp))
                         .border(
                             width = 2.dp,
