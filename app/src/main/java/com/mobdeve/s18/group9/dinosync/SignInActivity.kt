@@ -65,7 +65,7 @@ import androidx.compose.ui.text.style.TextDecoration
 /** TODO: Saving account details, password & email verification **/
 
 
-class RegisterActivity : ComponentActivity() {
+class SignInActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -73,7 +73,7 @@ class RegisterActivity : ComponentActivity() {
 
         setContent {
             DinoSyncTheme {
-                RegisterActivityScreen()
+                SignInActivityScreen()
             }
         }
     }
@@ -111,10 +111,9 @@ class RegisterActivity : ComponentActivity() {
 }
 
 @Composable
-fun RegisterActivityScreen() {
+fun SignInActivityScreen() {
     val context = LocalContext.current
-    var isToggled1 by remember { mutableStateOf(false) }
-    var isToggled2 by remember { mutableStateOf(false) }
+    var isPWVisible by remember { mutableStateOf(false) }
 
     BackHandler(enabled = true) {
         // Do nothing, just to disable back btn
@@ -142,7 +141,7 @@ fun RegisterActivityScreen() {
                 fontWeight = FontWeight.Bold
             )
             Text(
-                "Create a new account to get started.",
+                "Welcome back!",
                 color = Color.White,
                 fontSize = 10.sp
             )
@@ -160,13 +159,7 @@ fun RegisterActivityScreen() {
             ) {
                 OutlinedTextField(
                     state = rememberTextFieldState(),
-                    label = { Text("Username") },
-                    modifier = Modifier.fillMaxWidth(),
-                    lineLimits = TextFieldLineLimits.SingleLine
-                )
-                OutlinedTextField(
-                    state = rememberTextFieldState(),
-                    label = { Text("Email") },
+                    label = { Text("Username or Email") },
                     modifier = Modifier.fillMaxWidth(),
                     lineLimits = TextFieldLineLimits.SingleLine
                 )
@@ -175,9 +168,9 @@ fun RegisterActivityScreen() {
                     label = { Text("Password") },
                     trailingIcon = @androidx.compose.runtime.Composable {
                         IconButton(onClick = {
-                            isToggled1 = !isToggled1
+                            isPWVisible = !isPWVisible
                         }) {
-                            if (isToggled1) {
+                            if (isPWVisible) {
                                 Icon(
                                     imageVector = Icons.Filled.Visibility,
                                     contentDescription = "Show Password",
@@ -192,45 +185,20 @@ fun RegisterActivityScreen() {
                             }
                         }
                     },
-                    textObfuscationMode = if (isToggled1) {TextObfuscationMode.Visible} else {TextObfuscationMode.RevealLastTyped},
-                    modifier = Modifier.fillMaxWidth()
-                )
-                OutlinedSecureTextField(
-                    state = rememberTextFieldState(),
-                    label = { Text("Confirm Password") },
-                    trailingIcon = @androidx.compose.runtime.Composable {
-                        IconButton(onClick = {
-                            isToggled2 = !isToggled2
-                        }) {
-                            if (isToggled2) {
-                                Icon(
-                                    imageVector = Icons.Filled.Visibility,
-                                    contentDescription = "Show Password",
-                                    tint = Color.Black
-                                )
-                            } else {
-                                Icon(
-                                    imageVector = Icons.Outlined.VisibilityOff,
-                                    contentDescription = "Hide Password",
-                                    tint = Color.Black
-                                )
-                            }
-                        }
-                    },
-                    textObfuscationMode = if (isToggled2) {TextObfuscationMode.Visible} else {TextObfuscationMode.RevealLastTyped},
+                    textObfuscationMode = if (isPWVisible) {TextObfuscationMode.Visible} else {TextObfuscationMode.RevealLastTyped},
                     modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(
-                    modifier = Modifier.height(8.dp)
+                    modifier = Modifier.height(23.dp)
                 )
                 Row (modifier = Modifier.align(Alignment.End)
-                        .padding(2.dp),
+                    .padding(2.dp),
                     verticalAlignment = Alignment.CenterVertically) {
-                    Text(text = "Already have an account? ", fontSize = 14.sp,)
+                    Text(text = "Don't have an account? ", fontSize = 14.sp)
                     Text(
-                        text = "Sign In",
+                        text = "Register",
                         modifier = Modifier.clickable {
-                            val intent = Intent(context, SignInActivity::class.java)
+                            val intent = Intent(context, RegisterActivity::class.java)
                             context.startActivity(intent) },
                         color = Color(0xFF1E88E5),
                         fontSize = 14.sp,
@@ -250,7 +218,7 @@ fun RegisterActivityScreen() {
                         containerColor = DarkGreen,
                         contentColor = Color.White
                     )) {
-                    Text("Register")
+                    Text("Sign In")
                 }
             }
         }
