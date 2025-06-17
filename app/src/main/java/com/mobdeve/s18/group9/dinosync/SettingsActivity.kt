@@ -168,7 +168,6 @@ fun SettingsActivityScreen() {
                             intent.putExtra("userId", userId)
                             context.startActivity(intent)
                         },
-                        onNotificationsClick = { /* Show notifications */ },
                         onSettingsClick = {
                             val intent = Intent(context, SettingsActivity::class.java)
                             intent.putExtra("userId", userId)
