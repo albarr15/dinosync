@@ -42,30 +42,30 @@ class DataHelper {
         }
 
         fun initializeAchievements(): ArrayList<Achievement> {
-            val userIds = intArrayOf(1, 2, 3, 4, 5)
-            val titles = arrayOf("Badge 1", "Badge 2", "Badge 3", "Badge 4", "Badge 5")
-            val images = intArrayOf(
-                R.drawable.badge3,
-                R.drawable.badge1,
-                R.drawable.badge2,
-                R.drawable.badge4,
-                R.drawable.badge5
+            val achievementData = listOf(
+                Triple(1, "Badge 1", R.drawable.dino1),
+                Triple(2, "Badge 2", R.drawable.dino2),
+                Triple(3, "Badge 3", R.drawable.dino3),
+                Triple(4, "Badge 4", R.drawable.dino4),
+                Triple(5, "Badge 5", R.drawable.dino5),
+                Triple(6, "Badge 6", R.drawable.dino6)
             )
 
             val data = ArrayList<Achievement>()
-            for (i in titles.indices) {
+            achievementData.forEachIndexed { index, (userId, title, image) ->
                 data.add(
                     Achievement(
-                        achievementId = i + 1,
-                        userId = userIds[i],
-                        title = titles[i],
-                        image = images[i]
+                        achievementId = index + 1,
+                        userId = userId,
+                        title = title,
+                        image = image
                     )
                 )
             }
             data.shuffle()
             return data
         }
+
 
         fun initializeCourses(): ArrayList<Course> {
             val courseNames = arrayOf(
@@ -176,8 +176,8 @@ class DataHelper {
 
         fun initializeMoods(): ArrayList<Mood> {
             val moodNames = arrayOf(
-                "verySad",
-                "sad",
+                "Very Sad",
+                "Sad",
                 "Neutral",
                 "Happy",
                 "Very Happy"
@@ -204,6 +204,75 @@ class DataHelper {
             data.shuffle()
             return data
         }
+
+        fun initializeFeelingEntry(): ArrayList<FeelingEntry> {
+            val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+
+            val userIds = arrayOf(
+                1, 1, 1, 1, 1,
+                2, 2, 2, 2,
+                3, 3, 3,
+                4, 4, 4,
+                5, 5, 5
+            )
+
+            val moodIds = arrayOf(
+                5, 5, 4, 4, 3,
+                4, 3, 4, 4,
+                3, 3, 3,
+                2, 2, 4,
+                1, 1, 3
+            )
+
+            val journalEntries = arrayOf(
+                "Had a very productive day!",
+                "Still feeling good and motivated.",
+                "Pushed through with longer sessions today.",
+                "Great study momentum.",
+                "Felt a bit tired but still studied.",
+
+                "Started off slow, ended strong.",
+                "Managed distractions well today.",
+                "Back-to-back sessions completed!",
+                "Group study was very helpful.",
+
+                "Just okay, nothing special.",
+                "Maintained the pace.",
+                "Solid review for the week.",
+
+                "Not in the mood today but tried.",
+                "A bit off, but still made effort.",
+                "Feeling a bit better after studying.",
+
+                "Everything felt difficult today.",
+                "Felt overwhelmed by materials.",
+                "Short study helped a bit."
+            )
+
+            val dateStrings = arrayOf(
+                "2025-05-16", "2025-05-17", "2025-05-30", "2025-06-14", "2025-06-15",
+                "2025-04-14", "2025-05-20", "2025-06-14", "2025-06-15",
+                "2025-04-25", "2025-05-14", "2025-06-15",
+                "2025-04-13", "2025-05-14", "2025-06-15",
+                "2025-04-14", "2025-05-14", "2025-06-15"
+            )
+
+            val data = ArrayList<FeelingEntry>()
+            for (i in userIds.indices) {
+                data.add(
+                    FeelingEntry(
+                        entryId = i + 1,
+                        userId = userIds[i],
+                        moodId = moodIds[i],
+                        journalEntry = journalEntries[i],
+                        entryDate = dateFormat.parse(dateStrings[i])!!
+                    )
+                )
+            }
+            data.shuffle()
+            return data
+        }
+
         fun initializeStudySessions(): ArrayList<StudySession> {
             val sessions = ArrayList<StudySession>()
 

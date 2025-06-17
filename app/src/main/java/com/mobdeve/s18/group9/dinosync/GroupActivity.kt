@@ -64,6 +64,8 @@ import com.patrykandpatrick.vico.core.cartesian.axis.VerticalAxis
 import com.patrykandpatrick.vico.core.cartesian.data.CartesianChartModelProducer
 import com.patrykandpatrick.vico.core.cartesian.data.lineSeries
 import androidx.compose.runtime.LaunchedEffect
+import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeAchievements
+import com.mobdeve.s18.group9.dinosync.components.TopActionBar
 import com.mobdeve.s18.group9.dinosync.model.StudySession
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -104,6 +106,7 @@ class GroupActivity : ComponentActivity() {
         setContent {
             DinoSyncTheme {
                 GroupActivityScreen(
+                    userId = userId,
                     group = selectedGroup,
                     groupMembers = groupMembers,
                     allUsers = userList,
@@ -147,6 +150,7 @@ class GroupActivity : ComponentActivity() {
 
 @Composable
 fun GroupActivityScreen(
+    userId: Int,
     group: StudyGroup,
     groupMembers: List<GroupMember>,
     allUsers: List<User>,
@@ -156,6 +160,7 @@ fun GroupActivityScreen(
     var selectedTab by remember { mutableStateOf("Group Activity") }
 
     val studySessionList = initializeStudySessions()
+
 
     // Merge GroupMember with User
     val memberUsers = groupMembers.mapNotNull { gm ->
@@ -186,13 +191,19 @@ fun GroupActivityScreen(
         bottomBar = {
             BottomNavigationBar(
                 selectedItem = "Groups",
-                onGroupsClick = {},
+                onGroupsClick = {
+                    val intent = Intent(context, DiscoverGroupsActivity::class.java)
+                    intent.putExtra("userId", userId)
+                    context.startActivity(intent)
+                },
                 onHomeClick = {
                     val intent = Intent(context, MainActivity::class.java)
+                    intent.putExtra("userId", userId)
                     context.startActivity(intent)
                 },
                 onStatsClick = {
                     val intent = Intent(context, StatisticsActivity::class.java)
+                    intent.putExtra("userId", userId)
                     context.startActivity(intent)
                 }
             )
@@ -205,6 +216,14 @@ fun GroupActivityScreen(
                 .background(Color.White)
                 .padding(16.dp)
         ) {
+            TopActionBar(
+                onProfileClick = {
+                    val intent = Intent(context, ProfileActivity::class.java)
+                    //intent.putExtra("USER_ID", currentUserId)
+                    context.startActivity(intent)},
+                onSettingsClick = { }
+            )
+            Spacer(modifier = Modifier.height(5.dp))
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -212,6 +231,7 @@ fun GroupActivityScreen(
                     .background(Color(0xFF2F6437))
                     .padding(20.dp)
             ) {
+
                 Column {
                     Box(
                         modifier = Modifier

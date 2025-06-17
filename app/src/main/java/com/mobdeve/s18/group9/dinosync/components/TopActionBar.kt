@@ -19,7 +19,6 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun TopActionBar(
     onProfileClick: () -> Unit,
-    onNotificationsClick: () -> Unit,
     onSettingsClick: () -> Unit
 ) {
     Row(

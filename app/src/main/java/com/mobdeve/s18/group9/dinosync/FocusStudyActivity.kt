@@ -1,5 +1,7 @@
 package com.mobdeve.s18.group9.dinosync
 
+import HatchCard
+import NewEggCard
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -48,14 +50,14 @@ import com.mobdeve.s18.group9.dinosync.ui.theme.YellowGreen
 class FocusStudyActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
+        val userId = intent.getIntExtra("userId", 0)
         val hours = intent.getIntExtra("hours", 0)
         val minutes = intent.getIntExtra("minutes", 0)
         val selectedSubject = intent.getStringExtra("selected_subject") ?: ""
 
         setContent {
             DinoSyncTheme {
-                FocusStudyScreen(hours = hours, minutes = minutes, subject = selectedSubject)
+                FocusStudyScreen(userId = userId, hours = hours, minutes = minutes, subject = selectedSubject)
             }
         }
     }
@@ -92,24 +94,20 @@ class FocusStudyActivity : ComponentActivity() {
     }
 }
 
-
-
 @Composable
-fun FocusStudyScreen(hours: Int, minutes: Int, subject: String) {
-
+fun FocusStudyScreen(userId: Int, hours: Int, minutes: Int, subject: String) {
     val context = LocalContext.current
-
     val totalTime = (hours * 3600) + (minutes * 60)
     var timeLeft by remember { mutableIntStateOf(totalTime) }
     var isRunning by remember { mutableStateOf(true) }
     var isStopped by remember { mutableStateOf(false) }
     val musicList = remember { initializeMusic() }
     val progress = if (totalTime > 0) timeLeft / totalTime.toFloat() else 0f
-    val hours = timeLeft / 3600
-    val minutes = (timeLeft % 3600) / 60
+    val hoursLeft = timeLeft / 3600
+    val minutesLeft = (timeLeft % 3600) / 60
     val seconds = timeLeft % 60
+    val formattedTime = "%02d:%02d:%02d".format(hoursLeft, minutesLeft, seconds)
 
-    val formattedTime = "%02d:%02d:%02d".format(hours, minutes, seconds)
     val isLowTime = timeLeft <= totalTime * 0.2
     val isMidTime = timeLeft <= totalTime * 0.5
     val timerColor = when {
@@ -124,8 +122,6 @@ fun FocusStudyScreen(hours: Int, minutes: Int, subject: String) {
         certificates = R.array.com_google_android_gms_fonts_certs
     )
     val interFontName = GoogleFont("Inter")
-    val currentMusic = musicList[1]
-
     val fontFamily = FontFamily(
         Font(
             googleFont = interFontName,
@@ -134,34 +130,46 @@ fun FocusStudyScreen(hours: Int, minutes: Int, subject: String) {
         )
     )
 
-    /*** Countdown Timer ***/
+    val currentMusic = musicList[1]
+
+    // Popup states
+    var showHatchCard by remember { mutableStateOf(false) }
+    var showNewEggCard by remember { mutableStateOf(false) }
+
     LaunchedEffect(isRunning) {
         if (isRunning) {
             while (timeLeft > 0) {
-                delay(1000L)
+                delay(1000L) // 10 secs
                 timeLeft--
             }
             isRunning = false
         }
     }
 
+    LaunchedEffect(timeLeft) {
+        if (timeLeft == 0) {
+            showHatchCard = true
+            delay(10000L)  // 3 secs
+            showNewEggCard = true
+        }
+    }
+
     Scaffold(
         containerColor = DarkGreen,
-        bottomBar = { BottomNavigationBar(
-            selectedItem    = null,
-            onGroupsClick   = {
-                val intent = Intent(context, DiscoverGroupsActivity::class.java)
-                context.startActivity(intent)
-            },
-            onHomeClick  = {
-                val intent = Intent(context, MainActivity::class.java)
-                context.startActivity(intent)
-            },
-            onStatsClick    = {
-                val intent = Intent(context, StatisticsActivity::class.java)
-                context.startActivity(intent)
-            }
-        ) }
+        bottomBar = {
+            BottomNavigationBar(
+                selectedItem = null,
+                onGroupsClick = {
+                    context.startActivity(Intent(context, DiscoverGroupsActivity::class.java))
+                },
+                onHomeClick = {
+                    context.startActivity(Intent(context, MainActivity::class.java))
+                },
+                onStatsClick = {
+                    context.startActivity(Intent(context, StatisticsActivity::class.java))
+                }
+            )
+        }
     ) { padding ->
         Column(
             modifier = Modifier
@@ -172,49 +180,48 @@ fun FocusStudyScreen(hours: Int, minutes: Int, subject: String) {
         ) {
             Spacer(modifier = Modifier.height(16.dp))
             TopActionBar(
-                onProfileClick = { },
-                onNotificationsClick = {  },
+                onProfileClick = {
+                    val intent = Intent(context, ProfileActivity::class.java)
+                    intent.putExtra("userId", userId)
+                    context.startActivity(intent)
+                },
                 onSettingsClick = { }
             )
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            /******** Course Box *********/
             Box(
                 modifier = Modifier
                     .background(Color.Transparent, RoundedCornerShape(10.dp))
-                    .border(1.dp, Color.White, shape = RoundedCornerShape(8.dp))
+                    .border(1.dp, Color.White, RoundedCornerShape(8.dp))
                     .padding(horizontal = 50.dp, vertical = 10.dp)
             ) {
                 Text(subject, fontWeight = FontWeight.ExtraBold, fontFamily = fontFamily, color = Color.White)
             }
+
             Spacer(modifier = Modifier.height(50.dp))
 
-            /*** Circular progress and timer ***/
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier.size(360.dp)
             ) {
                 Canvas(modifier = Modifier.fillMaxSize()) {
                     val strokeWidth = 50f
-
                     drawArc(
                         color = Color.LightGray,
                         startAngle = 180f,
                         sweepAngle = 180f,
                         useCenter = false,
-                        style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
+                        style = androidx.compose.ui.graphics.drawscope.Stroke(width = strokeWidth, cap = StrokeCap.Round)
                     )
-
                     drawArc(
                         color = timerColor,
                         startAngle = 180f,
                         sweepAngle = 180f * progress,
                         useCenter = false,
-                        style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
+                        style = androidx.compose.ui.graphics.drawscope.Stroke(width = strokeWidth, cap = StrokeCap.Round)
                     )
                 }
-
                 Text(
                     text = formattedTime,
                     color = Color.White,
@@ -226,6 +233,7 @@ fun FocusStudyScreen(hours: Int, minutes: Int, subject: String) {
                         .padding(top = 90.dp)
                 )
             }
+
             Row(
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically,
@@ -235,59 +243,49 @@ fun FocusStudyScreen(hours: Int, minutes: Int, subject: String) {
             ) {
                 OutlinedButton(
                     onClick = {
-                        timeLeft = totalTime     // Reset time
-                        isRunning = false        // Stop countdown
+                        timeLeft = totalTime
+                        isRunning = false
                         isStopped = true
-
                     },
                     colors = ButtonDefaults.outlinedButtonColors(Color.Transparent),
-                    modifier = Modifier
-                        .width(100.dp)
-                        .height(35.dp)
+                    modifier = Modifier.width(100.dp).height(35.dp)
                 ) {
                     Text("Stop", color = Color.White, fontFamily = fontFamily)
                 }
-
                 Spacer(modifier = Modifier.width(20.dp))
-                /*** Buttons ***/
                 Button(
                     onClick = {
-
                         if (timeLeft == 0) {
-                            timeLeft = totalTime // Restart the timer
+                            timeLeft = totalTime
                             isRunning = true
                             isStopped = false
                         } else {
-                            isRunning = !isRunning // Toggle pause/resume
+                            isRunning = !isRunning
                         }
                     },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color.White,
                         contentColor = Color.DarkGray
                     ),
-                    modifier = Modifier
-                        .width(100.dp)
-                        .height(35.dp)
+                    modifier = Modifier.width(100.dp).height(35.dp)
                 ) {
-                    Text(text = when {
-                        isStopped || timeLeft == 0 -> "Repeat"
-                        isRunning -> "Pause"
-                        else -> "Resume"
-                    },
-                        fontFamily = fontFamily)
+                    Text(
+                        text = when {
+                            isStopped || timeLeft == 0 -> "Repeat"
+                            isRunning -> "Pause"
+                            else -> "Resume"
+                        },
+                        fontFamily = fontFamily
+                    )
                 }
             }
 
-
             Box(
-                modifier = Modifier
-                    .fillMaxSize().offset(y = (-120).dp),
+                modifier = Modifier.fillMaxSize().offset(y = (-120).dp),
                 contentAlignment = Alignment.Center
             ) {
                 Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(Color.LightGray)
+                    modifier = Modifier.clip(RoundedCornerShape(12.dp)).background(Color.LightGray)
                 ) {
                     AudioPlayerCard(
                         currentMusic = currentMusic,
@@ -300,11 +298,30 @@ fun FocusStudyScreen(hours: Int, minutes: Int, subject: String) {
                     )
                 }
             }
-
+        }
+    }
+    if (showHatchCard) {
+        Box(
+            modifier = Modifier.fillMaxSize().size(500.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            HatchCard()
+        }
+    }
+    if (showNewEggCard) {
+        Box(
+            modifier = Modifier.fillMaxSize().size(500.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            NewEggCard(
+                onContinueClick = {
+                    showHatchCard = false
+                    showNewEggCard = false
+                }
+            )
         }
     }
 }
-
 
 
 

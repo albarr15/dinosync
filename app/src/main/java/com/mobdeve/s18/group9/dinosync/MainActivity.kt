@@ -171,8 +171,9 @@ fun MainScreen(context : Context) {
                     intent.putExtra("userId", selectedUser.userId)
                     context.startActivity(intent)
                                  },
-                onNotificationsClick = { /* Show notifications */ },
-                onSettingsClick = { /* Show settings */ }
+                onSettingsClick = { val intent = Intent(context, SettingsActivity::class.java)
+                    intent.putExtra("userId", selectedUser.userId)
+                    context.startActivity(intent) }
             )
 
             /******** Course Box *********/
@@ -226,6 +227,7 @@ fun MainScreen(context : Context) {
                             if (hourInt == 0 && minuteInt == 0) return@Button
 
                             val intent = Intent(context, FocusStudyActivity::class.java).apply {
+                                putExtra("userId", selectedUser.userId)
                                 putExtra("hours", hourInt)
                                 putExtra("minutes", minuteInt)
                                 putExtra("selected_subject", selectedSubject)
@@ -247,6 +249,7 @@ fun MainScreen(context : Context) {
                             if (hourInt == 0 && minuteInt == 0) return@OutlinedButton
 
                             val intent = Intent(context, FocusStudyActivity::class.java).apply {
+                                putExtra("userId", selectedUser.userId)
                                 putExtra("hours", hourInt)
                                 putExtra("minutes", minuteInt)
                                 putExtra("selected_subject", selectedSubject)

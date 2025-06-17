@@ -23,7 +23,7 @@ class StatisticsActivity : ComponentActivity() {
 
         setContent {
             DinoSyncTheme {
-                StatsActivityScreen()
+                StatsActivityScreen(userId = userId)
             }
         }
     }
@@ -59,7 +59,7 @@ class StatisticsActivity : ComponentActivity() {
     }
 }
 @Composable
-fun StatsActivityScreen(){
+fun StatsActivityScreen(userId : Int){
     val context = LocalContext.current
     Box(modifier = Modifier.fillMaxSize()) {
         Box(
@@ -71,17 +71,21 @@ fun StatsActivityScreen(){
                 selectedItem = "Stats",
                 onGroupsClick = {
                     val intent = Intent(context, DiscoverGroupsActivity::class.java)
+                    intent.putExtra("userId", userId)
                     context.startActivity(intent)
                 },
                 onHomeClick = {
                     val intent = Intent(context, MainActivity::class.java)
+                    intent.putExtra("userId", userId)
                     context.startActivity(intent)
                 },
                 onStatsClick = {
+                    val intent = Intent(context, StatisticsActivity::class.java)
+                    intent.putExtra("userId", userId)
+                    context.startActivity(intent)
                 }
             )
         }
     }
 }
-
 
