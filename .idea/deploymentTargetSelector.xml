@@ -5,6 +5,10 @@
       <SelectionState runConfigName="DinoSync.app">
         <option name="selectionMode" value="DROPDOWN" />
       </SelectionState>
+      <SelectionState runConfigName="StatsActivityScreen">
+        <option name="selectionMode" value="DROPDOWN" />
+      </SelectionState>
+      <SelectionState runConfigName="SettingsActivityScreen">
       <SelectionState runConfigName="NewEggCard">
         <option name="selectionMode" value="DROPDOWN" />
       </SelectionState>
