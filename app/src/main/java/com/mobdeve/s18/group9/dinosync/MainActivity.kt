@@ -130,7 +130,7 @@ fun MainScreen(context : Context) {
                     context.startActivity(intent)
                 },
                 onHomeClick = {
-                    val intent = Intent(context, RegisterActivity::class.java)
+                    val intent = Intent(context, MainActivity::class.java)
                     intent.putExtra("userId", selectedUser.userId)
                     context.startActivity(intent)
                 },
