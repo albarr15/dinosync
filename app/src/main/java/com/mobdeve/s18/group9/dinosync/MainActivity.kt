@@ -593,6 +593,41 @@ fun TodoList(
                         .fillMaxWidth()
                         .background(Color.Transparent),
                 ) {
+                    item {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            OutlinedTextField(
+                                value = newItemTitle,
+                                onValueChange = { newItemTitle = it },
+                                singleLine = true,
+                                placeholder = { Text("Add New Task...") },
+                                colors = TextFieldDefaults.colors(
+                                    unfocusedLeadingIconColor = Color.Transparent,
+                                    focusedContainerColor = Color.Transparent,
+                                    unfocusedIndicatorColor = Color.Transparent,
+                                    unfocusedContainerColor = Color.Transparent,
+                                    focusedLeadingIconColor = DarkGreen,
+                                    focusedIndicatorColor = DarkGreen,
+                                    focusedLabelColor = DarkGreen
+                                ),
+                                modifier = Modifier.weight(1f)
+                            )
+
+                            IconButton(onClick = {
+                                if (newItemTitle.isNotBlank()) {
+                                    val newId = if (todoItems.isEmpty()) 1 else (todoItems.maxOf { it.id } + 1)
+                                    onItemsChange(todoItems + TodoItem(id = newId, title = newItemTitle))
+                                    newItemTitle = ""
+                                }
+                            }) {
+                                Icon(Icons.Default.Add, contentDescription = "Add")
+                            }
+                        }
+                    }
+
                     itemsIndexed(todoItems) { index, item ->
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
@@ -629,44 +664,6 @@ fun TodoList(
                                     imageVector = if (item.isChecked) Icons.Default.CheckBox else Icons.Default.CheckBoxOutlineBlank,
                                     contentDescription = null
                                 )
-                            }
-                        }
-                    }
-
-                    item {
-                        Spacer(modifier = Modifier.height(10.dp))
-                        HorizontalDivider(thickness = 1.dp, color = Color.Gray)
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            OutlinedTextField(
-                                value = newItemTitle,
-                                onValueChange = { newItemTitle = it },
-                                singleLine = true,
-                                placeholder = { Text("Add New Task...") },
-                                colors = TextFieldDefaults.colors(
-                                    unfocusedLeadingIconColor = Color.Transparent,
-                                    focusedContainerColor = Color.Transparent,
-                                    unfocusedIndicatorColor = Color.Transparent,
-                                    unfocusedContainerColor = Color.Transparent,
-                                    focusedLeadingIconColor = DarkGreen,
-                                    focusedIndicatorColor = DarkGreen,
-                                    focusedLabelColor = DarkGreen
-                                ),
-                                modifier = Modifier.weight(1f)
-                            )
-
-                            IconButton(onClick = {
-                                if (newItemTitle.isNotBlank()) {
-                                    val newId = if (todoItems.isEmpty()) 1 else (todoItems.maxOf { it.id } + 1)
-                                    onItemsChange(todoItems + TodoItem(id = newId, title = newItemTitle))
-                                    newItemTitle = ""
-                                }
-                            }) {
-                                Icon(Icons.Default.Add, contentDescription = "Add")
                             }
                         }
                     }

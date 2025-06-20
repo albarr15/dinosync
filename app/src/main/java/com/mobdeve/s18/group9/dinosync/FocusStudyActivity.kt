@@ -131,8 +131,6 @@ fun FocusStudyScreen(userId: Int, hours: Int, minutes: Int, subject: String) {
     )
 
     val currentMusic = musicList[1]
-
-    // Popup states
     var showHatchCard by remember { mutableStateOf(false) }
     var showNewEggCard by remember { mutableStateOf(false) }
 
