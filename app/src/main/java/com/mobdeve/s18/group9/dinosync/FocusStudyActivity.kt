@@ -185,7 +185,11 @@ fun FocusStudyScreen(userId: Int, hours: Int, minutes: Int, subject: String) {
                     intent.putExtra("userId", userId)
                     context.startActivity(intent)
                 },
-                onSettingsClick = { }
+                onSettingsClick = {
+                    val intent = Intent(context, SettingsActivity::class.java)
+                    intent.putExtra("userId", userId)
+                    context.startActivity(intent)
+                }
             )
 
             Spacer(modifier = Modifier.height(12.dp))

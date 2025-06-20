@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mobdeve.s18.group9.dinosync.model.Music
 import com.mobdeve.s18.group9.dinosync.ui.theme.DirtyWhite
+import com.mobdeve.s18.group9.dinosync.ui.theme.GreenGray
 
 @Composable
 fun AudioPlayerCard(
@@ -52,7 +53,7 @@ fun AudioPlayerCard(
             .fillMaxWidth()
             .height(160.dp)
             .clip(RoundedCornerShape(12.dp))
-            .background(DirtyWhite)
+            .background(GreenGray)
             .border(
                 border = BorderStroke(2.dp, Color.DarkGray.copy(alpha = 0.2f)),
                 shape = RoundedCornerShape(12.dp)

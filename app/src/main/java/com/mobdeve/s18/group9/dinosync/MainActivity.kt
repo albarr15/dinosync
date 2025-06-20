@@ -61,6 +61,7 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.zIndex
+import com.mobdeve.s18.group9.dinosync.model.Course
 
 class MainActivity : ComponentActivity() {
 
@@ -107,6 +108,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 /******** MAIN SCREEN *********/
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(context : Context) {
     var isRunning by remember { mutableStateOf(false) }
@@ -147,23 +149,6 @@ fun MainScreen(context : Context) {
             modifier = Modifier.padding(padding).fillMaxSize().padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            /******** Mood Button *********/
-            /*
-            Box(
-                modifier = Modifier
-                    .size(50.dp)
-                    .clip(CircleShape)
-                    .background(Color.LightGray)
-                    .align(Alignment.Start)
-                    .clickable { showMoodDialog = true },
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Mood,
-                    contentDescription = "Mood Tracker",
-                    tint = Color.Black
-                )
-            }*/
 
             TopActionBar(
                 onProfileClick = {
@@ -171,7 +156,8 @@ fun MainScreen(context : Context) {
                     intent.putExtra("userId", selectedUser.userId)
                     context.startActivity(intent)
                                  },
-                onSettingsClick = { val intent = Intent(context, SettingsActivity::class.java)
+                onSettingsClick = {
+                    val intent = Intent(context, SettingsActivity::class.java)
                     intent.putExtra("userId", selectedUser.userId)
                     context.startActivity(intent) }
             )
@@ -179,28 +165,53 @@ fun MainScreen(context : Context) {
             /******** Course Box *********/
             val courseList = initializeCourses()
             val subjects = courseList.map { it.name }
+            var expanded by remember { mutableStateOf(false) }
             var selectedSubject by remember { mutableStateOf("") }
 
-            Box(
+            ExposedDropdownMenuBox(
+                expanded = expanded,
+                onExpandedChange = { expanded = !expanded },
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 16.dp),
-                contentAlignment = Alignment.Center
+                    .width(250.dp)
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
             ) {
-                Box(
+                OutlinedTextField(
+                    value = selectedSubject,
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Select Subject") },
+                    trailingIcon = {
+                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+                    },
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = Color.Transparent,
+                        unfocusedContainerColor = Color.Transparent,
+                        focusedLeadingIconColor = DarkGreen,
+                        focusedIndicatorColor = DarkGreen,
+                        focusedLabelColor = DarkGreen
+                    ),
                     modifier = Modifier
-                        .width(250.dp)
-                        .border(3.dp, DirtyGreen, shape = RoundedCornerShape(8.dp))
-                        .clip(RoundedCornerShape(8.dp))
+                        .menuAnchor()
+                        .fillMaxWidth()
+                )
+
+
+                ExposedDropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false }
                 ) {
-                    SubjectInputDropdown(
-                        subjects = subjects,
-                        selected = selectedSubject,
-                        onSubjectSelected = { selectedSubject = it }
-                    )
+                    subjects.forEach { subject ->
+                        DropdownMenuItem(
+                            text = { Text(subject) },
+                            onClick = {
+                                selectedSubject = subject
+                                expanded = false
+                            }
+                        )
+                    }
                 }
             }
-
+            Spacer(modifier = Modifier.height(10.dp))
 
             /******** Timer Activity *********/
             TimerInput(
@@ -539,79 +550,9 @@ fun TimerInput(
     }
 }
 
-@Composable
-fun SubjectInputDropdown(
-    subjects: List<String>,
-    selected: String,
-    onSubjectSelected: (String) -> Unit
-) {
-    var expanded by remember { mutableStateOf(false) }
-    var inputText by remember { mutableStateOf(selected) }
-
-    Box(
-        modifier = Modifier
-            .width(250.dp)
-            .clip(RoundedCornerShape(8.dp))
-            .padding(8.dp)
-    ) {
-        Column {
-            OutlinedTextField(
-                value = inputText,
-                onValueChange = {
-                    inputText = it
-                    expanded = true
-                },
-                placeholder = { Text("Enter/Select course") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                trailingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.ArrowDropDown,
-                        contentDescription = null,
-                        modifier = Modifier.clickable { expanded = !expanded }
-                    )
-                }
-            )
-
-            DropdownMenu(
-                expanded = expanded && (inputText.isBlank() || subjects.any { it.contains(inputText, ignoreCase = true) }),
-                onDismissRequest = { expanded = false },
-                modifier = Modifier
-                    .width(235.dp)
-                    .border(1.dp, Color.Gray, shape = RoundedCornerShape(8.dp))
-                    .clip(RoundedCornerShape(8.dp))
-                    .padding(8.dp)
-            ) {
-                subjects
-                    .filter { inputText.isBlank() || it.contains(inputText, ignoreCase = true) }
-                    .forEach { subject ->
-                        DropdownMenuItem(
-                            onClick = {
-                                inputText = subject
-                                onSubjectSelected(subject)
-                                expanded = false
-                            },
-                            text = { Text(subject) }
-                        )
-                    }
-
-                if (subjects.none { it.equals(inputText, ignoreCase = true) } && inputText.isNotBlank()) {
-                    DropdownMenuItem(
-                        onClick = {
-                            onSubjectSelected(inputText)
-                            expanded = false
-                        },
-                        text = { Text("Add \"$inputText\"") }
-                    )
-                }
-            }
-
-        }
-    }
-}
-
 
 @Composable
+
 fun TodoList(
     todoItems: List<TodoItem>,
     onItemsChange: (List<TodoItem>) -> Unit,
@@ -622,18 +563,16 @@ fun TodoList(
 
     Box(
         modifier = Modifier
-            .fillMaxWidth().then(
-                if (expanded) Modifier.fillMaxHeight() else Modifier.wrapContentHeight()
-            )
+            .fillMaxWidth()
+            .then(if (expanded) Modifier.fillMaxHeight() else Modifier.wrapContentHeight())
             .clip(RoundedCornerShape(8.dp))
-            .background(Color(0xFFE6F0EC))
+            .background(GreenGray)
             .padding(8.dp)
     ) {
         Column {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
-
             ) {
                 Icon(Icons.Default.Schedule, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(8.dp))
@@ -644,247 +583,91 @@ fun TodoList(
                     modifier = Modifier
                         .clickable { expanded = !expanded }
                         .size(30.dp),
-
                 )
             }
-        }
-        if (expanded) {
-            Spacer(Modifier.height(20.dp))
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(Color.Transparent),
-                contentPadding = PaddingValues(top = 25.dp)
-            ) {
-                itemsIndexed(todoItems) { index, item ->
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(50.dp)
-                    ) {
-                        TextField(
-                            value = item.title,
-                            onValueChange = {
-                                val newList = todoItems.toMutableList()
-                                newList[index] = newList[index].copy(title = it)
-                                onItemsChange(newList)
-                            },
-                            singleLine = true,
-                            placeholder = { Text("Task...") },
-                            colors =TextFieldDefaults.colors(
-                                focusedContainerColor = Color.Transparent,
-                                unfocusedContainerColor = Color.Transparent,
-                                disabledContainerColor = Color.Transparent,
-                                focusedIndicatorColor = Color.Transparent,
-                                unfocusedIndicatorColor = Color.Transparent,
-                                disabledIndicatorColor = Color.Transparent
-                            ) ,
-                            modifier = Modifier.weight(1f)
-                        )
-                        IconButton(onClick = {
-                            val newList = todoItems.toMutableList()
-                            newList.removeAt(index)
-                            onItemsChange(newList)
-                        }){
-                            Icon(
-                                imageVector = if (item.isChecked) Icons.Default.CheckBox else Icons.Default.CheckBoxOutlineBlank,
-                                contentDescription = null
-                            )
-                        }
-                    }
-                }
-                item {
-                    Spacer(modifier = Modifier.height(10.dp))
-                    HorizontalDivider(modifier = Modifier, thickness = 1.dp, color = Color.Gray)
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        TextField(
-                            value = newItemTitle,
-                            onValueChange = { newItemTitle = it },
-                            singleLine = true,
-                            placeholder = { Text("Add New Task...") },
-                            colors = TextFieldDefaults.colors(
-                                focusedContainerColor = Color.Transparent,
-                                unfocusedContainerColor = Color.Transparent,
-                                disabledContainerColor = Color.Transparent,
-                                focusedIndicatorColor = Color.Transparent,
-                                unfocusedIndicatorColor = Color.Transparent,
-                                disabledIndicatorColor = Color.Transparent
-                            ),
-                            modifier = Modifier.weight(1f)
-                        )
 
-                        IconButton(onClick = {
-                            if (newItemTitle.isNotBlank()) {
-                                val newId = if (todoItems.isEmpty()) 1 else (todoItems.maxOf { it.id } + 1)
-                                onItemsChange(todoItems + TodoItem(id = newId, title = newItemTitle))
-                                newItemTitle = ""
-                            }
-                        }) {
-                            Icon(Icons.Default.Add, contentDescription = "Add")
-                        }
-
-                    }
-                }
-            }
-        }
-    }
-}
-
-
-
-@Composable
-fun MoodTrackerDialog(
-    showMoodDialog: Boolean,
-    onDismiss: () -> Unit,
-    selectedIcon: ImageVector?,
-    onIconSelected: (ImageVector?) -> Unit,
-    journalText: String,
-    onJournalTextChange: (String) -> Unit,
-    onSave: () -> Unit,
-    onCancel: () -> Unit
-) {
-    //Font Dependency
-    val provider = GoogleFont.Provider(
-        providerAuthority = "com.google.android.gms.fonts",
-        providerPackage = "com.google.android.gms",
-        certificates = R.array.com_google_android_gms_fonts_certs
-    )
-
-    val interFontName = GoogleFont("Inter")
-
-    val fontFamily = FontFamily(
-        Font(
-            googleFont = interFontName,
-            fontProvider = provider,
-            weight = FontWeight.Normal
-        )
-    )
-
-    if (showMoodDialog) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.6f))
-                .clickable { onDismiss() },
-            contentAlignment = Alignment.Center
-        ) {
-            Surface(
-                shape = RoundedCornerShape(16.dp),
-                color = LightGray,
-                tonalElevation = 8.dp,
-                modifier = Modifier
-                    .padding(24.dp)
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(10.dp))
-            ) {
-                Column(
-                    modifier = Modifier.padding(20.dp).background(LightGray),
-                    horizontalAlignment = Alignment.CenterHorizontally
+            if (expanded) {
+                Spacer(Modifier.height(10.dp))
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color.Transparent),
                 ) {
-                    Text("< Back", fontFamily = fontFamily, modifier = Modifier
-                        .align(Alignment.Start)
-                        .clickable { onDismiss() },
-                        fontSize = 13.sp)
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    Box(
-                        modifier = Modifier.fillMaxWidth().padding(20.dp)
-                    ) {
-                        Column {
-                            Text(
-                                "How are you feeling today?",
-                                fontFamily = fontFamily,
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold
+                    itemsIndexed(todoItems) { index, item ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(50.dp)
+                        ) {
+                            OutlinedTextField(
+                                value = item.title,
+                                onValueChange = {
+                                    val newList = todoItems.toMutableList()
+                                    newList[index] = newList[index].copy(title = it)
+                                    onItemsChange(newList)
+                                },
+                                singleLine = true,
+                                placeholder = { Text("Task...") },
+                                colors = TextFieldDefaults.colors(
+                                    unfocusedLeadingIconColor = Color.Transparent,
+                                    focusedContainerColor = Color.Transparent,
+                                    unfocusedIndicatorColor = Color.Transparent,
+                                    unfocusedContainerColor = Color.Transparent,
+                                    focusedLeadingIconColor = DarkGreen,
+                                    focusedIndicatorColor = DarkGreen,
+                                    focusedLabelColor = DarkGreen
+                                ),
+                                modifier = Modifier.weight(1f)
                             )
-                            Spacer(modifier = Modifier.height(16.dp))
-
-                            Row(
-                                horizontalArrangement = Arrangement.SpaceEvenly,
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                val icons = listOf(
-                                    Icons.Filled.SentimentVeryDissatisfied,
-                                    Icons.Filled.SentimentDissatisfied,
-                                    Icons.Filled.SentimentNeutral,
-                                    Icons.Filled.SentimentSatisfied,
-                                    Icons.Filled.SentimentVerySatisfied
+                            IconButton(onClick = {
+                                val newList = todoItems.toMutableList()
+                                newList.removeAt(index)
+                                onItemsChange(newList)
+                            }) {
+                                Icon(
+                                    imageVector = if (item.isChecked) Icons.Default.CheckBox else Icons.Default.CheckBoxOutlineBlank,
+                                    contentDescription = null
                                 )
-                                icons.forEach { icon ->
-                                    val isSelected = selectedIcon == icon
-                                    Box(
-                                        modifier = Modifier
-                                            .size(40.dp)
-                                            .clip(CircleShape)
-                                            .background(if (isSelected) YellowGreen else Color.White)
-                                            .clickable {
-                                                onIconSelected(if (isSelected) null else icon)
-                                            },
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Icon(
-                                            imageVector = icon,
-                                            contentDescription = null,
-                                            tint = if (isSelected) Color.White else Color.DarkGray
-                                        )
-                                    }
-                                }
                             }
-
-                            Spacer(modifier = Modifier.height(16.dp))
-
-                            Text(
-                                "Journal Entry",
-                                fontFamily = fontFamily,
-                                fontSize = 12.sp,
-                                modifier = Modifier.align(Alignment.Start)
-                            )
-
-                            Spacer(modifier = Modifier.height(8.dp))
-
-                            BasicTextField(
-                                value = journalText,
-                                onValueChange = { onJournalTextChange(it) },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(200.dp)
-                                    .clip(RoundedCornerShape(10.dp))
-                                    .background(Light)
-                                    .padding(10.dp),
-                                readOnly = false,
-                                enabled = true,
-                                interactionSource = remember { MutableInteractionSource() },
-                            )
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    item {
+                        Spacer(modifier = Modifier.height(10.dp))
+                        HorizontalDivider(thickness = 1.dp, color = Color.Gray)
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            OutlinedTextField(
+                                value = newItemTitle,
+                                onValueChange = { newItemTitle = it },
+                                singleLine = true,
+                                placeholder = { Text("Add New Task...") },
+                                colors = TextFieldDefaults.colors(
+                                    unfocusedLeadingIconColor = Color.Transparent,
+                                    focusedContainerColor = Color.Transparent,
+                                    unfocusedIndicatorColor = Color.Transparent,
+                                    unfocusedContainerColor = Color.Transparent,
+                                    focusedLeadingIconColor = DarkGreen,
+                                    focusedIndicatorColor = DarkGreen,
+                                    focusedLabelColor = DarkGreen
+                                ),
+                                modifier = Modifier.weight(1f)
+                            )
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(8.dp),
-                        horizontalArrangement = Arrangement.End
-                    ) {
-                        Button(
-                            colors = ButtonDefaults.buttonColors(containerColor = Color.LightGray, contentColor = Color.DarkGray),
-                            shape = RoundedCornerShape(5.dp),
-                            onClick = { onCancel() }
-                        ) {
-                            Text("Cancel")
-                        }
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Button(
-                            colors = ButtonDefaults.buttonColors(containerColor = Light, contentColor = Color.DarkGray),
-                            shape = RoundedCornerShape(5.dp),
-                            onClick = { onSave() }
-                        ) {
-                            Text("Save")
+                            IconButton(onClick = {
+                                if (newItemTitle.isNotBlank()) {
+                                    val newId = if (todoItems.isEmpty()) 1 else (todoItems.maxOf { it.id } + 1)
+                                    onItemsChange(todoItems + TodoItem(id = newId, title = newItemTitle))
+                                    newItemTitle = ""
+                                }
+                            }) {
+                                Icon(Icons.Default.Add, contentDescription = "Add")
+                            }
                         }
                     }
                 }

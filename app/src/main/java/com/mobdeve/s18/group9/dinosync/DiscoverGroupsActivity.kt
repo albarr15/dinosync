@@ -135,7 +135,11 @@ fun DiscoverGroupsScreen(userId: Int) {
                     intent.putExtra("userId", userId)
                     context.startActivity(intent)
                  },
-                onSettingsClick = { }
+                onSettingsClick = {
+                    val intent = Intent(context, SettingsActivity::class.java)
+                    intent.putExtra("userId", userId)
+                    context.startActivity(intent)
+                }
             )
 
             Text(
@@ -230,6 +234,7 @@ fun DiscoverGroupsScreen(userId: Int) {
                         onGroupClick = {
                             val intent = Intent(context, GroupActivity::class.java)
                             intent.putExtra("groupId", group.groupId)
+                            intent.putExtra("userId", userId)
                             context.startActivity(intent)
                     })
                 }
@@ -243,7 +248,7 @@ fun DiscoverGroupItem(group: StudyGroup, members: Int, onGroupClick: () -> Unit)
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(90.dp)
+            .height(100.dp)
             .clickable { onGroupClick() },
         shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)

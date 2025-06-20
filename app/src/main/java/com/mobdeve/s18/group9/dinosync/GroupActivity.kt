@@ -219,9 +219,13 @@ fun GroupActivityScreen(
             TopActionBar(
                 onProfileClick = {
                     val intent = Intent(context, ProfileActivity::class.java)
-                    //intent.putExtra("USER_ID", currentUserId)
+                    intent.putExtra("userId", userId)
                     context.startActivity(intent)},
-                onSettingsClick = { }
+                onSettingsClick = {
+                    val intent = Intent(context, SettingsActivity::class.java)
+                    intent.putExtra("userId", userId)
+                    context.startActivity(intent)
+                }
             )
             Spacer(modifier = Modifier.height(5.dp))
             Box(
