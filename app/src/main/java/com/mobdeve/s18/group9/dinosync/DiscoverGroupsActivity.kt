@@ -127,7 +127,7 @@ fun DiscoverGroupsScreen(userId: Int) {
             modifier = Modifier
                 .padding(padding)
                 .fillMaxSize()
-                .padding(top = 25.dp, start = 25.dp, end = 25.dp, bottom = 5.dp)
+                .padding(start = 25.dp, end = 25.dp, bottom = 5.dp)
         ) {
             TopActionBar(
                 onProfileClick = {

@@ -54,10 +54,6 @@ fun AudioPlayerCard(
             .height(160.dp)
             .clip(RoundedCornerShape(12.dp))
             .background(GreenGray)
-            .border(
-                border = BorderStroke(2.dp, Color.DarkGray.copy(alpha = 0.2f)),
-                shape = RoundedCornerShape(12.dp)
-            )
     ) {
         Row(modifier = Modifier.fillMaxSize()) {
 

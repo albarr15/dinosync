@@ -186,6 +186,7 @@ fun MainScreen(context : Context) {
                     colors = TextFieldDefaults.colors(
                         focusedContainerColor = Color.Transparent,
                         unfocusedContainerColor = Color.Transparent,
+                        unfocusedIndicatorColor = DarkGreen,
                         focusedLeadingIconColor = DarkGreen,
                         focusedIndicatorColor = DarkGreen,
                         focusedLabelColor = DarkGreen
@@ -299,7 +300,7 @@ fun MainScreen(context : Context) {
                 }
             )
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(25.dp))
 
             /******** Music Activity *********/
             val currentMusic = initializeMusic().random()
@@ -552,7 +553,6 @@ fun TimerInput(
 
 
 @Composable
-
 fun TodoList(
     todoItems: List<TodoItem>,
     onItemsChange: (List<TodoItem>) -> Unit,
@@ -566,7 +566,7 @@ fun TodoList(
             .fillMaxWidth()
             .then(if (expanded) Modifier.fillMaxHeight() else Modifier.wrapContentHeight())
             .clip(RoundedCornerShape(8.dp))
-            .background(GreenGray)
+            .background(Color.Transparent)
             .padding(8.dp)
     ) {
         Column {
