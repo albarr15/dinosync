@@ -189,12 +189,7 @@ fun DiscoverGroupsScreen(userId: Int) {
                     shape = RoundedCornerShape(12.dp),
                     singleLine = true,
                     colors = TextFieldDefaults.colors(
-                        focusedContainerColor = Color.Transparent,
-                        unfocusedContainerColor = Color.Transparent,
-                        disabledContainerColor = Color.Transparent,
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent,
-                        disabledIndicatorColor = Color.Transparent
+                        focusedIndicatorColor = Color.Transparent
                     ),
                     leadingIcon = {
                         Icon(Icons.Default.Search, contentDescription = null)
@@ -260,7 +255,7 @@ fun DiscoverGroupItem(group: StudyGroup, members: Int, onGroupClick: () -> Unit)
                 Text(group.bio, fontSize = 12.sp, maxLines = 1)
                 Spacer(modifier = Modifier.height(4.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    repeat(3) {
+                    repeat(members) {
                         Box(
                             modifier = Modifier
                                 .size(12.dp)
