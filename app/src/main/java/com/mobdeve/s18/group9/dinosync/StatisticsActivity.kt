@@ -42,10 +42,14 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeCourses
+import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeDailyStudyHistory
+import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeStudySessions
 import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeUsers
 import com.mobdeve.s18.group9.dinosync.components.BottomNavigationBar
 import com.mobdeve.s18.group9.dinosync.components.PieStats
+import com.mobdeve.s18.group9.dinosync.components.SessionsLineChart
 import com.mobdeve.s18.group9.dinosync.components.TopActionBar
+import com.mobdeve.s18.group9.dinosync.components.UserSessionsLineChart
 import com.mobdeve.s18.group9.dinosync.ui.theme.DarkGreen
 import com.mobdeve.s18.group9.dinosync.ui.theme.DinoSyncTheme
 import com.mobdeve.s18.group9.dinosync.ui.theme.DirtyGreen
@@ -107,13 +111,13 @@ fun StatsActivityScreen(userId : Int){
     val userList = initializeUsers()
     val selectedUser = userList.random()
 
+    val studySessions = initializeStudySessions()
+    val dailyStudyHistory = initializeDailyStudyHistory()
+
     val courseList = initializeCourses()
     val subjects = courseList.map { it.name }
 
     val totalTime = 2 * 60 * 60; // dummy data, represents total study time across subjects in seconds
-
-    var stats_data by remember { mutableStateOf(HashMap<String, Int>()) }
-    // format: course, time_spent_focusing
 
     var dummy_data by remember {
         mutableStateOf(
@@ -208,12 +212,28 @@ fun StatsActivityScreen(userId : Int){
 
             Spacer(modifier = Modifier.height(5.dp))
             StreakGrid()
+
+            // Sessions Section
+            Row {
+                Text(
+                    text = "Sessions",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = Color.Gray,
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
+                Text(
+                    text = "Latest Session",
+                    fontSize = 12.sp,
+                    textAlign = TextAlign.End,
+                    modifier = Modifier.fillMaxWidth()
+                        .padding(top = 5.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(5.dp))
+            UserSessionsLineChart(userId, dailyStudyHistory, studySessions)
         }
     }
-
-
-
-
 }
 
 fun getStudyActColor(studyLevel: Int): Color {

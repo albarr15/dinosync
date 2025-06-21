@@ -65,6 +65,8 @@ import com.patrykandpatrick.vico.core.cartesian.data.CartesianChartModelProducer
 import com.patrykandpatrick.vico.core.cartesian.data.lineSeries
 import androidx.compose.runtime.LaunchedEffect
 import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeAchievements
+import com.mobdeve.s18.group9.dinosync.components.GroupSessionsLineChart
+
 import com.mobdeve.s18.group9.dinosync.components.SessionsLineChart
 import com.mobdeve.s18.group9.dinosync.components.TopActionBar
 import com.mobdeve.s18.group9.dinosync.model.StudySession
@@ -476,6 +478,6 @@ fun OnClickGroupStatsActivityBtn(
         }
 
         Spacer(modifier = Modifier.height(24.dp))
-        SessionsLineChart(selectedGroup, dailyStudyHistory, studySessions)
+        GroupSessionsLineChart(selectedGroup, dailyStudyHistory, studySessions)
     }
 }

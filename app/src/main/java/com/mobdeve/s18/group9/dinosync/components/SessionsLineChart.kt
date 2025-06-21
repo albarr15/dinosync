@@ -40,39 +40,68 @@ import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
+// Sealed class to represent either user or group filtering
+sealed class ChartFilter {
+    data class ByUser(val userId: Int) : ChartFilter()
+    data class ByGroup(val groupId: Int) : ChartFilter()
+}
 
-
-// Filtering Logic
-fun filterDailyHistoryByGroup(
-    targetGroupId: Int,
+// Filtering logic for daily history based on chart filter
+fun filterDailyHistoryByFilter(
+    filter: ChartFilter,
     dailyStudyHistory: List<DailyStudyHistory>,
     studySessions: List<StudySession>
 ): List<DailyStudyHistory> {
-    return dailyStudyHistory.filter { history ->
-        studySessions.any { session ->
-            session.userId == history.userId &&
-                    session.groupId == targetGroupId &&
-                    session.status == "done"
+    return when (filter) {
+        is ChartFilter.ByUser -> {
+            dailyStudyHistory.filter { history ->
+                history.userId == filter.userId &&
+                        studySessions.any { session ->
+                            session.userId == filter.userId && session.status == "done"
+                        }
+            }
+        }
+        is ChartFilter.ByGroup -> {
+            dailyStudyHistory.filter { history ->
+                studySessions.any { session ->
+                    session.userId == history.userId &&
+                            session.groupId == filter.groupId &&
+                            session.status == "done"
+                }
+            }
         }
     }
 }
 
-// Aggregation Logic
+// Aggregation logic for hourly chart data
 fun aggregateHourlyChartData(
     sessions: List<StudySession>,
     targetDate: Date,
-    targetGroupId: Int
+    filter: ChartFilter
 ): Map<Int, Int> {
     val formatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
     val targetDateStr = formatter.format(targetDate)
 
     val hourlyMap = mutableMapOf<Int, Int>()
 
-    sessions.filter { session ->
-        session.groupId == targetGroupId &&
-                session.status == "done" &&
-                session.sessionDate == targetDateStr
-    }.forEach { session ->
+    val filteredSessions = when (filter) {
+        is ChartFilter.ByUser -> {
+            sessions.filter { session ->
+                session.userId == filter.userId &&
+                        session.status == "done" &&
+                        session.sessionDate == targetDateStr
+            }
+        }
+        is ChartFilter.ByGroup -> {
+            sessions.filter { session ->
+                session.groupId == filter.groupId &&
+                        session.status == "done" &&
+                        session.sessionDate == targetDateStr
+            }
+        }
+    }
+
+    filteredSessions.forEach { session ->
         val startHour = 12
         val totalMinutes = session.hourSet * 60 + session.minuteSet
         hourlyMap[startHour] = (hourlyMap[startHour] ?: 0) + totalMinutes
@@ -80,13 +109,14 @@ fun aggregateHourlyChartData(
     return hourlyMap.toSortedMap()
 }
 
+// Main composable for sessions line chart - takes either userId or groupId
 @Composable
 fun SessionsLineChart(
-    targetGroupId: Int,
+    filter: ChartFilter,
     dailyStudyHistory: List<DailyStudyHistory>,
-    studySessions: List<StudySession>) {
+    studySessions: List<StudySession>
+) {
     var selectedTab by remember { mutableStateOf("Day") }
-
 
     // Sessions Section
     Text(
@@ -123,28 +153,25 @@ fun SessionsLineChart(
         contentAlignment = Alignment.Center
     ) {
         when (selectedTab) {
-            "Day" -> GroupStudyDayLineChart(dailyStudyHistory, studySessions, targetGroupId)
-            "Week" -> GroupStudyWeeklyLineChart(dailyStudyHistory, studySessions, targetGroupId)
-            "Month" -> GroupStudyMonthlyLineChart(dailyStudyHistory, studySessions, targetGroupId)
-            "Year" -> GroupStudyYearlyLineChart(dailyStudyHistory, studySessions, targetGroupId)
+            "Day" -> StudyDayLineChart(dailyStudyHistory, studySessions, filter)
+            "Week" -> StudyWeeklyLineChart(dailyStudyHistory, studySessions, filter)
+            "Month" -> StudyMonthlyLineChart(dailyStudyHistory, studySessions, filter)
+            "Year" -> StudyYearlyLineChart(dailyStudyHistory, studySessions, filter)
         }
     }
 }
 
 @Composable
-fun GroupStudyDayLineChart(
+fun StudyDayLineChart(
     dailyStudyHistory: List<DailyStudyHistory>,
     studySessions: List<StudySession>,
-    targetGroupId: Int
+    filter: ChartFilter
 ) {
     val modelProducer = remember { CartesianChartModelProducer() }
 
-    LaunchedEffect(targetGroupId, dailyStudyHistory, studySessions) {
-        val filteredSessions = studySessions.filter { session ->
-            session.groupId == targetGroupId && session.status == "done"
-        }
+    LaunchedEffect(filter, dailyStudyHistory, studySessions) {
         val todayDate = Date()
-        val chartData = aggregateHourlyChartData(filteredSessions, todayDate, targetGroupId)
+        val chartData = aggregateHourlyChartData(studySessions, todayDate, filter)
         val fullSeries = (1..24).map { hour -> chartData[hour] ?: 0 }
         modelProducer.runTransaction {
             lineSeries { series(fullSeries) }
@@ -167,18 +194,17 @@ fun GroupStudyDayLineChart(
     )
 }
 
-
 @Composable
-fun GroupStudyWeeklyLineChart(
+fun StudyWeeklyLineChart(
     dailyStudyHistory: List<DailyStudyHistory>,
     studySessions: List<StudySession>,
-    targetGroupId: Int
+    filter: ChartFilter
 ) {
     val modelProducer = remember { CartesianChartModelProducer() }
 
-    LaunchedEffect(dailyStudyHistory, studySessions, targetGroupId) {
-        val filteredHistory = filterDailyHistoryByGroup(
-            targetGroupId,
+    LaunchedEffect(dailyStudyHistory, studySessions, filter) {
+        val filteredHistory = filterDailyHistoryByFilter(
+            filter,
             dailyStudyHistory,
             studySessions
         )
@@ -223,18 +249,17 @@ fun GroupStudyWeeklyLineChart(
     }
 }
 
-
 @Composable
-fun GroupStudyMonthlyLineChart(
+fun StudyMonthlyLineChart(
     dailyStudyHistory: List<DailyStudyHistory>,
     studySessions: List<StudySession>,
-    targetGroupId: Int
+    filter: ChartFilter
 ) {
     val modelProducer = remember { CartesianChartModelProducer() }
 
-    LaunchedEffect(dailyStudyHistory, studySessions, targetGroupId) {
-        val filteredHistory = filterDailyHistoryByGroup(
-            targetGroupId,
+    LaunchedEffect(dailyStudyHistory, studySessions, filter) {
+        val filteredHistory = filterDailyHistoryByFilter(
+            filter,
             dailyStudyHistory,
             studySessions
         )
@@ -279,18 +304,17 @@ fun GroupStudyMonthlyLineChart(
     }
 }
 
-
 @Composable
-fun GroupStudyYearlyLineChart(
+fun StudyYearlyLineChart(
     dailyStudyHistory: List<DailyStudyHistory>,
     studySessions: List<StudySession>,
-    targetGroupId: Int
+    filter: ChartFilter
 ) {
     val modelProducer = remember { CartesianChartModelProducer() }
 
-    LaunchedEffect(dailyStudyHistory, studySessions, targetGroupId) {
-        val filteredHistory = filterDailyHistoryByGroup(
-            targetGroupId,
+    LaunchedEffect(dailyStudyHistory, studySessions, filter) {
+        val filteredHistory = filterDailyHistoryByFilter(
+            filter,
             dailyStudyHistory,
             studySessions
         )
@@ -333,10 +357,29 @@ fun GroupStudyYearlyLineChart(
     }
 }
 
+// Convenience functions for easier usage
+@Composable
+fun UserSessionsLineChart(
+    userId: Int,
+    dailyStudyHistory: List<DailyStudyHistory>,
+    studySessions: List<StudySession>
+) {
+    SessionsLineChart(
+        filter = ChartFilter.ByUser(userId),
+        dailyStudyHistory = dailyStudyHistory,
+        studySessions = studySessions
+    )
+}
 
-
-
-
-
-
-
+@Composable
+fun GroupSessionsLineChart(
+    groupId: Int,
+    dailyStudyHistory: List<DailyStudyHistory>,
+    studySessions: List<StudySession>
+) {
+    SessionsLineChart(
+        filter = ChartFilter.ByGroup(groupId),
+        dailyStudyHistory = dailyStudyHistory,
+        studySessions = studySessions
+    )
+}
