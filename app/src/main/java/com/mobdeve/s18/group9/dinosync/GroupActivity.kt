@@ -65,6 +65,7 @@ import com.patrykandpatrick.vico.core.cartesian.data.CartesianChartModelProducer
 import com.patrykandpatrick.vico.core.cartesian.data.lineSeries
 import androidx.compose.runtime.LaunchedEffect
 import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeAchievements
+import com.mobdeve.s18.group9.dinosync.components.SessionsLineChart
 import com.mobdeve.s18.group9.dinosync.components.TopActionBar
 import com.mobdeve.s18.group9.dinosync.model.StudySession
 import java.text.SimpleDateFormat
@@ -341,10 +342,9 @@ fun GroupActivityScreen(
                     "Group Activity" -> OnClickGroupActivityBtn(memberUsers)
                     "Stats" -> OnClickGroupStatsActivityBtn(
                         topMembers = ArrayList(topMembers),
-                        dailyStudyHistory = ArrayList(dailyStudyHistory),
-                        studySessionList = ArrayList(studySessionList),
-                        targetGroupId = group.groupId,
-                        modifier = Modifier)
+                        group.groupId,
+                        dailyStudyHistory,
+                        studySessionList)
                 }
             }
         }
@@ -424,13 +424,10 @@ fun UserCard(user: User, groupMember: GroupMember) {
 @Composable
 fun OnClickGroupStatsActivityBtn(
     topMembers: ArrayList<User>,
-    dailyStudyHistory: ArrayList<DailyStudyHistory>,
-    studySessionList: ArrayList<StudySession>,
-    targetGroupId: Int,
-    modifier: Modifier = Modifier
+    selectedGroup: Int,
+    dailyStudyHistory: List<DailyStudyHistory>,
+    studySessions: List<StudySession>
 ) {
-    var selectedTab by remember { mutableStateOf("Day") }
-
     Box(modifier = Modifier.fillMaxWidth()) {
         HorizontalDivider(
             modifier = Modifier
@@ -479,293 +476,6 @@ fun OnClickGroupStatsActivityBtn(
         }
 
         Spacer(modifier = Modifier.height(24.dp))
-
-        // Sessions Section
-        Text(
-            text = "Sessions",
-            fontSize = 20.sp,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
-
-        // Tab Row (Day, Week, Month, Year)
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly
-        ) {
-            listOf("Day", "Week", "Month", "Year").forEach { label ->
-                Text(
-                    text = label,
-                    fontSize = 14.sp,
-                    color = if (selectedTab == label) Color.Black else Color.Gray,
-                    modifier = Modifier
-                        .clickable { selectedTab = label }
-                        .padding(8.dp)
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(200.dp)
-                .clip(RoundedCornerShape(16.dp))
-                .background(Color(0xFFEFEFEF)),
-            contentAlignment = Alignment.Center
-        ) {
-            when (selectedTab) {
-                "Day" -> GroupStudyDayLineChart(dailyStudyHistory, studySessionList, targetGroupId)
-                "Week" -> GroupStudyWeeklyLineChart(dailyStudyHistory, studySessionList, targetGroupId)
-                "Month" -> GroupStudyMonthlyLineChart(dailyStudyHistory, studySessionList, targetGroupId)
-                "Year" -> GroupStudyYearlyLineChart(dailyStudyHistory, studySessionList, targetGroupId)
-            }
-        }
+        SessionsLineChart(selectedGroup, dailyStudyHistory, studySessions)
     }
 }
-
-@Composable
-fun GroupStudyDayLineChart(
-    dailyStudyHistory: List<DailyStudyHistory>,
-    studySessions: List<StudySession>,
-    targetGroupId: Int
-) {
-    val modelProducer = remember { CartesianChartModelProducer() }
-
-    LaunchedEffect(targetGroupId, dailyStudyHistory, studySessions) {
-        val filteredSessions = studySessions.filter { session ->
-            session.groupId == targetGroupId && session.status == "done"
-        }
-        val todayDate = Date()
-        val chartData = aggregateHourlyChartData(filteredSessions, todayDate, targetGroupId)
-        val fullSeries = (1..24).map { hour -> chartData[hour] ?: 0 }
-        modelProducer.runTransaction {
-            lineSeries { series(fullSeries) }
-        }
-    }
-
-    CartesianChartHost(
-        chart = rememberCartesianChart(
-            rememberLineCartesianLayer(),
-            startAxis = VerticalAxis.rememberStart(),
-            bottomAxis = HorizontalAxis.rememberBottom(),
-        ),
-        modelProducer = modelProducer,
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(300.dp)
-            .clip(RoundedCornerShape(16.dp))
-            .background(Color(0xFFEFEFEF))
-            .padding(16.dp)
-    )
-}
-
-// Filtering Logic
-fun filterDailyHistoryByGroup(
-    targetGroupId: Int,
-    dailyStudyHistory: List<DailyStudyHistory>,
-    studySessions: List<StudySession>
-): List<DailyStudyHistory> {
-    return dailyStudyHistory.filter { history ->
-        studySessions.any { session ->
-            session.userId == history.userId &&
-                    session.groupId == targetGroupId &&
-                    session.status == "done"
-        }
-    }
-}
-
-// Aggregation Logic
-fun aggregateHourlyChartData(
-    sessions: List<StudySession>,
-    targetDate: Date,
-    targetGroupId: Int
-): Map<Int, Int> {
-    val formatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-    val targetDateStr = formatter.format(targetDate)
-
-    val hourlyMap = mutableMapOf<Int, Int>()
-
-    sessions.filter { session ->
-        session.groupId == targetGroupId &&
-                session.status == "done" &&
-                session.sessionDate == targetDateStr
-    }.forEach { session ->
-        val startHour = 12
-        val totalMinutes = session.hourSet * 60 + session.minuteSet
-        hourlyMap[startHour] = (hourlyMap[startHour] ?: 0) + totalMinutes
-    }
-    return hourlyMap.toSortedMap()
-}
-
-@Composable
-fun GroupStudyWeeklyLineChart(
-    dailyStudyHistory: List<DailyStudyHistory>,
-    studySessions: List<StudySession>,
-    targetGroupId: Int
-) {
-    val modelProducer = remember { CartesianChartModelProducer() }
-
-    LaunchedEffect(dailyStudyHistory, studySessions, targetGroupId) {
-        val filteredHistory = filterDailyHistoryByGroup(
-            targetGroupId,
-            dailyStudyHistory,
-            studySessions
-        )
-
-        val calendar = Calendar.getInstance()
-        val weeklyData = filteredHistory
-            .groupBy { daily ->
-                calendar.time = daily.date
-                val weekOfYear = calendar.get(Calendar.WEEK_OF_YEAR)
-                val year = calendar.get(Calendar.YEAR)
-                year * 100 + weekOfYear
-            }
-            .mapValues { entry ->
-                entry.value.sumOf { it.totalStudyHours }
-            }
-            .toSortedMap()
-
-        val chartData = weeklyData.values.map { it.toFloat() }
-
-        modelProducer.runTransaction {
-            lineSeries { series(chartData) }
-        }
-    }
-
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(300.dp)
-            .clip(RoundedCornerShape(16.dp))
-            .background(Color(0xFFEFEFEF))
-            .padding(16.dp)
-    ) {
-        CartesianChartHost(
-            chart = rememberCartesianChart(
-                rememberLineCartesianLayer(),
-                startAxis = VerticalAxis.rememberStart(),
-                bottomAxis = HorizontalAxis.rememberBottom(),
-            ),
-            modelProducer = modelProducer,
-            modifier = Modifier.fillMaxSize()
-        )
-    }
-}
-
-
-@Composable
-fun GroupStudyMonthlyLineChart(
-    dailyStudyHistory: List<DailyStudyHistory>,
-    studySessions: List<StudySession>,
-    targetGroupId: Int
-) {
-    val modelProducer = remember { CartesianChartModelProducer() }
-
-    LaunchedEffect(dailyStudyHistory, studySessions, targetGroupId) {
-        val filteredHistory = filterDailyHistoryByGroup(
-            targetGroupId,
-            dailyStudyHistory,
-            studySessions
-        )
-
-        val calendar = Calendar.getInstance()
-        val monthlyData = filteredHistory
-            .groupBy { daily ->
-                calendar.time = daily.date
-                val month = calendar.get(Calendar.MONTH) + 1
-                val year = calendar.get(Calendar.YEAR)
-                year * 100 + month
-            }
-            .mapValues { entry ->
-                entry.value.sumOf { it.totalStudyHours }
-            }
-            .toSortedMap()
-
-        val chartData = monthlyData.values.map { it.toFloat() }
-
-        modelProducer.runTransaction {
-            lineSeries { series(chartData) }
-        }
-    }
-
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(300.dp)
-            .clip(RoundedCornerShape(16.dp))
-            .background(Color(0xFFEFEFEF))
-            .padding(16.dp)
-    ) {
-        CartesianChartHost(
-            chart = rememberCartesianChart(
-                rememberLineCartesianLayer(),
-                startAxis = VerticalAxis.rememberStart(),
-                bottomAxis = HorizontalAxis.rememberBottom(),
-            ),
-            modelProducer = modelProducer,
-            modifier = Modifier.fillMaxSize()
-        )
-    }
-}
-
-@Composable
-fun GroupStudyYearlyLineChart(
-    dailyStudyHistory: List<DailyStudyHistory>,
-    studySessions: List<StudySession>,
-    targetGroupId: Int
-) {
-    val modelProducer = remember { CartesianChartModelProducer() }
-
-    LaunchedEffect(dailyStudyHistory, studySessions, targetGroupId) {
-        val filteredHistory = filterDailyHistoryByGroup(
-            targetGroupId,
-            dailyStudyHistory,
-            studySessions
-        )
-
-        val calendar = Calendar.getInstance()
-        val yearlyData = filteredHistory
-            .groupBy { daily ->
-                calendar.time = daily.date
-                calendar.get(Calendar.YEAR)
-            }
-            .mapValues { entry ->
-                entry.value.sumOf { it.totalStudyHours }
-            }
-            .toSortedMap()
-
-        val chartData = yearlyData.values.map { it.toFloat() }
-
-        modelProducer.runTransaction {
-            lineSeries { series(chartData) }
-        }
-    }
-
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(300.dp)
-            .clip(RoundedCornerShape(16.dp))
-            .background(Color(0xFFEFEFEF))
-            .padding(16.dp)
-    ) {
-        CartesianChartHost(
-            chart = rememberCartesianChart(
-                rememberLineCartesianLayer(),
-                startAxis = VerticalAxis.rememberStart(),
-                bottomAxis = HorizontalAxis.rememberBottom(),
-            ),
-            modelProducer = modelProducer,
-            modifier = Modifier.fillMaxSize()
-        )
-    }
-}
-
-
-
-
-
-
-
-
