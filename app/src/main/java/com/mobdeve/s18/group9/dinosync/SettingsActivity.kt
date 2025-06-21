@@ -58,9 +58,7 @@ import androidx.compose.ui.unit.dp
 import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeUsers
 import com.mobdeve.s18.group9.dinosync.components.TopActionBar
 import com.mobdeve.s18.group9.dinosync.ui.theme.DarkGreen
-import com.mobdeve.s18.group9.dinosync.ui.theme.DirtyGreen
-import com.mobdeve.s18.group9.dinosync.ui.theme.DirtyWhite
-import com.mobdeve.s18.group9.dinosync.ui.theme.Lime
+import com.mobdeve.s18.group9.dinosync.ui.theme.GreenGray
 
 class SettingsActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -152,7 +150,7 @@ fun SettingsActivityScreen() {
             modifier = Modifier
                 .padding(padding)
                 .fillMaxSize()
-                .padding(top = 25.dp, start = 25.dp, end = 25.dp, bottom = 5.dp),
+                .padding(bottom = 5.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
@@ -1213,7 +1211,7 @@ fun SettingsSection(title: String, content: @Composable () -> Unit) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(DirtyWhite)
+                    .background(GreenGray)
             ) {
                 content()
             }
@@ -1268,7 +1266,7 @@ fun SettingRow(label: String, icon: ImageVector? = null, hasSwitch: Boolean = fa
                     checkedThumbColor = Color.White,
                     checkedTrackColor = DarkGreen,
                     uncheckedThumbColor = Color.DarkGray,
-                    uncheckedTrackColor = DirtyWhite,
+                    uncheckedTrackColor = GreenGray,
                 ))
         } else {
             Icon(

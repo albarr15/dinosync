@@ -2,7 +2,6 @@ package com.mobdeve.s18.group9.dinosync
 
 import android.content.Intent
 import android.os.Bundle
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
@@ -16,13 +15,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeUsers
 import com.mobdeve.s18.group9.dinosync.components.BottomNavigationBar
 import com.mobdeve.s18.group9.dinosync.ui.theme.DinoSyncTheme
 import com.mobdeve.s18.group9.dinosync.components.TopActionBar
-
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -33,32 +29,20 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Text
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalContext
-
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.runtime.*
-import androidx.compose.ui.unit.dp
 import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeGroupMembers
 import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeStudyGroups
 import com.mobdeve.s18.group9.dinosync.model.StudyGroup
-import com.mobdeve.s18.group9.dinosync.ui.theme.Lime
 
 class DiscoverGroupsActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -127,7 +111,7 @@ fun DiscoverGroupsScreen(userId: Int) {
             modifier = Modifier
                 .padding(padding)
                 .fillMaxSize()
-                .padding(top = 25.dp, start = 25.dp, end = 25.dp, bottom = 5.dp)
+                .padding(start = 25.dp, end = 25.dp, bottom = 5.dp)
         ) {
             TopActionBar(
                 onProfileClick = {
@@ -135,7 +119,11 @@ fun DiscoverGroupsScreen(userId: Int) {
                     intent.putExtra("userId", userId)
                     context.startActivity(intent)
                  },
-                onSettingsClick = { }
+                onSettingsClick = {
+                    val intent = Intent(context, SettingsActivity::class.java)
+                    intent.putExtra("userId", userId)
+                    context.startActivity(intent)
+                }
             )
 
             Text(
@@ -163,11 +151,7 @@ fun DiscoverGroupsScreen(userId: Int) {
                             modifier = Modifier
                                 .size(70.dp)
                                 .clip(RoundedCornerShape(12.dp))
-                                .background(Color(0xFFE0E0E0))
-                                .clickable {
-                                    // Handle your group click
-                                    Toast.makeText(context, "Clicked ${group.name}", Toast.LENGTH_SHORT).show()
-                                },
+                                .background(Color(0xFFE0E0E0)),
                             contentAlignment = Alignment.Center
                         ) {
                             Image(
@@ -205,12 +189,7 @@ fun DiscoverGroupsScreen(userId: Int) {
                     shape = RoundedCornerShape(12.dp),
                     singleLine = true,
                     colors = TextFieldDefaults.colors(
-                        focusedContainerColor = Color.Transparent,
-                        unfocusedContainerColor = Color.Transparent,
-                        disabledContainerColor = Color.Transparent,
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent,
-                        disabledIndicatorColor = Color.Transparent
+                        focusedIndicatorColor = Color.Transparent
                     ),
                     leadingIcon = {
                         Icon(Icons.Default.Search, contentDescription = null)
@@ -230,6 +209,7 @@ fun DiscoverGroupsScreen(userId: Int) {
                         onGroupClick = {
                             val intent = Intent(context, GroupActivity::class.java)
                             intent.putExtra("groupId", group.groupId)
+                            intent.putExtra("userId", userId)
                             context.startActivity(intent)
                     })
                 }
@@ -243,7 +223,7 @@ fun DiscoverGroupItem(group: StudyGroup, members: Int, onGroupClick: () -> Unit)
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(90.dp)
+            .height(100.dp)
             .clickable { onGroupClick() },
         shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -275,7 +255,7 @@ fun DiscoverGroupItem(group: StudyGroup, members: Int, onGroupClick: () -> Unit)
                 Text(group.bio, fontSize = 12.sp, maxLines = 1)
                 Spacer(modifier = Modifier.height(4.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    repeat(3) {
+                    repeat(members) {
                         Box(
                             modifier = Modifier
                                 .size(12.dp)

@@ -32,6 +32,7 @@ import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -197,7 +198,11 @@ fun ProfileActivityScreen(userId : Int) {
                     intent.putExtra("userId", userId)
                     context.startActivity(intent)
                 },
-                onSettingsClick = { }
+                onSettingsClick = {
+                    val intent = Intent(context, SettingsActivity::class.java)
+                    intent.putExtra("userId", userId)
+                    context.startActivity(intent)
+                }
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -265,7 +270,13 @@ fun ProfileActivityScreen(userId : Int) {
                     Box(
                         modifier = Modifier
                             .size(80.dp)
-                            .background(Color.LightGray, RoundedCornerShape(10.dp)),
+                            .background(Color.LightGray, RoundedCornerShape(10.dp))
+                            .clickable {
+                                // Navigate to AchievementDetailActivity with achievement ID
+                                val intent = Intent(context, CompanionActivity::class.java)
+                                intent.putExtra("userId", userId)
+                                context.startActivity(intent)
+                            },
                         contentAlignment = Alignment.Center
                     ) {
                         Image(

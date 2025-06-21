@@ -64,7 +64,6 @@ import com.patrykandpatrick.vico.core.cartesian.axis.VerticalAxis
 import com.patrykandpatrick.vico.core.cartesian.data.CartesianChartModelProducer
 import com.patrykandpatrick.vico.core.cartesian.data.lineSeries
 import androidx.compose.runtime.LaunchedEffect
-import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeAchievements
 import com.mobdeve.s18.group9.dinosync.components.TopActionBar
 import com.mobdeve.s18.group9.dinosync.model.StudySession
 import java.text.SimpleDateFormat
@@ -158,19 +157,14 @@ fun GroupActivityScreen(
 
     val context = LocalContext.current
     var selectedTab by remember { mutableStateOf("Group Activity") }
-
     val studySessionList = initializeStudySessions()
 
-
-    // Merge GroupMember with User
     val memberUsers = groupMembers.mapNotNull { gm ->
         val user = allUsers.find { it.userId == gm.userId }
         user?.let { user -> user to gm }
     }
 
-    val topMembers = memberUsers.sortedByDescending { it.second.currentGroupStudyMinutes }
-        .map { it.first }
-        .take(3)
+    val topMembers = memberUsers.sortedByDescending { it.second.currentGroupStudyMinutes }.map { it.first }.take(3)
 
     val provider = GoogleFont.Provider(
         providerAuthority = "com.google.android.gms.fonts",
@@ -209,7 +203,6 @@ fun GroupActivityScreen(
             )
         }
     ) { padding ->
-
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -219,9 +212,13 @@ fun GroupActivityScreen(
             TopActionBar(
                 onProfileClick = {
                     val intent = Intent(context, ProfileActivity::class.java)
-                    //intent.putExtra("USER_ID", currentUserId)
+                    intent.putExtra("userId", userId)
                     context.startActivity(intent)},
-                onSettingsClick = { }
+                onSettingsClick = {
+                    val intent = Intent(context, SettingsActivity::class.java)
+                    intent.putExtra("userId", userId)
+                    context.startActivity(intent)
+                }
             )
             Spacer(modifier = Modifier.height(5.dp))
             Box(
@@ -261,13 +258,14 @@ fun GroupActivityScreen(
                             fontFamily = fontFamily
                         )
                     }
+                    Spacer(modifier = Modifier.height(5.dp))
                     Text(
                         text = group.bio,
                         color = Color.White,
                         fontSize = 14.sp,
                         fontFamily = fontFamily
                     )
-                    Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(5.dp))
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -277,7 +275,8 @@ fun GroupActivityScreen(
                             text = "Rank ${group.rank} out of 5",
                             color = Color.White,
                             fontStyle = FontStyle.Italic,
-                            fontFamily = fontFamily
+                            fontFamily = fontFamily,
+                            fontSize = 13.sp
                         )
                         Row(modifier = Modifier.height(30.dp)) {
                             val opacities = listOf(1f, 0.8f, 0.6f, 0.4f)
