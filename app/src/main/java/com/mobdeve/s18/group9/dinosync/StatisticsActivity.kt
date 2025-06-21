@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -36,8 +37,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeCourses
 import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeUsers
 import com.mobdeve.s18.group9.dinosync.components.BottomNavigationBar
@@ -184,6 +187,101 @@ fun StatsActivityScreen(userId : Int){
                 )
 
                 PieStats(dummy_data, totalTime)
+            }
+
+            // Streak Section
+            Row {
+                Text(
+                    text = "Streak",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = Color.Gray,
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
+                Text(
+                    text = "Latest Study History",
+                    fontSize = 12.sp,
+                    textAlign = TextAlign.End,
+                    modifier = Modifier.fillMaxWidth()
+                        .padding(top = 5.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(5.dp))
+            StreakGrid()
+        }
+    }
+
+
+
+
+}
+
+fun getStudyActColor(studyLevel: Int): Color {
+    return when (studyLevel) {
+        0 -> Color.Gray
+        in 1..2 -> Color(0xFFD32F2F) // Terrible - Red
+        in 3..6 -> Color(0xFFF57C00) // Bad - Orange
+        in 7..9 -> Color(0xFFFBC02D) // Meh - Yellow
+        in 10..12 -> Color(0xFF8BC34A) // Good - Light Green
+        in 12..24 -> Color(0xFF388E3C) // Great - Green
+        else -> Color.Gray
+    }
+}
+
+fun generateTimeSampleData(): List<Int> {
+    // Random time levels from 0 to 5
+    return List(365) { (0..24).random() }
+}
+
+@Composable
+fun StreakGrid(
+    modifier: Modifier = Modifier
+) {
+    // val daily_time = listOf(0, 1, 0, 2, 2, 0, 0), latest time at end of list, in hrs
+    val study_act = generateTimeSampleData()
+    val daysToShow = 60
+    val columns = 15
+    val rows = 4
+
+    // Pad moods to always be full grid
+    val recentStudyAct = study_act.takeLast(daysToShow)
+        .let {
+            if (it.size < daysToShow) List(daysToShow - it.size) { 0 } + it else it
+        }
+
+    // Fill grid in top-down, right-to-left row-major order
+    val studyActGrid = Array(rows) { Array(columns) { 0 } }
+
+    for (i in recentStudyAct.indices) {
+        val row = i / columns
+        val col = columns - 1 - (i % columns) // reverse column order
+        if (row < rows) {
+            studyActGrid[row][col] = recentStudyAct[recentStudyAct.size - 1 - i]
+        }
+    }
+
+    Column(
+        modifier = modifier
+            .fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        for (row in 0 until rows) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                for (col in 0 until columns) {
+                    val x = studyActGrid[row][col]
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .aspectRatio(1f)
+                            .background(
+                                color = getStudyActColor(x),
+                                shape = RoundedCornerShape(3.dp)
+                            )
+                    )
+                }
             }
         }
     }
