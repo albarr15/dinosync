@@ -1,68 +1,59 @@
 package com.mobdeve.s18.group9.dinosync
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.googlefonts.Font
-import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeGroupMembers
-import com.mobdeve.s18.group9.dinosync.components.BottomNavigationBar
-import com.mobdeve.s18.group9.dinosync.components.TopActionBar
-import com.mobdeve.s18.group9.dinosync.model.Achievement
-import com.mobdeve.s18.group9.dinosync.model.DailyStudyHistory
-import com.mobdeve.s18.group9.dinosync.model.FeelingEntry
-import com.mobdeve.s18.group9.dinosync.model.Mood
-import com.mobdeve.s18.group9.dinosync.model.StudyGroup
-import com.mobdeve.s18.group9.dinosync.model.User
-import com.mobdeve.s18.group9.dinosync.ui.theme.DarkGreen
-import com.mobdeve.s18.group9.dinosync.ui.theme.DinoSyncTheme
-import java.util.Calendar
-import android.content.Intent
-import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material3.*
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.googlefonts.Font
 import androidx.compose.ui.text.googlefonts.GoogleFont
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeFeelingEntry
 import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeAchievements
 import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeDailyStudyHistory
+import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeFeelingEntry
+import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeGroupMembers
 import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeMoods
-import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeUsers
 import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeStudyGroups
-import kotlin.math.ceil
+import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeUsers
+import com.mobdeve.s18.group9.dinosync.components.BottomNavigationBar
+import com.mobdeve.s18.group9.dinosync.components.TopActionBar
+import com.mobdeve.s18.group9.dinosync.ui.theme.DarkGreen
+import com.mobdeve.s18.group9.dinosync.ui.theme.DinoSyncTheme
+import java.util.Calendar
 
 
 class ProfileActivity : ComponentActivity() {
@@ -110,7 +101,6 @@ class ProfileActivity : ComponentActivity() {
 
 @Composable
 fun ProfileActivityScreen(userId : Int) {
-    val userId = userId
     val feelingEntries = initializeFeelingEntry()
     val dailyStudyHistory = initializeDailyStudyHistory()
     val studyGroups = initializeStudyGroups()
