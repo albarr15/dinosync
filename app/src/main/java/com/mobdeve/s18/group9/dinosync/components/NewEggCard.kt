@@ -1,3 +1,5 @@
+package com.mobdeve.s18.group9.dinosync.components
+
 import com.mobdeve.s18.group9.dinosync.R
 
 import androidx.compose.runtime.Composable
