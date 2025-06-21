@@ -58,7 +58,11 @@ import androidx.compose.ui.unit.dp
 import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeUsers
 import com.mobdeve.s18.group9.dinosync.components.TopActionBar
 import com.mobdeve.s18.group9.dinosync.ui.theme.DarkGreen
+import com.mobdeve.s18.group9.dinosync.ui.theme.DirtyGreen
+import com.mobdeve.s18.group9.dinosync.ui.theme.DirtyWhite
 import com.mobdeve.s18.group9.dinosync.ui.theme.GreenGray
+import com.mobdeve.s18.group9.dinosync.ui.theme.LightGray
+import com.mobdeve.s18.group9.dinosync.ui.theme.YellowGreen
 
 class SettingsActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -307,6 +311,7 @@ fun ProfileVisibilityModal(onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Profile Visibility") },
+        containerColor = Color.White,
         text = {
             Column {
                 Text(
@@ -371,6 +376,7 @@ fun ChangePasswordModal(onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Change Password") },
+        containerColor = Color.White,
         text = {
             Column {
                 OutlinedSecureTextField(
@@ -482,6 +488,7 @@ fun ChangeEmailModal(onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Change Email Address") },
+        containerColor = Color.White,
         text = {
             Column {
                 Text(
@@ -535,6 +542,7 @@ fun DeleteAccountModal(onDismiss: () -> Unit) {
                 color = MaterialTheme.colorScheme.error
             )
         },
+        containerColor = Color.White,
         text = {
             Column {
                 Text(
@@ -590,41 +598,18 @@ fun DeleteAccountModal(onDismiss: () -> Unit) {
 
 @Composable
 fun TimerDurationModal(onDismiss: () -> Unit) {
-    var workDuration by remember { mutableStateOf("25") }
-    var shortBreak by remember { mutableStateOf("5") }
-    var longBreak by remember { mutableStateOf("15") }
-    var sessionsBeforeLongBreak by remember { mutableStateOf("4") }
+    var duration by remember { mutableStateOf("25") }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Default Timer Durations") },
+        containerColor = Color.White,
         text = {
             Column {
                 OutlinedTextField(
-                    value = workDuration,
-                    onValueChange = { workDuration = it },
-                    label = { Text("Work Duration (minutes)") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = shortBreak,
-                    onValueChange = { shortBreak = it },
-                    label = { Text("Short Break (minutes)") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = longBreak,
-                    onValueChange = { longBreak = it },
-                    label = { Text("Long Break (minutes)") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = sessionsBeforeLongBreak,
-                    onValueChange = { sessionsBeforeLongBreak = it },
-                    label = { Text("Sessions before long break") },
+                    value = duration,
+                    onValueChange = { duration = it },
+                    label = { Text("Timer Duration (minutes)") },
                     modifier = Modifier.fillMaxWidth()
                 )
             }
@@ -652,6 +637,7 @@ fun BreakRemindersModal(onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Break Reminders") },
+        containerColor = Color.White,
         text = {
             Column {
                 Row(
@@ -726,6 +712,7 @@ fun EditProfileModal(onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Edit Profile") },
+        containerColor = Color.White,
         text = {
             Column {
                 OutlinedTextField(
@@ -784,6 +771,7 @@ fun SpotifyYouTubeModal(onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Music Service Connections") },
+        containerColor = Color.White,
         text = {
             Column {
                 Text(
@@ -902,6 +890,7 @@ fun AppBlockingModal(onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("App Blocking Whitelist") },
+        containerColor = Color.White,
         text = {
             Column {
                 Text(
@@ -994,6 +983,7 @@ fun AppInfoModal(onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("App Information") },
+        containerColor = Color.White,
         text = {
             Column {
                 Row(
@@ -1054,6 +1044,7 @@ fun PrivacyPolicyModal(onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Privacy Policy") },
+        containerColor = Color.White,
         text = {
             Column(
                 modifier = Modifier.verticalScroll(rememberScrollState())
@@ -1097,16 +1088,6 @@ fun PrivacyPolicyModal(onDismiss: () -> Unit) {
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.padding(bottom = 16.dp)
                 )
-
-                Text(
-                    "Contact Us",
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-                Text(
-                    "If you have any questions about this Privacy Policy, please contact us at privacy@dinosync.app",
-                    style = MaterialTheme.typography.bodyMedium
-                )
             }
         },
         confirmButton = {
@@ -1122,6 +1103,7 @@ fun CreditsModal(onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Credits") },
+        containerColor = Color.White,
         text = {
             Column(
                 modifier = Modifier.verticalScroll(rememberScrollState())
@@ -1154,8 +1136,10 @@ fun CreditsModal(onDismiss: () -> Unit) {
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
                 Text(
-                    "• Jetpack Compose - UI Toolkit\n• Material Design 3 - Design System\n• Kotlin",
-                    style = MaterialTheme.typography.bodyMedium,
+                    "• Jetpack Compose - UI Toolkit\n• Material Design 3 - Design System\n" +
+                            "• Compose Charts by ehsannarmani\n" +
+                            "• Vico by patrykandpatrick\n",
+                            style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.padding(bottom = 16.dp)
                 )
 
@@ -1252,7 +1236,6 @@ fun SettingRow(label: String, icon: ImageVector? = null, hasSwitch: Boolean = fa
                         .size(28.dp)
                         .padding(end = 5.dp),
                     tint = Color.DarkGray,
-
                 )
             }
             Spacer(modifier = Modifier.width(15.dp))
