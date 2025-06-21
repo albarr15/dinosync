@@ -118,13 +118,6 @@ fun SessionsLineChart(
 ) {
     var selectedTab by remember { mutableStateOf("Day") }
 
-    // Sessions Section
-    Text(
-        text = "Sessions",
-        fontSize = 20.sp,
-        modifier = Modifier.padding(bottom = 8.dp)
-    )
-
     // Tab Row (Day, Week, Month, Year)
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -141,8 +134,6 @@ fun SessionsLineChart(
             )
         }
     }
-
-    Spacer(modifier = Modifier.height(16.dp))
 
     Box(
         modifier = Modifier

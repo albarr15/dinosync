@@ -120,6 +120,7 @@ fun MainScreen(context : Context) {
     val selectedUser = userList.random()
     var todoItems by remember { mutableStateOf( ArrayList(initializeTodo()) ) }
     var selectedMoodIcon by remember { mutableStateOf<ImageVector?>(null) }
+    val currentMusic by remember { mutableStateOf(initializeMusic().random()) }
 
 
     Scaffold(
@@ -160,6 +161,14 @@ fun MainScreen(context : Context) {
                     val intent = Intent(context, SettingsActivity::class.java)
                     intent.putExtra("userId", selectedUser.userId)
                     context.startActivity(intent) }
+            )
+
+            Text(
+                text = "Home",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                color = Color.Black,
+                modifier = Modifier.align(Alignment.Start)
             )
 
             /******** Course Box *********/
@@ -303,7 +312,6 @@ fun MainScreen(context : Context) {
             Spacer(modifier = Modifier.height(25.dp))
 
             /******** Music Activity *********/
-            val currentMusic = initializeMusic().random()
             AudioPlayerCard(
                 currentMusic = currentMusic,
                 progress = 0.5f,

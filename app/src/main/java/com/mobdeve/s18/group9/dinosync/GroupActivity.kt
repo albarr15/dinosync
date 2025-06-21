@@ -23,6 +23,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -224,6 +225,16 @@ fun GroupActivityScreen(
                 }
             )
             Spacer(modifier = Modifier.height(5.dp))
+
+            Text(
+                text = "Group Page",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                color = Color.Black,
+                modifier = Modifier.align(Alignment.Start)
+                    .padding(vertical = 5.dp)
+            )
+
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -477,6 +488,13 @@ fun OnClickGroupStatsActivityBtn(
         }
 
         Spacer(modifier = Modifier.height(24.dp))
+
+        // Sessions Section
+        Text(
+            text = "Sessions",
+            fontSize = 20.sp,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
         GroupSessionsLineChart(selectedGroup, dailyStudyHistory, studySessions)
     }
 }

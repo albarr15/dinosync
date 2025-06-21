@@ -175,7 +175,8 @@ fun StatsActivityScreen(userId : Int){
                 text = "Statistics",
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
-                color = Color.Black
+                color = Color.Black,
+                modifier = Modifier.align(Alignment.Start)
             )
             Spacer(modifier = Modifier.height(10.dp))
 

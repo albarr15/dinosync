@@ -189,7 +189,7 @@ fun ProfileActivityScreen(userId : Int) {
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color.White)
-                .padding(horizontal = 24.dp, vertical = 16.dp)
+                .padding(16.dp)
         ) {
 
             TopActionBar(
@@ -208,6 +208,14 @@ fun ProfileActivityScreen(userId : Int) {
             Spacer(modifier = Modifier.height(16.dp))
 
             // Profile Info Section
+            Text(
+                text = "Profile",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                color = Color.Black,
+                modifier = Modifier.align(Alignment.Start)
+            )
+
             Box(
                 modifier = Modifier
                     .fillMaxWidth()

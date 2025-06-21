@@ -20,6 +20,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -90,7 +91,7 @@ fun CompanionActivityScreen(userId:Int) {
             modifier = Modifier
                 .padding(padding)
                 .fillMaxSize()
-                .padding(bottom = 5.dp),
+                .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
@@ -109,6 +110,15 @@ fun CompanionActivityScreen(userId:Int) {
             )
 
             Spacer(modifier = Modifier.height(12.dp))
+
+
+            Text(
+                text = "Your Companions",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                color = Color.Black,
+                modifier = Modifier.align(Alignment.Start)
+            )
 
             // Egg image display
             Box(
