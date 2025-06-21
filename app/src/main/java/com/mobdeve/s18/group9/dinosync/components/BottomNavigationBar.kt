@@ -10,28 +10,16 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-
-import com.mobdeve.s18.group9.dinosync.GroupActivity
-import com.mobdeve.s18.group9.dinosync.ProfileActivity
-import com.mobdeve.s18.group9.dinosync.StatisticsActivity
-
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.runtime.*
 import com.mobdeve.s18.group9.dinosync.ui.theme.YellowGreen
 
 @Composable

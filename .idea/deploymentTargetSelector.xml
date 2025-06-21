@@ -5,17 +5,13 @@
       <SelectionState runConfigName="DinoSync.app">
         <option name="selectionMode" value="DROPDOWN" />
       </SelectionState>
-      <SelectionState runConfigName="StatsActivityScreen">
-        <option name="selectionMode" value="DROPDOWN" />
-      </SelectionState>
       <SelectionState runConfigName="SettingsActivityScreen">
-      <SelectionState runConfigName="NewEggCard">
         <option name="selectionMode" value="DROPDOWN" />
       </SelectionState>
-      <SelectionState runConfigName="HatchCard">
+      <SelectionState runConfigName="CompanionActivityScreen">
         <option name="selectionMode" value="DROPDOWN" />
       </SelectionState>
-      <SelectionState runConfigName="HatchCard (1)">
+      <SelectionState runConfigName="CompanionActivity">
         <option name="selectionMode" value="DROPDOWN" />
       </SelectionState>
     </selectionStates>

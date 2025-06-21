@@ -131,8 +131,6 @@ fun FocusStudyScreen(userId: Int, hours: Int, minutes: Int, subject: String) {
     )
 
     val currentMusic = musicList[1]
-
-    // Popup states
     var showHatchCard by remember { mutableStateOf(false) }
     var showNewEggCard by remember { mutableStateOf(false) }
 
@@ -185,7 +183,11 @@ fun FocusStudyScreen(userId: Int, hours: Int, minutes: Int, subject: String) {
                     intent.putExtra("userId", userId)
                     context.startActivity(intent)
                 },
-                onSettingsClick = { }
+                onSettingsClick = {
+                    val intent = Intent(context, SettingsActivity::class.java)
+                    intent.putExtra("userId", userId)
+                    context.startActivity(intent)
+                }
             )
 
             Spacer(modifier = Modifier.height(12.dp))

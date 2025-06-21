@@ -60,7 +60,7 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
-
+    implementation("androidx.compose.material3:material3:1.2.1")
     implementation ("androidx.compose.ui:ui-text-google-fonts:1.8.1")
     implementation("androidx.compose.material:material-icons-extended:1.1.1")
     implementation("androidx.compose.material3:material3:1.3.2")
