@@ -1,3 +1,4 @@
+/*
 package com.mobdeve.s18.group9.dinosync.components
 
 import androidx.compose.foundation.background
@@ -373,3 +374,5 @@ fun GroupSessionsLineChart(
         studySessions = studySessions
     )
 }
+
+ */

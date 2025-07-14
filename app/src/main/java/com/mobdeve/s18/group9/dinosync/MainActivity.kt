@@ -1,3 +1,4 @@
+
 package com.mobdeve.s18.group9.dinosync
 
 import android.content.Context
@@ -55,6 +56,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -74,14 +76,13 @@ import androidx.compose.ui.text.googlefonts.GoogleFont
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeCourses
-import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeMusic
-import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeTodo
-import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeUsers
+import com.google.firebase.firestore.FirebaseFirestore
+
 import com.mobdeve.s18.group9.dinosync.components.AudioPlayerCard
 import com.mobdeve.s18.group9.dinosync.components.BottomNavigationBar
 import com.mobdeve.s18.group9.dinosync.components.TopActionBar
 import com.mobdeve.s18.group9.dinosync.model.TodoItem
+import com.mobdeve.s18.group9.dinosync.model.User
 import com.mobdeve.s18.group9.dinosync.ui.theme.DarkGreen
 import com.mobdeve.s18.group9.dinosync.ui.theme.DinoSyncTheme
 import com.mobdeve.s18.group9.dinosync.ui.theme.DirtyGreen
@@ -96,8 +97,12 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             DinoSyncTheme {
-                val context = LocalContext.current
-                MainScreen(context = context)
+                //val context = LocalContext.current
+                //MainScreen(context = context)
+                androidx.compose.material3.Surface {
+                    androidx.compose.material3.Text(text = "Main Screen")
+                }
+
             }
         }
     }
@@ -105,34 +110,35 @@ class MainActivity : ComponentActivity() {
     /******** ACTIVITY LIFE CYCLE ******** */
     override fun onStart() {
         super.onStart()
-        println("onStart()")
+        println("MainActivity onStart()")
     }
 
     override fun onResume() {
         super.onResume()
-        println("onResume()")
+        println("MainActivity onResume()")
     }
 
     override fun onPause() {
         super.onPause()
-        println("onPause()")
+        println("MainActivity onPause()")
     }
 
     override fun onStop() {
         super.onStop()
-        println("onStop()")
+        println("MainActivity onStop()")
     }
 
     override fun onRestart() {
         super.onRestart()
-        println("onRestart()")
+        println("MainActivity onRestart()")
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        println("onDestroy()")
+        println("MainActivity onDestroy()")
     }
 }
+/*
 /******** MAIN SCREEN *********/
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -142,11 +148,12 @@ fun MainScreen(context : Context) {
     var hoursSet by remember { mutableStateOf("") }
     var minutesSet by remember { mutableStateOf("") }
     val context = LocalContext.current
-    var userList = initializeUsers()
-    val selectedUser = userList.random()
-    var todoItems by remember { mutableStateOf( ArrayList(initializeTodo()) ) }
-    var selectedMoodIcon by remember { mutableStateOf<ImageVector?>(null) }
-    val currentMusic by remember { mutableStateOf(initializeMusic().random()) }
+
+    val db = FirebaseFirestore.getInstance()
+    var userList by remember { mutableStateOf<List<User>>(emptyList()) }
+    var selectedUser by remember { mutableStateOf<User?>(null) }
+    var todoItems by remember { mutableStateOf<List<TodoItem>>(emptyList()) }
+    var courseList by remember { mutableStateOf<List<String>>(emptyList()) }
 
 
     Scaffold(
@@ -706,3 +713,4 @@ fun TodoList(
         }
     }
 }
+*/

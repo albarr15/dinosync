@@ -1,3 +1,4 @@
+/*
 package com.mobdeve.s18.group9.dinosync
 
 import HatchCard
@@ -73,33 +74,33 @@ class FocusStudyActivity : ComponentActivity() {
     /******** ACTIVITY LIFE CYCLE ******** */
     override fun onStart() {
         super.onStart()
-        println("onStart()")
+        println("FocusStudyActivity onStart()")
 
     }
 
     override fun onResume() {
         super.onResume()
-        println("onResume()")
+        println("FocusStudyActivity onResume()")
     }
 
     override fun onPause() {
         super.onPause()
-        println("onPause()")
+        println("FocusStudyActivity onPause()")
     }
 
     override fun onStop() {
         super.onStop()
-        println("onStop()")
+        println("FocusStudyActivity onStop()")
     }
 
     override fun onRestart() {
         super.onRestart()
-        println("onRestart()")
+        println("FocusStudyActivity onRestart()")
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        println("onDestroy()")
+        println("FocusStudyActivity onDestroy()")
     }
 }
 
@@ -333,6 +334,8 @@ fun FocusStudyScreen(userId: Int, hours: Int, minutes: Int, subject: String) {
         }
     }
 }
+
+ */
 
 
 
