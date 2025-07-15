@@ -1,4 +1,4 @@
-/*
+
 package com.mobdeve.s18.group9.dinosync
 
 import android.content.Intent
@@ -37,7 +37,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeAchievements
 import com.mobdeve.s18.group9.dinosync.components.BottomNavigationBar
 import com.mobdeve.s18.group9.dinosync.components.TopActionBar
 import com.mobdeve.s18.group9.dinosync.ui.theme.DarkGreen
@@ -50,7 +49,12 @@ class CompanionActivity : ComponentActivity() {
         val userId = intent.getIntExtra("userId", -1)
         setContent {
             DinoSyncTheme {
-                CompanionActivityScreen(userId = userId)
+                //CompanionActivityScreen(userId = userId)
+
+                // TEMPORARY CHECKER FOR SCREEN ACTIVITY
+                androidx.compose.material3.Surface {
+                    androidx.compose.material3.Text(text = "Companion Activity Screen")
+                }
             }
         }
     }
@@ -63,7 +67,7 @@ class CompanionActivity : ComponentActivity() {
     override fun onRestart() { super.onRestart(); println("CompanionActivity  onRestart()") }
     override fun onDestroy() { super.onDestroy(); println("CompanionActivity onDestroy()") }
 }
-
+/*
 @Composable
 fun CompanionActivityScreen(userId:Int) {
     val context = LocalContext.current

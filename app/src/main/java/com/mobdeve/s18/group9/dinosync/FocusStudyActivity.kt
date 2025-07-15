@@ -1,4 +1,4 @@
-/*
+
 package com.mobdeve.s18.group9.dinosync
 
 import HatchCard
@@ -46,7 +46,7 @@ import androidx.compose.ui.text.googlefonts.Font
 import androidx.compose.ui.text.googlefonts.GoogleFont
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeMusic
+//import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeMusic
 import com.mobdeve.s18.group9.dinosync.components.AudioPlayerCard
 import com.mobdeve.s18.group9.dinosync.components.BottomNavigationBar
 import com.mobdeve.s18.group9.dinosync.components.TopActionBar
@@ -60,14 +60,21 @@ import kotlinx.coroutines.delay
 class FocusStudyActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        /*
         val userId = intent.getIntExtra("userId", 0)
         val hours = intent.getIntExtra("hours", 0)
         val minutes = intent.getIntExtra("minutes", 0)
         val selectedSubject = intent.getStringExtra("selected_subject") ?: ""
+        */
 
         setContent {
             DinoSyncTheme {
-                FocusStudyScreen(userId = userId, hours = hours, minutes = minutes, subject = selectedSubject)
+                //FocusStudyScreen(userId = userId, hours = hours, minutes = minutes, subject = selectedSubject)
+
+                // TEMPORARY CHECKER FOR SCREEN ACTIVITY
+                androidx.compose.material3.Surface {
+                    androidx.compose.material3.Text(text = "Focus Study Screen")
+                }
             }
         }
     }
@@ -103,7 +110,7 @@ class FocusStudyActivity : ComponentActivity() {
         println("FocusStudyActivity onDestroy()")
     }
 }
-
+/*
 @Composable
 fun FocusStudyScreen(userId: Int, hours: Int, minutes: Int, subject: String) {
     val context = LocalContext.current

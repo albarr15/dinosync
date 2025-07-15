@@ -1,4 +1,4 @@
-/*
+
 package com.mobdeve.s18.group9.dinosync
 
 import android.content.Intent
@@ -70,7 +70,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeUsers
 import com.mobdeve.s18.group9.dinosync.components.BottomNavigationBar
 import com.mobdeve.s18.group9.dinosync.components.TopActionBar
 import com.mobdeve.s18.group9.dinosync.ui.theme.DarkGreen
@@ -85,7 +84,12 @@ class SettingsActivity : ComponentActivity() {
 
         setContent {
             DinoSyncTheme {
-                SettingsActivityScreen(/*userId = userId*/)
+                //SettingsActivityScreen(/*userId = userId*/)
+
+                // TEMPORARY CHECKER FOR SCREEN ACTIVITY
+                androidx.compose.material3.Surface {
+                    androidx.compose.material3.Text(text = "Settings Activity Screen")
+                }
             }
         }
     }
@@ -120,6 +124,8 @@ class SettingsActivity : ComponentActivity() {
         println("SettingsActivity onDestroy()")
     }
 }
+
+/*
 @Preview
 @Composable
 fun SettingsActivityScreen() {

@@ -1,4 +1,4 @@
-/*
+
 package com.mobdeve.s18.group9.dinosync
 
 import android.content.Intent
@@ -41,8 +41,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.clickable
 import androidx.compose.runtime.*
-import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeGroupMembers
-import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeStudyGroups
 import com.mobdeve.s18.group9.dinosync.model.StudyGroup
 
 class DiscoverGroupsActivity : ComponentActivity() {
@@ -53,7 +51,11 @@ class DiscoverGroupsActivity : ComponentActivity() {
 
         setContent {
             DinoSyncTheme {
-                DiscoverGroupsScreen(userId)
+                //DiscoverGroupsScreen(userId)
+                // TEMPORARY CHECKER FOR SCREEN ACTIVITY
+                androidx.compose.material3.Surface {
+                    androidx.compose.material3.Text(text = "Discover Groups Screen")
+                }
             }
         }
     }
@@ -67,6 +69,7 @@ class DiscoverGroupsActivity : ComponentActivity() {
     override fun onDestroy() { super.onDestroy(); println("DiscoverGroupsActivity onDestroy()") }
 }
 
+/*
 @Composable
 
 fun DiscoverGroupsScreen(userId: Int) {

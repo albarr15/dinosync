@@ -1,4 +1,4 @@
-/*
+
 package com.mobdeve.s18.group9.dinosync
 
 import android.content.Intent
@@ -33,14 +33,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeCourses
-import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeDailyStudyHistory
-import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeStudySessions
-import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeUsers
 import com.mobdeve.s18.group9.dinosync.components.BottomNavigationBar
 import com.mobdeve.s18.group9.dinosync.components.PieStats
 import com.mobdeve.s18.group9.dinosync.components.TopActionBar
-import com.mobdeve.s18.group9.dinosync.components.UserSessionsLineChart
+//import com.mobdeve.s18.group9.dinosync.components.UserSessionsLineChart
 import com.mobdeve.s18.group9.dinosync.ui.theme.DinoSyncTheme
 import com.mobdeve.s18.group9.dinosync.ui.theme.DirtyGreen
 import ir.ehsannarmani.compose_charts.models.Pie
@@ -54,7 +50,12 @@ class StatisticsActivity : ComponentActivity() {
 
         setContent {
             DinoSyncTheme {
-                StatsActivityScreen(userId = userId)
+                //StatsActivityScreen(userId = userId)
+
+                // TEMPORARY CHECKER FOR SCREEN ACTIVITY
+                androidx.compose.material3.Surface {
+                    androidx.compose.material3.Text(text = "Stats Activity Screen")
+                }
             }
         }
     }
@@ -90,6 +91,7 @@ class StatisticsActivity : ComponentActivity() {
     }
 }
 
+/*
 @Composable
 fun StatsActivityScreen(userId : Int){
     val context = LocalContext.current
