@@ -99,6 +99,7 @@ class MainActivity : ComponentActivity() {
             DinoSyncTheme {
                 //val context = LocalContext.current
                 //MainScreen(context = context)
+                // TEMPORARY CHECKER FOR SCREEN ACTIVITY
                 androidx.compose.material3.Surface {
                     androidx.compose.material3.Text(text = "Main Screen")
                 }

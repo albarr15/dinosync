@@ -1,4 +1,4 @@
-/*
+
 package com.mobdeve.s18.group9.dinosync
 
 import android.content.Intent
@@ -43,6 +43,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+/*
 import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeAchievements
 import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeDailyStudyHistory
 import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeFeelingEntry
@@ -50,6 +51,8 @@ import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeGroupMembe
 import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeMoods
 import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeStudyGroups
 import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeUsers
+*/
+
 import com.mobdeve.s18.group9.dinosync.components.BottomNavigationBar
 import com.mobdeve.s18.group9.dinosync.components.TopActionBar
 import com.mobdeve.s18.group9.dinosync.ui.theme.DarkGreen
@@ -64,7 +67,12 @@ class ProfileActivity : ComponentActivity() {
         val userId = intent.getIntExtra("userId", -1)
         setContent {
             DinoSyncTheme {
-                ProfileActivityScreen(userId = userId)
+                //ProfileActivityScreen(userId = userId)
+
+                // TEMPORARY CHECKER FOR SCREEN ACTIVITY
+                androidx.compose.material3.Surface {
+                    androidx.compose.material3.Text(text = "Profile Activity Screen")
+                }
             }
         }
     }
@@ -100,6 +108,7 @@ class ProfileActivity : ComponentActivity() {
     }
 }
 
+/*
 @Composable
 fun ProfileActivityScreen(userId : Int) {
     val feelingEntries = initializeFeelingEntry()

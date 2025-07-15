@@ -1,4 +1,4 @@
-/*
+
 package com.mobdeve.s18.group9.dinosync
 
 import android.content.Intent
@@ -51,13 +51,13 @@ import androidx.compose.ui.text.googlefonts.GoogleFont
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
-import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeDailyStudyHistory
-import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeGroupMembers
-import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeStudyGroups
-import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeStudySessions
-import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeUsers
+//import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeDailyStudyHistory
+//import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeGroupMembers
+//import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeStudyGroups
+//import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeStudySessions
+//import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeUsers
 import com.mobdeve.s18.group9.dinosync.components.BottomNavigationBar
-import com.mobdeve.s18.group9.dinosync.components.GroupSessionsLineChart
+//import com.mobdeve.s18.group9.dinosync.components.GroupSessionsLineChart
 import com.mobdeve.s18.group9.dinosync.components.TopActionBar
 import com.mobdeve.s18.group9.dinosync.model.DailyStudyHistory
 import com.mobdeve.s18.group9.dinosync.model.GroupMember
@@ -73,7 +73,7 @@ import com.mobdeve.s18.group9.dinosync.ui.theme.YellowGreen
 class GroupActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
+        /*
         val userId = intent.getIntExtra("userId", -1)
         val groupId = intent.getIntExtra("groupId", -1)
 
@@ -99,16 +99,23 @@ class GroupActivity : ComponentActivity() {
         val dailyStudyHistory = dailyStudyHistoryList.filter { session ->
             groupMembers.any { it.userId == session.userId }
         }
+        */
 
         setContent {
             DinoSyncTheme {
+                /*
                 GroupActivityScreen(
                     userId = userId,
                     group = selectedGroup,
                     groupMembers = groupMembers,
                     allUsers = userList,
                     dailyStudyHistory = dailyStudyHistory
-                )
+                )*/
+
+                // TEMPORARY CHECKER FOR SCREEN ACTIVITY
+                androidx.compose.material3.Surface {
+                    androidx.compose.material3.Text(text = "Group Activity Screen")
+                }
             }
         }
     }
@@ -145,6 +152,7 @@ class GroupActivity : ComponentActivity() {
     }
 }
 
+/*
 @Composable
 fun GroupActivityScreen(
     userId: Int,
