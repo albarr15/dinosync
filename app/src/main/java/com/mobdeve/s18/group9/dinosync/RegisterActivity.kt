@@ -2,6 +2,8 @@ package com.mobdeve.s18.group9.dinosync
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
@@ -29,7 +31,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedSecureTextField
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -45,11 +46,16 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mobdeve.s18.group9.dinosync.ui.theme.DarkGreen
 import com.mobdeve.s18.group9.dinosync.ui.theme.DinoSyncTheme
+import com.mobdeve.s18.group9.dinosync.viewmodel.AuthViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.google.firebase.auth.FirebaseAuth
 
 
 class RegisterActivity : ComponentActivity() {
@@ -68,40 +74,47 @@ class RegisterActivity : ComponentActivity() {
     /******** ACTIVITY LIFE CYCLE ******** */
     override fun onStart() {
         super.onStart()
-        println("onStart()")
+        println("RegisterActivity onStart()")
     }
 
     override fun onResume() {
         super.onResume()
-        println("onResume()")
+        println("RegisterActivity onResume()")
     }
 
     override fun onPause() {
         super.onPause()
-        println("onPause()")
+        println("RegisterActivity onPause()")
     }
 
     override fun onStop() {
         super.onStop()
-        println("onStop()")
+        println("RegisterActivity onStop()")
     }
 
     override fun onRestart() {
         super.onRestart()
-        println("onRestart()")
+        println("RegisterActivity onRestart()")
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        println("onDestroy()")
+        println("RegisterActivity onDestroy()")
     }
 }
 
 @Composable
-fun RegisterActivityScreen() {
+fun RegisterActivityScreen(authViewModel: AuthViewModel = viewModel()) {
     val context = LocalContext.current
-    var isToggled1 by remember { mutableStateOf(false) }
-    var isToggled2 by remember { mutableStateOf(false) }
+    val authViewModel: AuthViewModel = viewModel()
+    var username by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var confirmPassword by remember { mutableStateOf("") }
+
+    var isPasswordVisible by remember { mutableStateOf(false) }
+    var isConfirmPasswordVisible by remember { mutableStateOf(false) }
+
 
     BackHandler(enabled = true) {
         // Do nothing, just to disable back btn
@@ -145,71 +158,60 @@ fun RegisterActivityScreen() {
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp) // adds spacing between fields
             ) {
+                // Username Field
                 OutlinedTextField(
-                    state = rememberTextFieldState(),
+                    value = username,
+                    onValueChange = { username = it },
                     label = { Text("Username") },
                     modifier = Modifier.fillMaxWidth(),
-                    lineLimits = TextFieldLineLimits.SingleLine
+                    singleLine = true
                 )
+                // Email Field
                 OutlinedTextField(
-                    state = rememberTextFieldState(),
+                    value = email,
+                    onValueChange = { email = it },
                     label = { Text("Email") },
                     modifier = Modifier.fillMaxWidth(),
-                    lineLimits = TextFieldLineLimits.SingleLine
+                    singleLine = true
                 )
-                OutlinedSecureTextField(
-                    state = rememberTextFieldState(),
+                // Password Field
+                OutlinedTextField(
+                    value = password,
+                    onValueChange = { password = it },
                     label = { Text("Password") },
-                    trailingIcon = @androidx.compose.runtime.Composable {
-                        IconButton(onClick = {
-                            isToggled1 = !isToggled1
-                        }) {
-                            if (isToggled1) {
-                                Icon(
-                                    imageVector = Icons.Filled.Visibility,
-                                    contentDescription = "Show Password",
-                                    tint = Color.Black
-                                )
-                            } else {
-                                Icon(
-                                    imageVector = Icons.Outlined.VisibilityOff,
-                                    contentDescription = "Hide Password",
-                                    tint = Color.Black
-                                )
-                            }
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    visualTransformation = if (isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                    trailingIcon = {
+                        IconButton(onClick = { isPasswordVisible = !isPasswordVisible }) {
+                            Icon(
+                                imageVector = if (isPasswordVisible) Icons.Filled.Visibility else Icons.Outlined.VisibilityOff,
+                                contentDescription = if (isPasswordVisible) "Hide" else "Show"
+                            )
                         }
-                    },
-                    textObfuscationMode = if (isToggled1) {TextObfuscationMode.Visible} else {TextObfuscationMode.RevealLastTyped},
-                    modifier = Modifier.fillMaxWidth()
+                    }
                 )
-                OutlinedSecureTextField(
-                    state = rememberTextFieldState(),
+                // Confirm Password Field
+                OutlinedTextField(
+                    value = confirmPassword,
+                    onValueChange = { confirmPassword = it },
                     label = { Text("Confirm Password") },
-                    trailingIcon = @androidx.compose.runtime.Composable {
-                        IconButton(onClick = {
-                            isToggled2 = !isToggled2
-                        }) {
-                            if (isToggled2) {
-                                Icon(
-                                    imageVector = Icons.Filled.Visibility,
-                                    contentDescription = "Show Password",
-                                    tint = Color.Black
-                                )
-                            } else {
-                                Icon(
-                                    imageVector = Icons.Outlined.VisibilityOff,
-                                    contentDescription = "Hide Password",
-                                    tint = Color.Black
-                                )
-                            }
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    visualTransformation = if (isConfirmPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                    trailingIcon = {
+                        IconButton(onClick = { isConfirmPasswordVisible = !isConfirmPasswordVisible }) {
+                            Icon(
+                                imageVector = if (isConfirmPasswordVisible) Icons.Filled.Visibility else Icons.Outlined.VisibilityOff,
+                                contentDescription = if (isConfirmPasswordVisible) "Hide" else "Show"
+                            )
                         }
-                    },
-                    textObfuscationMode = if (isToggled2) {TextObfuscationMode.Visible} else {TextObfuscationMode.RevealLastTyped},
-                    modifier = Modifier.fillMaxWidth()
+                    }
                 )
                 Spacer(
                     modifier = Modifier.height(8.dp)
                 )
+                // Sign In Link
                 Row (modifier = Modifier.align(Alignment.End)
                         .padding(2.dp),
                     verticalAlignment = Alignment.CenterVertically) {
@@ -229,16 +231,76 @@ fun RegisterActivityScreen() {
                 Spacer(
                     modifier = Modifier.height(12.dp)
                 )
-                Button(onClick = { val intent = Intent(context, MainActivity::class.java)
-                    // disable going back to sign in page upon successful sign in
-                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                    context.startActivity(intent) }, modifier = Modifier.fillMaxWidth(),
+                /*
+                *   🔁 – button clicked
+                    🔐 – Firebase request started
+                    ✅ – success toast
+                    ❌ – error from Firebase
+                * */
+                Button(
+                    onClick = {
+                        println("🔁 Register button clicked")
+
+                        if (username.isBlank() || email.isBlank() || password.isBlank()) {
+                            Toast.makeText(context, "Please fill all fields", Toast.LENGTH_SHORT).show()
+                            println("⚠️ Fields are empty")
+                            return@Button
+                        }
+
+                        if (password != confirmPassword) {
+                            Toast.makeText(context, "Passwords do not match", Toast.LENGTH_SHORT).show()
+                            println("⚠️ Passwords do not match")
+                            return@Button
+                        }
+
+                        println("🔐 Attempting to register user...")
+                        authViewModel.register(
+                            userName = username,
+                            email = email,
+                            password = password,
+                            userBio = "",
+                            onSuccess = {
+                                val currentUser = FirebaseAuth.getInstance().currentUser
+                                currentUser?.sendEmailVerification()
+                                    ?.addOnCompleteListener { task ->
+                                        if (task.isSuccessful) {
+                                            Toast.makeText(
+                                                context,
+                                                "Account created! Please check your email for verification.",
+                                                Toast.LENGTH_LONG
+                                            ).show()
+                                            println("✅ Verification email sent to ${currentUser.email}")
+                                        } else {
+                                            Toast.makeText(
+                                                context,
+                                                "Account created, but failed to send verification email.",
+                                                Toast.LENGTH_LONG
+                                            ).show()
+                                            println("❌ Failed to send verification email: ${task.exception?.message}")
+                                        }
+                                    }
+
+                                val intent = Intent(context, SignInActivity::class.java).apply {
+                                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                                }
+                                context.startActivity(intent)
+                            },
+                            onError = { errorMsg ->
+                                Toast.makeText(context, "Registration failed: $errorMsg", Toast.LENGTH_SHORT).show()
+                                println("❌ Registration failed: $errorMsg")
+                                Log.e("REGISTER_ERROR", "Registration failed: $errorMsg")
+                            }
+                        )
+                    },
+                    modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = DarkGreen,
                         contentColor = Color.White
-                    )) {
+                    )
+                ) {
                     Text("Register")
                 }
+
             }
         }
     }

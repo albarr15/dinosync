@@ -1,3 +1,4 @@
+/*
 package com.mobdeve.s18.group9.dinosync
 
 import android.content.Intent
@@ -70,32 +71,32 @@ class ProfileActivity : ComponentActivity() {
     /******** ACTIVITY LIFE CYCLE ******** */
     override fun onStart() {
         super.onStart()
-        println("onStart()")
+        println("ProfileActivity onStart()")
     }
 
     override fun onResume() {
         super.onResume()
-        println("onResume()")
+        println("ProfileActivity onResume()")
     }
 
     override fun onPause() {
         super.onPause()
-        println("onPause()")
+        println("ProfileActivity onPause()")
     }
 
     override fun onStop() {
         super.onStop()
-        println("onStop()")
+        println("ProfileActivity onStop()")
     }
 
     override fun onRestart() {
         super.onRestart()
-        println("onRestart()")
+        println("ProfileActivity onRestart()")
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        println("onDestroy()")
+        println("ProfileActivity onDestroy()")
     }
 }
 
@@ -423,3 +424,5 @@ fun MoodTrackerGrid(
         }
     }
 }
+*/
+

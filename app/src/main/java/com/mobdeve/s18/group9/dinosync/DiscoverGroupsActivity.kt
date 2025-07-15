@@ -1,3 +1,4 @@
+/*
 package com.mobdeve.s18.group9.dinosync
 
 import android.content.Intent
@@ -58,12 +59,12 @@ class DiscoverGroupsActivity : ComponentActivity() {
     }
 
     /******** ACTIVITY LIFE CYCLE ******** */
-    override fun onStart() { super.onStart(); println("onStart()") }
-    override fun onResume() { super.onResume(); println("onResume()") }
-    override fun onPause() { super.onPause(); println("onPause()") }
-    override fun onStop() { super.onStop(); println("onStop()") }
-    override fun onRestart() { super.onRestart(); println("onRestart()") }
-    override fun onDestroy() { super.onDestroy(); println("onDestroy()") }
+    override fun onStart() { super.onStart(); println("DiscoverGroupsActivity onStart()") }
+    override fun onResume() { super.onResume(); println("DiscoverGroupsActivity onResume()") }
+    override fun onPause() { super.onPause(); println("DiscoverGroupsActivity onPause()") }
+    override fun onStop() { super.onStop(); println("DiscoverGroupsActivity onStop()") }
+    override fun onRestart() { super.onRestart(); println("DiscoverGroupsActivity onRestart()") }
+    override fun onDestroy() { super.onDestroy(); println("DiscoverGroupsActivity onDestroy()") }
 }
 
 @Composable
@@ -75,23 +76,19 @@ fun DiscoverGroupsScreen(userId: Int) {
     val groupMembers = remember { initializeGroupMembers() }
     var searchQuery by remember { mutableStateOf("") }
 
-    val filteredGroups = remember(searchQuery) {
-        if (searchQuery.isBlank()) {
-            studyGroups
-        } else {
-            studyGroups.filter { it.name.contains(searchQuery, ignoreCase = true) }
+    val filteredGroups by remember {
+        derivedStateOf {
+            if (searchQuery.isBlank()) studyGroups
+            else studyGroups.filter { it.name.contains(searchQuery, true) }
         }
     }
+
 
     Scaffold(
         bottomBar = {
             BottomNavigationBar(
                 selectedItem = "Groups",
-                onGroupsClick = {
-                    val intent = Intent(context, DiscoverGroupsActivity::class.java)
-                    intent.putExtra("userId", userId)
-                    context.startActivity(intent)
-                },
+                onGroupsClick = {},
                 onHomeClick = {
                     val intent = Intent(context, MainActivity::class.java)
                     intent.putExtra("userId", userId)
@@ -271,3 +268,5 @@ fun DiscoverGroupItem(group: StudyGroup, members: Int, onGroupClick: () -> Unit)
         }
     }
 }
+*/
+

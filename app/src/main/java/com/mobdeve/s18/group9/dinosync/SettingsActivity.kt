@@ -1,3 +1,4 @@
+/*
 package com.mobdeve.s18.group9.dinosync
 
 import android.content.Intent
@@ -91,32 +92,32 @@ class SettingsActivity : ComponentActivity() {
     /******** ACTIVITY LIFE CYCLE ******** */
     override fun onStart() {
         super.onStart()
-        println("onStart()")
+        println("SettingsActivity onStart()")
     }
 
     override fun onResume() {
         super.onResume()
-        println("onResume()")
+        println("SettingsActivity onResume()")
     }
 
     override fun onPause() {
         super.onPause()
-        println("onPause()")
+        println("SettingsActivity onPause()")
     }
 
     override fun onStop() {
         super.onStop()
-        println("onStop()")
+        println("SettingsActivity onStop()")
     }
 
     override fun onRestart() {
         super.onRestart()
-        println("onRestart()")
+        println("SettingsActivity onRestart()")
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        println("onDestroy()")
+        println("SettingsActivity onDestroy()")
     }
 }
 @Preview
@@ -1266,3 +1267,4 @@ fun SettingRow(label: String, icon: ImageVector? = null, hasSwitch: Boolean = fa
         }
     }
 }
+*/

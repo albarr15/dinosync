@@ -1,3 +1,4 @@
+/*
 package com.mobdeve.s18.group9.dinosync
 
 import android.content.Intent
@@ -52,8 +53,15 @@ class CompanionActivity : ComponentActivity() {
                 CompanionActivityScreen(userId = userId)
             }
         }
-
     }
+
+    /******** ACTIVITY LIFE CYCLE ******** */
+    override fun onStart() { super.onStart(); println("CompanionActivity onStart()") }
+    override fun onResume() { super.onResume(); println("CompanionActivity onResume()") }
+    override fun onPause() { super.onPause(); println("CompanionActivity onPause()") }
+    override fun onStop() { super.onStop(); println(" CompanionActivity onStop()") }
+    override fun onRestart() { super.onRestart(); println("CompanionActivity  onRestart()") }
+    override fun onDestroy() { super.onDestroy(); println("CompanionActivity onDestroy()") }
 }
 
 @Composable
@@ -208,3 +216,4 @@ fun CompanionActivityScreen(userId:Int) {
         }
     }
 }
+*/

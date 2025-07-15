@@ -1,3 +1,4 @@
+/*
 package com.mobdeve.s18.group9.dinosync
 import androidx.compose.material.icons.Icons
 import com.mobdeve.s18.group9.dinosync.model.*
@@ -30,9 +31,9 @@ class DataHelper {
             for (i in usernames.indices) {
                 data.add(
                     User(
-                        userId = i + 1,
+                        //userId = i + 1,
                         userName = usernames[i],
-                        userProfileImage = userImages[i],
+                        //userProfileImage = userImages[i],
                         userBio = userDescriptions[i]
                     )
                 )
@@ -97,9 +98,9 @@ class DataHelper {
             for (i in userIds.indices) {
                 data.add(
                     UserCourse(
-                        userCourseId = i + 1,
-                        userId = userIds[i],
-                        courseId = courseIds[i]
+                        //userCourseId = i + 1,
+                        //userId = userIds[i],
+                        //courseId = courseIds[i]
                     )
                 )
             }
@@ -473,12 +474,6 @@ INSERT INTO user (userName, userProfileImage, userBio) VALUES
 ('claire', 'claire.jpg', 'Mobile dev in training'),
 ('leo', 'leo.jpg', 'Web design hobbyist');
 
-INSERT INTO socialMedia (userId, title, link) VALUES
-(1, 'GitHub', 'https://github.com/miko'),
-(2, 'LinkedIn', 'https://linkedin.com/in/clarissa'),
-(3, 'Portfolio', 'https://althea.dev'),
-(4, 'Instagram', 'https://instagram.com/claire.codes'),
-(5, 'Instagram', 'https://instagram.com/leo');
 
 INSERT INTO achievement (userId, title, image) VALUES
 (1, 'Badge 1', 'badge3.png'),

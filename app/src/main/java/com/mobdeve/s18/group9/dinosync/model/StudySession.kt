@@ -1,14 +1,14 @@
 package com.mobdeve.s18.group9.dinosync.model
 
 data class StudySession(
-    val sessionId: Int = 0,
-    val userId: Int,
-    val groupId: Int?,
-    val courseId: Int?,
-    val hasJoinedGroup: Boolean,
-    val hourSet: Int,
-    val minuteSet: Int,
-    val status: String,
-    val sessionDate: String
+    val courseId: String? = "",
+    val endedAt: String = "",
+    val hourSet: Int = 0,
+    val minuteSet: Int = 0,
+    val sessionDate: String = "",
+    val startedAt: String = "",
+    val status: String = "ongoing", // ongoing, pause, reset, completed
+    val userId: String = ""
 )
+
 

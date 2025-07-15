@@ -1,3 +1,4 @@
+/*
 package com.mobdeve.s18.group9.dinosync
 
 import android.content.Intent
@@ -60,36 +61,34 @@ class StatisticsActivity : ComponentActivity() {
     /******** ACTIVITY LIFE CYCLE ******** */
     override fun onStart() {
         super.onStart()
-        println("onStart()")
+        println("StatisticsActivity onStart()")
     }
 
     override fun onResume() {
         super.onResume()
-        println("onResume()")
+        println("StatisticsActivity onResume()")
     }
 
     override fun onPause() {
         super.onPause()
-        println("onPause()")
+        println("StatisticsActivity onPause()")
     }
 
     override fun onStop() {
         super.onStop()
-        println("onStop()")
+        println("StatisticsActivity onStop()")
     }
 
     override fun onRestart() {
         super.onRestart()
-        println("onRestart()")
+        println("StatisticsActivity onRestart()")
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        println("onDestroy()")
+        println("StatisticsActivity onDestroy()")
     }
 }
-
-
 
 @Composable
 fun StatsActivityScreen(userId : Int){
@@ -293,3 +292,4 @@ fun StreakGrid(
         }
     }
 }
+*/

@@ -2,6 +2,7 @@ package com.mobdeve.s18.group9.dinosync
 
 import android.content.Intent
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
@@ -61,8 +62,9 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import com.mobdeve.s18.group9.dinosync.ui.theme.DarkGreen
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextDecoration
-
-/** TODO: Saving account details, password & email verification **/
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.google.firebase.auth.FirebaseAuth
+import com.mobdeve.s18.group9.dinosync.viewmodel.AuthViewModel
 
 
 class SignInActivity : ComponentActivity() {
@@ -79,41 +81,21 @@ class SignInActivity : ComponentActivity() {
     }
 
     /******** ACTIVITY LIFE CYCLE ******** */
-    override fun onStart() {
-        super.onStart()
-        println("onStart()")
-    }
-
-    override fun onResume() {
-        super.onResume()
-        println("onResume()")
-    }
-
-    override fun onPause() {
-        super.onPause()
-        println("onPause()")
-    }
-
-    override fun onStop() {
-        super.onStop()
-        println("onStop()")
-    }
-
-    override fun onRestart() {
-        super.onRestart()
-        println("onRestart()")
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        println("onDestroy()")
-    }
-}
+    override fun onStart() { super.onStart(); println("SettingsActivity onStart()") }
+    override fun onResume() { super.onResume(); println("SettingsActivity onResume()") }
+    override fun onPause() { super.onPause(); println("SettingsActivity onPause()") }
+    override fun onStop() { super.onStop(); println("SettingsActivity onStop()") }
+    override fun onRestart() { super.onRestart();println("SettingsActivity onRestart()") }
+    override fun onDestroy() { super.onDestroy();println("SettingsActivity onDestroy()") } }
 
 @Composable
 fun SignInActivityScreen() {
     val context = LocalContext.current
     var isPWVisible by remember { mutableStateOf(false) }
+
+    val authViewModel: AuthViewModel = viewModel()
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
 
     BackHandler(enabled = true) {
         // Do nothing, just to disable back btn
@@ -158,36 +140,31 @@ fun SignInActivityScreen() {
                 verticalArrangement = Arrangement.spacedBy(12.dp) // adds spacing between fields
             ) {
                 OutlinedTextField(
-                    state = rememberTextFieldState(),
-                    label = { Text("Username or Email") },
+                    value = email,
+                    onValueChange = { email = it },
+                    label = { Text("Email") },
                     modifier = Modifier.fillMaxWidth(),
-                    lineLimits = TextFieldLineLimits.SingleLine
+                    singleLine = true
                 )
-                OutlinedSecureTextField(
-                    state = rememberTextFieldState(),
+
+                OutlinedTextField(
+                    value = password,
+                    onValueChange = { password = it },
                     label = { Text("Password") },
-                    trailingIcon = @androidx.compose.runtime.Composable {
-                        IconButton(onClick = {
-                            isPWVisible = !isPWVisible
-                        }) {
-                            if (isPWVisible) {
-                                Icon(
-                                    imageVector = Icons.Filled.Visibility,
-                                    contentDescription = "Show Password",
-                                    tint = Color.Black
-                                )
-                            } else {
-                                Icon(
-                                    imageVector = Icons.Outlined.VisibilityOff,
-                                    contentDescription = "Hide Password",
-                                    tint = Color.Black
-                                )
-                            }
+                    visualTransformation = if (isPWVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                    trailingIcon = {
+                        IconButton(onClick = { isPWVisible = !isPWVisible }) {
+                            Icon(
+                                imageVector = if (isPWVisible) Icons.Filled.Visibility else Icons.Outlined.VisibilityOff,
+                                contentDescription = if (isPWVisible) "Hide Password" else "Show Password",
+                                tint = Color.Black
+                            )
                         }
                     },
-                    textObfuscationMode = if (isPWVisible) {TextObfuscationMode.Visible} else {TextObfuscationMode.RevealLastTyped},
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
                 )
+
                 Spacer(
                     modifier = Modifier.height(23.dp)
                 )
@@ -210,16 +187,39 @@ fun SignInActivityScreen() {
                 Spacer(
                     modifier = Modifier.height(12.dp)
                 )
-                Button(onClick = { val intent = Intent(context, MainActivity::class.java)
-                    // disable going back to sign in page upon successful sign in
-                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                    context.startActivity(intent) }, modifier = Modifier.fillMaxWidth(),
+                Button(
+                    onClick = {
+                        authViewModel.login(
+                            email = email,
+                            password = password,
+                            onSuccess = {
+                                val user = FirebaseAuth.getInstance().currentUser
+                                user?.reload()?.addOnCompleteListener {
+                                    if (user.isEmailVerified) {
+                                        Toast.makeText(context, "✅ Email verified. Welcome!", Toast.LENGTH_SHORT).show()
+                                        val intent = Intent(context, MainActivity::class.java).apply {
+                                            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                                        }
+                                        context.startActivity(intent)
+                                    } else {
+                                        Toast.makeText(context, "❌ Please verify your email address first.", Toast.LENGTH_LONG).show()
+                                    }
+                                }
+                            },
+                            onError = { errorMsg ->
+                                Toast.makeText(context, "Login failed: $errorMsg", Toast.LENGTH_SHORT).show()
+                            }
+                        )
+                    },
+                    modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = DarkGreen,
                         contentColor = Color.White
-                    )) {
+                    )
+                ) {
                     Text("Sign In")
                 }
+
             }
         }
     }
