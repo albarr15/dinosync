@@ -56,6 +56,7 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+    implementation(files("D:\\Downloads\\android-sdk-0.7.2-appremote_v1.2.3-auth\\android-sdk-0.7.2-appremote_v1.2.3-auth\\app-remote-lib\\spotify-app-remote-release-0.7.2.aar"))
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -81,6 +82,7 @@ dependencies {
     implementation(libs.coil.compose)
 
     // Import Spotify API
-    implementation ("com.spotify.android:auth:1.2.5")
+    implementation(libs.gson)
+
 
 }
