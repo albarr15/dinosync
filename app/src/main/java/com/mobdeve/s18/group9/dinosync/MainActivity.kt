@@ -362,31 +362,35 @@ fun MainScreen(userId: String) {
                                 endedAt = null,
                                 status = "active" // active,pause, reset, completed
                             )
-                            studySessionVM.createStudySession(session)
 
-                            dailyHistoryVM.updateDailyHistory(
-                                userId = userId,
-                                date = sessionDate,
-                                moodId = moodId,
-                                hours = hourInt + (minuteInt / 60f)
-                            )
+                            studySessionVM.createStudySessionAndGetId(session) { sessionId ->
+                                dailyHistoryVM.updateDailyHistory(
+                                    userId = userId,
+                                    date = sessionDate,
+                                    moodId = moodId,
+                                    hours = hourInt + (minuteInt / 60f)
+                                )
 
-                            Toast.makeText(context, "Session logged successfully!", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, "Session logged successfully!", Toast.LENGTH_SHORT).show()
 
-                            // Reset
-                            hoursSet = ""
-                            minutesSet = ""
-                            selectedMood = null
-                            showMoodDialog = false
+                                // Reset fields
+                                hoursSet = ""
+                                minutesSet = ""
+                                selectedMood = null
+                                showMoodDialog = false
 
-
-                            val intent = Intent(context, FocusStudyActivity::class.java).apply {
-                                putExtra("userId", userId)
-                                putExtra("hours", hourInt)
-                                putExtra("minutes", minuteInt)
-                                putExtra("selected_subject", selectedCourse)
+                                // Start FocusStudyActivity with sessionId
+                                val intent = Intent(context, FocusStudyActivity::class.java).apply {
+                                    putExtra("userId", userId)
+                                    putExtra("hours", hourInt)
+                                    putExtra("minutes", minuteInt)
+                                    putExtra("selected_subject", selectedCourse)
+                                    putExtra("study_session_id", sessionId)
+                                    putExtra("moodId", moodId)
+                                }
+                                context.startActivity(intent)
                             }
-                            context.startActivity(intent)
+
                         },
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = DarkGreen,
@@ -402,13 +406,38 @@ fun MainScreen(userId: String) {
                             val minuteInt = minutesSet.toIntOrNull() ?: 0
                             if (hourInt == 0 && minuteInt == 0) return@OutlinedButton
 
-                            val intent = Intent(context, FocusStudyActivity::class.java).apply {
-                                putExtra("userId", userId)
-                                putExtra("hours", hourInt)
-                                putExtra("minutes", minuteInt)
-                                putExtra("selected_subject", selectedCourse) // ERROR SINCE WE'LL INTEGRATE Subject (Course) List Initialization LATER
+                            val sessionDate = getCurrentDate()
+                            val startedAt = getCurrentTimestamp()
+
+                            val skippedSession = StudySession(
+                                userId = userId,
+                                courseId = selectedCourse,
+                                hourSet = hourInt,
+                                minuteSet = minuteInt,
+                                moodId = "",
+                                sessionDate = sessionDate,
+                                startedAt = startedAt,
+                                endedAt = null,
+                                status = "active"
+                            )
+
+                            studySessionVM.createStudySessionAndGetId(skippedSession) { sessionId ->
+                                val intent = Intent(context, FocusStudyActivity::class.java).apply {
+                                    putExtra("userId", userId)
+                                    putExtra("hours", hourInt)
+                                    putExtra("minutes", minuteInt)
+                                    putExtra("selected_subject", selectedCourse)
+                                    putExtra("study_session_id", sessionId)
+                                    putExtra("moodId", "")
+                                }
+                                context.startActivity(intent)
+
+                                // Reset state after skip
+                                hoursSet = ""
+                                minutesSet = ""
+                                selectedMood = null
+                                showMoodDialog = false
                             }
-                            context.startActivity(intent)
                         }) {
                             Text("Skip")
                         }

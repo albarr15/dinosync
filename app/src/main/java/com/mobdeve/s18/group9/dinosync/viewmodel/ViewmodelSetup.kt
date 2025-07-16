@@ -172,15 +172,19 @@ class MusicSessionViewModel : ViewModel() {
             _musicSessions.value = repository.getMusicSessionsByUser(userId)
         }
     }
+
     fun musicSessionsFlow(userId: String): StateFlow<List<MusicSession>> {
         return repository.listenToMusicSessions(userId)
-            .stateIn(
-                viewModelScope,
-                SharingStarted.WhileSubscribed(5000),
-                emptyList()
-            )
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    }
+
+    fun createMusicSession(session: MusicSession) {
+        viewModelScope.launch {
+            repository.createMusicSession(session)
+        }
     }
 }
+
 
 class StudyGroupViewModel : ViewModel() {
     private val repository = FirebaseRepository()
@@ -206,20 +210,32 @@ class StudySessionViewModel : ViewModel() {
             _studySessions.value = repository.getStudySessionsByUserId(userId)
         }
     }
+
     fun studySessionsFlow(userId: String): StateFlow<List<StudySession>> {
         return repository.listenToStudySessions(userId)
-            .stateIn(
-                viewModelScope,
-                SharingStarted.WhileSubscribed(5000),
-                emptyList()
-            )
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
     }
+
     fun createStudySession(session: StudySession) {
         viewModelScope.launch {
             repository.addStudySession(session)
         }
     }
+
+    fun createStudySessionAndGetId(session: StudySession, onComplete: (String) -> Unit) {
+        viewModelScope.launch {
+            val id = repository.createStudySessionAndReturnId(session)
+            onComplete(id)
+        }
+    }
+
+    fun updateStudySession(sessionId: String, updates: Map<String, Any>) {
+        viewModelScope.launch {
+            repository.updateStudySession(sessionId, updates)
+        }
+    }
 }
+
 
 class TodoViewModel : ViewModel() {
     private val repository = FirebaseRepository()

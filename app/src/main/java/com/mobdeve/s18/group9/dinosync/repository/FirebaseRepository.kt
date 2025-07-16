@@ -197,7 +197,14 @@ class FirebaseRepository {
         studySessionsRef.add(session)
     }
 
+    suspend fun createStudySessionAndReturnId(session: StudySession): String {
+        val ref = db.collection("studysession").add(session).await()
+        return ref.id
+    }
 
+    suspend fun updateStudySession(sessionId: String, updates: Map<String, Any>) {
+        db.collection("studysession").document(sessionId).update(updates).await()
+    }
 
     // STUDY GROUPS ✔️
     suspend fun getAllStudyGroups(): List<StudyGroup> {

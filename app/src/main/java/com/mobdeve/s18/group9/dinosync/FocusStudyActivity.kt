@@ -2,7 +2,6 @@
 package com.mobdeve.s18.group9.dinosync
 
 import HatchCard
-import com.mobdeve.s18.group9.dinosync.components.NewEggCard
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -10,71 +9,60 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.PaintingStyle.Companion.Stroke
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.googlefonts.Font
 import androidx.compose.ui.text.googlefonts.GoogleFont
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-//import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeMusic
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.google.firebase.Timestamp
 import com.mobdeve.s18.group9.dinosync.components.AudioPlayerCard
 import com.mobdeve.s18.group9.dinosync.components.BottomNavigationBar
+import com.mobdeve.s18.group9.dinosync.components.NewEggCard
 import com.mobdeve.s18.group9.dinosync.components.TopActionBar
-import com.mobdeve.s18.group9.dinosync.ui.theme.DarkGreen
-import com.mobdeve.s18.group9.dinosync.ui.theme.DinoSyncTheme
-import com.mobdeve.s18.group9.dinosync.ui.theme.Orange
-import com.mobdeve.s18.group9.dinosync.ui.theme.YellowGreen
+import com.mobdeve.s18.group9.dinosync.model.Music
+import com.mobdeve.s18.group9.dinosync.model.MusicSession
+import com.mobdeve.s18.group9.dinosync.model.StudySession
+import com.mobdeve.s18.group9.dinosync.ui.theme.*
+import com.mobdeve.s18.group9.dinosync.viewmodel.MusicSessionViewModel
+import com.mobdeve.s18.group9.dinosync.viewmodel.MusicViewModel
+import com.mobdeve.s18.group9.dinosync.viewmodel.StudySessionViewModel
 import kotlinx.coroutines.delay
-
+import kotlinx.coroutines.launch
+import androidx.compose.ui.graphics.StrokeCap
 
 class FocusStudyActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        /*
-        val userId = intent.getIntExtra("userId", 0)
+
+        val userId = intent.getStringExtra("userId") ?: ""
         val hours = intent.getIntExtra("hours", 0)
         val minutes = intent.getIntExtra("minutes", 0)
         val selectedSubject = intent.getStringExtra("selected_subject") ?: ""
-        */
+        val studySessionId = intent.getStringExtra("study_session_id") ?: ""
+        val moodId = intent.getStringExtra("moodId") ?: ""
 
         setContent {
             DinoSyncTheme {
-                //FocusStudyScreen(userId = userId, hours = hours, minutes = minutes, subject = selectedSubject)
-
-                // TEMPORARY CHECKER FOR SCREEN ACTIVITY
-                androidx.compose.material3.Surface {
-                    androidx.compose.material3.Text(text = "Focus Study Screen")
-                }
+                FocusStudyScreen(
+                    userId = userId,
+                    hours = hours,
+                    minutes = minutes,
+                    subject = selectedSubject,
+                    studySessionId = studySessionId,
+                    moodId = moodId
+                )
             }
         }
     }
@@ -110,26 +98,42 @@ class FocusStudyActivity : ComponentActivity() {
         println("FocusStudyActivity onDestroy()")
     }
 }
-/*
 @Composable
-fun FocusStudyScreen(userId: Int, hours: Int, minutes: Int, subject: String) {
+fun FocusStudyScreen(
+    userId: String,
+    hours: Int,
+    minutes: Int,
+    subject: String,
+    studySessionId: String,
+    moodId: String
+) {
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+
+    val musicVM: MusicViewModel = viewModel()
+    val musicList by musicVM.musicList.collectAsState()
+    var currentMusic by remember { mutableStateOf<Music?>(null) }
+
     val totalTime = (hours * 3600) + (minutes * 60)
     var timeLeft by remember { mutableIntStateOf(totalTime) }
     var isRunning by remember { mutableStateOf(true) }
     var isStopped by remember { mutableStateOf(false) }
-    val musicList = remember { initializeMusic() }
-    val progress = if (totalTime > 0) timeLeft / totalTime.toFloat() else 0f
-    val hoursLeft = timeLeft / 3600
-    val minutesLeft = (timeLeft % 3600) / 60
-    val seconds = timeLeft % 60
-    val formattedTime = "%02d:%02d:%02d".format(hoursLeft, minutesLeft, seconds)
+    val pauseTimestamps = remember { mutableStateListOf<Long>() }
+    val resumeTimestamps = remember { mutableStateListOf<Long>() }
+    val startTime = remember { System.currentTimeMillis() }
 
-    val isLowTime = timeLeft <= totalTime * 0.2
-    val isMidTime = timeLeft <= totalTime * 0.5
+    val studySessionVM: StudySessionViewModel = viewModel()
+    val musicSessionVM: MusicSessionViewModel = viewModel()
+
+    var currentSessionId by remember { mutableStateOf(studySessionId) }
+
+    val progress = if (totalTime > 0) timeLeft / totalTime.toFloat() else 0f
+    val formattedTime =
+        String.format("%02d:%02d:%02d", timeLeft / 3600, (timeLeft % 3600) / 60, timeLeft % 60)
+
     val timerColor = when {
-        isLowTime -> Color.Red
-        isMidTime -> Orange
+        timeLeft <= totalTime * 0.2 -> Color.Red
+        timeLeft <= totalTime * 0.5 -> Orange
         else -> YellowGreen
     }
 
@@ -140,32 +144,41 @@ fun FocusStudyScreen(userId: Int, hours: Int, minutes: Int, subject: String) {
     )
     val interFontName = GoogleFont("Inter")
     val fontFamily = FontFamily(
-        Font(
+        androidx.compose.ui.text.googlefonts.Font(
             googleFont = interFontName,
             fontProvider = provider,
             weight = FontWeight.Normal
         )
     )
 
-    val currentMusic = musicList[1]
     var showHatchCard by remember { mutableStateOf(false) }
     var showNewEggCard by remember { mutableStateOf(false) }
 
     LaunchedEffect(isRunning) {
         if (isRunning) {
             while (timeLeft > 0) {
-                delay(1000L) // 10 secs
+                delay(1000L)
                 timeLeft--
             }
-            isRunning = false
+
+            if (timeLeft == 0 && !isStopped) {
+                isRunning = false
+                isStopped = true
+                val endTime = System.currentTimeMillis()
+                val endTimestamp = Timestamp(endTime / 1000, ((endTime % 1000) * 1000000).toInt())
+                val updates = mapOf("endedAt" to endTimestamp, "status" to "completed")
+                studySessionVM.updateStudySession(currentSessionId, updates)
+            }
         }
     }
 
-    LaunchedEffect(timeLeft) {
-        if (timeLeft == 0) {
-            showHatchCard = true
-            delay(10000L)  // 3 secs
-            showNewEggCard = true
+    LaunchedEffect(Unit) {
+        musicVM.loadMusic()
+    }
+
+    LaunchedEffect(musicList) {
+        if (musicList.isNotEmpty() && currentMusic == null) {
+            currentMusic = musicList.first()
         }
     }
 
@@ -175,13 +188,21 @@ fun FocusStudyScreen(userId: Int, hours: Int, minutes: Int, subject: String) {
             BottomNavigationBar(
                 selectedItem = null,
                 onGroupsClick = {
-                    context.startActivity(Intent(context, DiscoverGroupsActivity::class.java))
+                    context.startActivity(
+                        Intent(
+                            context,
+                            DiscoverGroupsActivity::class.java
+                        )
+                    )
                 },
-                onHomeClick = {
-                    context.startActivity(Intent(context, MainActivity::class.java))
-                },
+                onHomeClick = { context.startActivity(Intent(context, MainActivity::class.java)) },
                 onStatsClick = {
-                    context.startActivity(Intent(context, StatisticsActivity::class.java))
+                    context.startActivity(
+                        Intent(
+                            context,
+                            StatisticsActivity::class.java
+                        )
+                    )
                 }
             )
         }
@@ -196,17 +217,16 @@ fun FocusStudyScreen(userId: Int, hours: Int, minutes: Int, subject: String) {
             Spacer(modifier = Modifier.height(16.dp))
             TopActionBar(
                 onProfileClick = {
-                    val intent = Intent(context, ProfileActivity::class.java)
-                    intent.putExtra("userId", userId)
-                    context.startActivity(intent)
+                    context.startActivity(Intent(context, ProfileActivity::class.java).apply {
+                        putExtra("userId", userId)
+                    })
                 },
                 onSettingsClick = {
-                    val intent = Intent(context, SettingsActivity::class.java)
-                    intent.putExtra("userId", userId)
-                    context.startActivity(intent)
+                    context.startActivity(Intent(context, SettingsActivity::class.java).apply {
+                        putExtra("userId", userId)
+                    })
                 }
             )
-
             Spacer(modifier = Modifier.height(12.dp))
 
             Box(
@@ -215,15 +235,17 @@ fun FocusStudyScreen(userId: Int, hours: Int, minutes: Int, subject: String) {
                     .border(1.dp, Color.White, RoundedCornerShape(8.dp))
                     .padding(horizontal = 50.dp, vertical = 10.dp)
             ) {
-                Text(subject, fontWeight = FontWeight.ExtraBold, fontFamily = fontFamily, color = Color.White)
+                Text(
+                    subject,
+                    fontWeight = FontWeight.ExtraBold,
+                    fontFamily = fontFamily,
+                    color = Color.White
+                )
             }
 
             Spacer(modifier = Modifier.height(50.dp))
 
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier.size(360.dp)
-            ) {
+            Box(contentAlignment = Alignment.Center, modifier = Modifier.size(360.dp)) {
                 Canvas(modifier = Modifier.fillMaxSize()) {
                     val strokeWidth = 50f
                     drawArc(
@@ -247,46 +269,84 @@ fun FocusStudyScreen(userId: Int, hours: Int, minutes: Int, subject: String) {
                     fontSize = 50.sp,
                     fontWeight = FontWeight.Bold,
                     fontFamily = fontFamily,
-                    modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .padding(top = 90.dp)
+                    modifier = Modifier.align(Alignment.TopCenter).padding(top = 90.dp)
                 )
             }
 
             Row(
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .align(Alignment.CenterHorizontally)
-                    .offset(y = (-190).dp)
+                modifier = Modifier.align(Alignment.CenterHorizontally).offset(y = (-190).dp)
             ) {
                 OutlinedButton(
                     onClick = {
-                        timeLeft = totalTime
+                        timeLeft = 0
                         isRunning = false
                         isStopped = true
+                        val endTime = System.currentTimeMillis()
+                        val endTimestamp =
+                            Timestamp(endTime / 1000, ((endTime % 1000) * 1000000).toInt())
+                        val updates = mapOf("endedAt" to endTimestamp, "status" to "completed")
+                        studySessionVM.updateStudySession(currentSessionId, updates)
                     },
                     colors = ButtonDefaults.outlinedButtonColors(Color.Transparent),
                     modifier = Modifier.width(100.dp).height(35.dp)
                 ) {
                     Text("Stop", color = Color.White, fontFamily = fontFamily)
                 }
+
                 Spacer(modifier = Modifier.width(20.dp))
                 Button(
                     onClick = {
-                        if (timeLeft == 0) {
-                            timeLeft = totalTime
-                            isRunning = true
-                            isStopped = false
+                        val now = System.currentTimeMillis()
+
+                        if (isStopped || timeLeft == 0) {
+                            coroutineScope.launch {
+                                val newSession = StudySession(
+                                    userId = userId.toString(),
+                                    courseId = subject,
+                                    hourSet = hours,
+                                    minuteSet = minutes,
+                                    moodId = moodId,
+                                    sessionDate = getCurrentDate(),
+                                    startedAt = Timestamp.now(),
+                                    status = "active"
+                                )
+
+                                // Call the ViewModel method with callback correctly
+                                studySessionVM.createStudySessionAndGetId(newSession) { newId ->
+                                    currentSessionId = newId
+                                    timeLeft = totalTime
+                                    isRunning = true
+                                    isStopped = false
+                                    pauseTimestamps.clear()
+                                    resumeTimestamps.clear()
+                                }
+                            }
                         } else {
                             isRunning = !isRunning
+
+                            coroutineScope.launch {
+                                val updates = mapOf(
+                                    "status" to if (isRunning) "active" else "paused"
+                                )
+                                studySessionVM.updateStudySession(currentSessionId, updates)
+
+                                if (isRunning) {
+                                    resumeTimestamps.add(now)
+                                } else {
+                                    pauseTimestamps.add(now)
+                                }
+                            }
                         }
                     },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color.White,
                         contentColor = Color.DarkGray
                     ),
-                    modifier = Modifier.width(100.dp).height(35.dp)
+                    modifier = Modifier
+                        .width(100.dp)
+                        .height(35.dp)
                 ) {
                     Text(
                         text = when {
@@ -306,43 +366,45 @@ fun FocusStudyScreen(userId: Int, hours: Int, minutes: Int, subject: String) {
                 Box(
                     modifier = Modifier.clip(RoundedCornerShape(12.dp)).background(Color.LightGray)
                 ) {
-                    AudioPlayerCard(
-                        currentMusic = currentMusic,
-                        progress = 0.5f,
-                        onShuffle = { },
-                        onPrevious = { },
-                        onPlayPause = { },
-                        onNext = { },
-                        onRepeat = { }
-                    )
+                    currentMusic?.let { music ->
+                        AudioPlayerCard(
+                            currentMusic = music,
+                            progress = 0.5f,
+                            onShuffle = {},
+                            onPrevious = {},
+                            onPlayPause = {
+                                musicSessionVM.createMusicSession(
+                                    MusicSession(
+                                        artist = music.artist,
+                                        musicTitle = music.title,
+                                        musicPlatform = "In-App",
+                                        musicUri = music.albumArtUri,
+                                        startTime = Timestamp.now(),
+                                        userId = userId.toString(),
+                                        studySessionId = currentSessionId
+                                    )
+                                )
+                            },
+                            onNext = {},
+                            onRepeat = {}
+                        )
+                    }
                 }
             }
         }
     }
+
     if (showHatchCard) {
-        Box(
-            modifier = Modifier.fillMaxSize().size(500.dp),
-            contentAlignment = Alignment.Center
-        ) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             HatchCard()
         }
     }
     if (showNewEggCard) {
-        Box(
-            modifier = Modifier.fillMaxSize().size(500.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            NewEggCard(
-                onContinueClick = {
-                    showHatchCard = false
-                    showNewEggCard = false
-                }
-            )
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            NewEggCard(onContinueClick = {
+                showHatchCard = false
+                showNewEggCard = false
+            })
         }
     }
 }
-
- */
-
-
-
