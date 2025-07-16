@@ -313,7 +313,6 @@ fun FocusStudyScreen(
                                     status = "active"
                                 )
 
-                                // Call the ViewModel method with callback correctly
                                 studySessionVM.createStudySessionAndGetId(newSession) { newId ->
                                     currentSessionId = newId
                                     timeLeft = totalTime

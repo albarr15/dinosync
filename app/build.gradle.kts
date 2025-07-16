@@ -80,4 +80,7 @@ dependencies {
 
     implementation(libs.coil.compose)
 
+    // Import Spotify API
+    implementation ("com.spotify.android:auth:1.2.5")
+
 }

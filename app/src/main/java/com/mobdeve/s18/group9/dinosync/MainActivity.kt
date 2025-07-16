@@ -113,6 +113,12 @@ import java.util.Date
 import coil.compose.AsyncImage
 import androidx.compose.ui.layout.ContentScale
 
+enum class PlaybackMode {
+    IN_APP,
+    SPOTIFY,
+    YOUTUBEMUSIC
+}
+
 class MainActivity : ComponentActivity() {
 
     @RequiresApi(Build.VERSION_CODES.O)
@@ -181,6 +187,9 @@ fun MainScreen(userId: String) {
     val musicSessions by musicVM.observeMusicSessions(userId).collectAsState(initial = emptyList())
     var currentMusic by remember { mutableStateOf<Music?>(null) }
 
+    var playbackMode by remember { mutableStateOf(PlaybackMode.IN_APP) }
+
+
     val todoVM: TodoViewModel = viewModel()
     val todoDocs by todoVM.todos.collectAsState()
     val todoItems = todoDocs.map { it.item }
@@ -191,18 +200,6 @@ fun MainScreen(userId: String) {
         }
     }
 
-    /*
-    var isRunning by remember { mutableStateOf(false) }
-    var showMoodDialog by remember { mutableStateOf(false) }
-    var hoursSet by remember { mutableStateOf("") }
-    var minutesSet by remember { mutableStateOf("") }
-
-    val db = FirebaseFirestore.getInstance()
-    var userList by remember { mutableStateOf<List<User>>(emptyList()) }
-    var selectedUser by remember { mutableStateOf<User?>(null) }
-    var todoItems by remember { mutableStateOf<List<TodoItem>>(emptyList()) }
-    var courseList by remember { mutableStateOf<List<String>>(emptyList()) }
-    */
 
     LaunchedEffect(Unit) {
         moodVM.loadMoods()
@@ -257,11 +254,12 @@ fun MainScreen(userId: String) {
                     val intent = Intent(context, ProfileActivity::class.java)
                     intent.putExtra("userId", userId)
                     context.startActivity(intent)
-                                 },
+                },
                 onSettingsClick = {
                     val intent = Intent(context, SettingsActivity::class.java)
                     intent.putExtra("userId", userId)
-                    context.startActivity(intent) }
+                    context.startActivity(intent)
+                }
             )
 
             Text(
@@ -314,7 +312,7 @@ fun MainScreen(userId: String) {
                         DropdownMenuItem(
                             text = { Text(courseName) },
                             onClick = {
-                                selectedCourse  = courseName
+                                selectedCourse = courseName
                                 expanded = false
                             }
                         )
@@ -341,61 +339,68 @@ fun MainScreen(userId: String) {
                 AlertDialog(
                     onDismissRequest = { showMoodDialog = false },
                     confirmButton = {
-                        Button(onClick = {
-                            showMoodDialog = false
-                            val hourInt = hoursSet.toIntOrNull() ?: 0
-                            val minuteInt = minutesSet.toIntOrNull() ?: 0
-                            if (hourInt == 0 && minuteInt == 0) return@Button
+                        Button(
+                            onClick = {
+                                showMoodDialog = false
+                                val hourInt = hoursSet.toIntOrNull() ?: 0
+                                val minuteInt = minutesSet.toIntOrNull() ?: 0
+                                if (hourInt == 0 && minuteInt == 0) return@Button
 
-                            val moodId = selectedMood?.imageKey ?: return@Button
-                            val sessionDate = getCurrentDate()
-                            val startedAt = getCurrentDateTime()
+                                val moodId = selectedMood?.imageKey ?: return@Button
+                                val sessionDate = getCurrentDate()
+                                val startedAt = getCurrentDateTime()
 
-                            val session = StudySession(
-                                userId = userId,
-                                courseId = selectedCourse,
-                                hourSet = hourInt,
-                                minuteSet = minuteInt,
-                                moodId = moodId,
-                                sessionDate = sessionDate,
-                                startedAt = getCurrentTimestamp(),
-                                endedAt = null,
-                                status = "active" // active,pause, reset, completed
-                            )
-
-                            studySessionVM.createStudySessionAndGetId(session) { sessionId ->
-                                dailyHistoryVM.updateDailyHistory(
+                                val session = StudySession(
                                     userId = userId,
-                                    date = sessionDate,
+                                    courseId = selectedCourse,
+                                    hourSet = hourInt,
+                                    minuteSet = minuteInt,
                                     moodId = moodId,
-                                    hours = hourInt + (minuteInt / 60f)
+                                    sessionDate = sessionDate,
+                                    startedAt = getCurrentTimestamp(),
+                                    endedAt = null,
+                                    status = "active" // active,pause, reset, completed
                                 )
 
-                                Toast.makeText(context, "Session logged successfully!", Toast.LENGTH_SHORT).show()
+                                studySessionVM.createStudySessionAndGetId(session) { sessionId ->
+                                    dailyHistoryVM.updateDailyHistory(
+                                        userId = userId,
+                                        date = sessionDate,
+                                        moodId = moodId,
+                                        hours = hourInt + (minuteInt / 60f)
+                                    )
 
-                                // Reset fields
-                                hoursSet = ""
-                                minutesSet = ""
-                                selectedMood = null
-                                showMoodDialog = false
+                                    Toast.makeText(
+                                        context,
+                                        "Session logged successfully!",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
 
-                                // Start FocusStudyActivity with sessionId
-                                val intent = Intent(context, FocusStudyActivity::class.java).apply {
-                                    putExtra("userId", userId)
-                                    putExtra("hours", hourInt)
-                                    putExtra("minutes", minuteInt)
-                                    putExtra("selected_subject", selectedCourse)
-                                    putExtra("study_session_id", sessionId)
-                                    putExtra("moodId", moodId)
+                                    // Reset fields
+                                    hoursSet = ""
+                                    minutesSet = ""
+                                    selectedMood = null
+                                    showMoodDialog = false
+
+                                    // Start FocusStudyActivity with sessionId
+                                    val intent =
+                                        Intent(context, FocusStudyActivity::class.java).apply {
+                                            putExtra("userId", userId)
+                                            putExtra("hours", hourInt)
+                                            putExtra("minutes", minuteInt)
+                                            putExtra("selected_subject", selectedCourse)
+                                            putExtra("study_session_id", sessionId)
+                                            putExtra("moodId", moodId)
+                                        }
+                                    context.startActivity(intent)
                                 }
-                                context.startActivity(intent)
-                            }
 
-                        },
+                            },
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = DarkGreen,
                                 contentColor = Color.Black
-                            )) {
+                            )
+                        ) {
                             Text("Log", color = Color.White)
                         }
                     },
@@ -454,9 +459,9 @@ fun MainScreen(userId: String) {
                 )
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(5.dp))
             HorizontalDivider(modifier = Modifier, thickness = 1.dp, color = Color.Gray)
-            Spacer(modifier = Modifier.height(20.dp))
+
 
 
             /******** TodoList *********/
@@ -483,9 +488,42 @@ fun MainScreen(userId: String) {
                 }
             )
 
-            Spacer(modifier = Modifier.height(25.dp))
+            Spacer(modifier = Modifier.height(5.dp))
+            Row(horizontalArrangement = Arrangement.Center) {
+                Button(onClick = {
+                    playbackMode = PlaybackMode.IN_APP
+                },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = DarkGreen,
+                        contentColor = Color.White
+                    )) {
+                    Text("In-App")
+                }
+                Spacer(modifier = Modifier.width(10.dp))
+                Button(onClick = {
+                    playbackMode = PlaybackMode.SPOTIFY
+                },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = DarkGreen,
+                        contentColor = Color.White
+                    )) {
+                    Text("Spotify")
+                }
+                Spacer(modifier = Modifier.width(10.dp))
+                Button(onClick = {
+                    playbackMode = PlaybackMode.YOUTUBEMUSIC
+                },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = DarkGreen,
+                        contentColor = Color.White
+                    )) {
+                    Text("Youtube Music")
+                }
+            }
 
+            Spacer(modifier = Modifier.height(10.dp))
             /******** Music Activity *********/
+            /*
             currentMusic?.let { safeMusic ->
                 AudioPlayerCard(
                     currentMusic = safeMusic,
@@ -518,8 +556,71 @@ fun MainScreen(userId: String) {
                     },
                     onRepeat = { /* optional logic */ }
                 )
-            }
+            }*/
+            when (playbackMode) {
+                PlaybackMode.IN_APP -> {
+                    currentMusic?.let { safeMusic ->
+                        AudioPlayerCard(
+                            currentMusic = safeMusic,
+                            progress = 0.5f,
+                            onShuffle = {
+                                val shuffled = musicList.shuffled().firstOrNull()
+                                currentMusic = shuffled
+                            },
+                            onPrevious = {
+                                val index = musicList.indexOf(safeMusic)
+                                if (index > 0) currentMusic = musicList[index - 1]
+                            },
+                            onPlayPause = {
+                                musicVM.createMusicSession(
+                                    MusicSession(
+                                        userId = userId,
+                                        studySessionId = "",
+                                        artist = safeMusic.artist,
+                                        musicPlatform = "In-App",
+                                        musicTitle = safeMusic.title,
+                                        musicUri = safeMusic.albumArtUri,
+                                        startTime = getCurrentTimestamp(),
+                                        endTime = null
+                                    )
+                                )
+                            },
+                            onNext = {
+                                val index = musicList.indexOf(safeMusic)
+                                if (index < musicList.lastIndex) currentMusic = musicList[index + 1]
+                            },
+                            onRepeat = {}
+                        )
+                    }
+                }
 
+                PlaybackMode.SPOTIFY -> {
+                    // Replace later
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(160.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color.LightGray),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("Spotify mode UI coming soon…")
+                    }
+                }
+                PlaybackMode.YOUTUBEMUSIC -> {
+                    // Replace later
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(160.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color.LightGray),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("Youtube Music mode UI coming soon…")
+                    }
+                }
+            }
         }
     }
 }
