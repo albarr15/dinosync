@@ -360,7 +360,7 @@ fun MainScreen(userId: String) {
                                 sessionDate = sessionDate,
                                 startedAt = getCurrentTimestamp(),
                                 endedAt = null,
-                                status = "active" // active, pause, reset, completed
+                                status = "active" // active,pause, reset, completed
                             )
                             studySessionVM.createStudySession(session)
 
@@ -824,8 +824,6 @@ fun TodoList(
 
                             IconButton(onClick = {
                                 if (newItemTitle.isNotBlank()) {
-                                    //val newId = if (todoItems.isEmpty()) 1 else (todoItems.maxOf { it.id } + 1)
-                                    //onItemsChange(todoItems + TodoItem(id = newId, title = newItemTitle))
                                     onAddItem(newItemTitle)
                                     newItemTitle = ""
                                 }
@@ -837,6 +835,7 @@ fun TodoList(
 
                     itemsIndexed(todoItems) { _, doc ->
                         val item = doc.item
+                        var localTitle by remember(doc.id) { mutableStateOf(item.title) }
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier
@@ -844,9 +843,9 @@ fun TodoList(
                                 .height(50.dp)
                         ) {
                             OutlinedTextField(
-                                value = item.title,
+                                value = localTitle,
                                 onValueChange = { newTitle ->
-                                    onEditTitle(doc.id, newTitle)
+                                    localTitle = newTitle
                                 },
                                 singleLine = true,
                                 placeholder = { Text("Task...") },
@@ -859,14 +858,15 @@ fun TodoList(
                                     focusedIndicatorColor = DarkGreen,
                                     focusedLabelColor = DarkGreen
                                 ),
-                                modifier = Modifier.weight(1f)
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .onFocusChanged { focusState ->
+                                    if (!focusState.isFocused && localTitle != item.title) {
+                                        onEditTitle(doc.id, localTitle)
+                                    }
+                                }
                             )
                             IconButton(onClick = {
-                                /*
-                                val newList = todoItems.toMutableList()
-                                newList.removeAt(index)
-                                onItemsChange(newList)
-                                */
                                 onToggleCheck(doc.id, item)
                             }) {
                                 Icon(
