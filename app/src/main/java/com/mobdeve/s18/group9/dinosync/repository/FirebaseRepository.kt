@@ -113,31 +113,6 @@ class FirebaseRepository {
         return snapshot.toObjects(Mood::class.java)
     }
 
-    fun seedMoodsToFirestore() {
-        val firestore = FirebaseFirestore.getInstance()
-        val moodsRef = firestore.collection("moods")
-
-        val moods = listOf(
-            Mood(imageKey = "SentimentVeryDissatisfied", name = "Very Sad"),
-            Mood(imageKey = "SentimentDissatisfied", name = "Sad"),
-            Mood(imageKey = "SentimentNeutral", name = "Neutral"),
-            Mood(imageKey = "SentimentSatisfied", name = "Happy"),
-            Mood(imageKey = "SentimentVerySatisfied", name = "Very Happy")
-        )
-
-        moods.forEach { mood ->
-            moodsRef.add(mood)
-                .addOnSuccessListener {
-                    println("Mood '${mood.name}' added with ID: ${it.id}")
-                }
-                .addOnFailureListener {
-                    println("Failed to add mood '${mood.name}': ${it.message}")
-                }
-        }
-    }
-
-
-
     // MUSIC ✔️
     suspend fun getAllMusic(): List<Music> {
         val snapshot = db.collection("music").get().await()
