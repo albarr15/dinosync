@@ -33,6 +33,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mobdeve.s18.group9.dinosync.model.Music
 import com.mobdeve.s18.group9.dinosync.ui.theme.GreenGray
+import coil.compose.AsyncImage
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import com.mobdeve.s18.group9.dinosync.R
 
 @Composable
 fun AudioPlayerCard(
@@ -54,13 +58,16 @@ fun AudioPlayerCard(
     ) {
         Row(modifier = Modifier.fillMaxSize()) {
 
-            Box(
+            AsyncImage(
+                model = currentMusic.albumArtUri,
+                contentDescription = "Album Art",
+                contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .width(120.dp)
                     .fillMaxHeight()
                     .clip(RoundedCornerShape(8.dp))
-                    .background(Color.DarkGray.copy(alpha = 0.2f))
             )
+
 
             Column(
                 modifier = Modifier

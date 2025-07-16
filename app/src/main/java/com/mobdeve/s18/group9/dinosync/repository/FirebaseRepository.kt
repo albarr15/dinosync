@@ -1,5 +1,6 @@
 package com.mobdeve.s18.group9.dinosync.repository
 
+import android.util.Log
 import com.google.firebase.firestore.FirebaseFirestore
 import com.mobdeve.s18.group9.dinosync.model.*
 import kotlinx.coroutines.tasks.await
@@ -19,11 +20,15 @@ class FirebaseRepository {
         return snapshot.toObjects(Achievement::class.java)
     }
 
+
+
     // COURSES ✔️
     suspend fun getAllCourses(): List<Course> {
         val snapshot = db.collection("course").get().await()
         return snapshot.toObjects(Course::class.java)
     }
+
+
 
     // DAILY STUDY HISTORY ✔️
     suspend fun getDailyStudyHistory(userId: String): List<DailyStudyHistory> {
@@ -32,6 +37,30 @@ class FirebaseRepository {
             .get().await()
         return snapshot.toObjects(DailyStudyHistory::class.java)
     }
+
+    suspend fun getDailyStudyHistoryByDate(userId: String, date: String): DailyStudyHistory? {
+        val db = FirebaseFirestore.getInstance()
+        val querySnapshot = db.collection("dailystudyhistory")
+            .whereEqualTo("userId", userId)
+            .whereEqualTo("date", date)
+            .get()
+            .await()
+
+        return querySnapshot.documents.firstOrNull()?.toObject(DailyStudyHistory::class.java)
+    }
+
+    suspend fun setDailyStudyHistory(history: DailyStudyHistory) {
+        val db = FirebaseFirestore.getInstance()
+        val docId = "${history.userId}_${history.date}"
+        db.collection("dailystudyhistory")
+            .document(docId)
+            .set(history)
+            .await()
+    }
+
+
+
+
 
     // DINO CATALOG✔️
     suspend fun getAllDino(): List<DinoCatalog> {
@@ -56,6 +85,8 @@ class FirebaseRepository {
 
         awaitClose { listener.remove() }
     }
+
+
     // GROUP MEMBERS ✔️
     suspend fun getGroupMembers(groupId: String): List<GroupMember> {
         val snapshot = db.collection("groupmember")
@@ -63,6 +94,8 @@ class FirebaseRepository {
             .get().await()
         return snapshot.toObjects(GroupMember::class.java)
     }
+
+
 
     // GROUP SESSIONS  ✔️
     suspend fun getGroupSessions(groupId: String): List<GroupSession> {
@@ -72,17 +105,46 @@ class FirebaseRepository {
         return snapshot.toObjects(GroupSession::class.java)
     }
 
+
+
     // MOODS ✔️
     suspend fun getAllMoods(): List<Mood> {
         val snapshot = db.collection("mood").get().await()
         return snapshot.toObjects(Mood::class.java)
     }
 
+    fun seedMoodsToFirestore() {
+        val firestore = FirebaseFirestore.getInstance()
+        val moodsRef = firestore.collection("moods")
+
+        val moods = listOf(
+            Mood(imageKey = "SentimentVeryDissatisfied", name = "Very Sad"),
+            Mood(imageKey = "SentimentDissatisfied", name = "Sad"),
+            Mood(imageKey = "SentimentNeutral", name = "Neutral"),
+            Mood(imageKey = "SentimentSatisfied", name = "Happy"),
+            Mood(imageKey = "SentimentVerySatisfied", name = "Very Happy")
+        )
+
+        moods.forEach { mood ->
+            moodsRef.add(mood)
+                .addOnSuccessListener {
+                    println("Mood '${mood.name}' added with ID: ${it.id}")
+                }
+                .addOnFailureListener {
+                    println("Failed to add mood '${mood.name}': ${it.message}")
+                }
+        }
+    }
+
+
+
     // MUSIC ✔️
     suspend fun getAllMusic(): List<Music> {
         val snapshot = db.collection("music").get().await()
         return snapshot.toObjects(Music::class.java)
     }
+
+
 
     // MUSIC SESSION ✔️
     suspend fun getMusicSessionsByUser(userId: String): List<MusicSession> {
@@ -91,6 +153,12 @@ class FirebaseRepository {
             .get().await()
         return snapshot.toObjects(MusicSession::class.java)
     }
+    suspend fun createMusicSession(musicSession: MusicSession) {
+        db.collection("musicsession")
+            .add(musicSession)
+            .await()
+    }
+
 
     // Real-time listener for MusicSession
     fun listenToMusicSessions(userId: String): Flow<List<MusicSession>> = callbackFlow {
@@ -108,6 +176,8 @@ class FirebaseRepository {
         awaitClose { listener.remove() }
     }
 
+
+
     // USERS ✔️
     suspend fun getUserById(userId: String): User? {
         val snapshot = db.collection("users").document(userId).get().await()
@@ -119,6 +189,8 @@ class FirebaseRepository {
         val snapshot = db.collection("users").get().await()
         return snapshot.toObjects(User::class.java)
     }
+
+
 
     // STUDY SESSIONS ✔️
     suspend fun getStudySessionsByUserId(userId: String): List<StudySession> {
@@ -144,20 +216,19 @@ class FirebaseRepository {
         awaitClose { listener.remove() }
     }
 
+    suspend fun addStudySession(session: StudySession) {
+        val db = FirebaseFirestore.getInstance()
+        val studySessionsRef = db.collection("studysession")
+        studySessionsRef.add(session)
+    }
+
+
+
     // STUDY GROUPS ✔️
     suspend fun getAllStudyGroups(): List<StudyGroup> {
         val snapshot = db.collection("studygroup").get().await()
         return snapshot.toObjects(StudyGroup::class.java)
     }
-
-    // TODO_ITEMS ️ ✔️
-    suspend fun getTodosByUserId(userId: String): List<TodoItem> {
-        val snapshot = db.collection("todoitem")
-            .whereEqualTo("userId", userId)
-            .get().await()
-        return snapshot.toObjects(TodoItem::class.java)
-    }
-
     // Real-time listener for group sessions
     fun listenToGroupSessions(groupId: String): Flow<List<GroupSession>> = callbackFlow {
         val listenerRegistration: ListenerRegistration = db.collection("groupsession")
@@ -174,5 +245,41 @@ class FirebaseRepository {
 
         awaitClose { listenerRegistration.remove() }
     }
+
+
+    // TODO_ITEMS ️ ✔️
+    suspend fun getTodosByUserId(userId: String): List<TodoDocument> {
+        val snapshot = db.collection("todoitem")
+            .whereEqualTo("userId", userId)
+            .get()
+            .await()
+
+        return snapshot.documents.mapNotNull { doc ->
+            val item = doc.toObject(TodoItem::class.java)
+            item?.let {
+                TodoDocument(id = doc.id, item = it)
+            }
+        }
+    }
+
+    // CREATE a new Todo
+    suspend fun addTodoItem(item: TodoItem): String {
+        val docRef = db.collection("todoitem").add(item).await()
+        return docRef.id
+    }
+
+
+    // UPDATE a Todo (by document ID)
+    suspend fun updateTodoItem(id: String, updatedItem: TodoItem) {
+        db.collection("todoitem").document(id).set(updatedItem).await()
+    }
+
+
+    // DELETE a Todo (by document ID)
+    suspend fun deleteTodoItem(id: String) {
+        db.collection("todoitem").document(id).delete().await()
+    }
+
+
 }
 
