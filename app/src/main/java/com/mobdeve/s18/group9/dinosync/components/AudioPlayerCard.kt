@@ -49,7 +49,7 @@ fun AudioPlayerCard(
     onNext: () -> Unit = {},
     onRepeat: () -> Unit = {}
 ) {
-    Box(
+    Column(
         modifier = modifier
             .fillMaxWidth()
             .height(160.dp)

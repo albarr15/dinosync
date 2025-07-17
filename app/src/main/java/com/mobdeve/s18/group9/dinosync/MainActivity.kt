@@ -3,6 +3,7 @@ package com.mobdeve.s18.group9.dinosync
 
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -86,6 +87,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.mobdeve.s18.group9.dinosync.components.AudioPlayerCard
+import com.mobdeve.s18.group9.dinosync.components.AudioPlayerCardSpotify
 import com.mobdeve.s18.group9.dinosync.components.BottomNavigationBar
 import com.mobdeve.s18.group9.dinosync.components.TopActionBar
 import com.mobdeve.s18.group9.dinosync.model.Mood
@@ -116,10 +118,13 @@ import com.spotify.android.appremote.api.SpotifyAppRemote
 import com.spotify.android.appremote.api.error.CouldNotFindSpotifyApp
 import com.spotify.android.appremote.api.error.NotLoggedInException
 import com.spotify.android.appremote.api.error.UserNotAuthorizedException
+import com.spotify.protocol.types.PlayerState
+import com.spotify.protocol.types.Track
 
 import com.spotify.sdk.android.auth.AuthorizationClient
 import com.spotify.sdk.android.auth.AuthorizationRequest
 import com.spotify.sdk.android.auth.AuthorizationResponse
+import androidx.compose.runtime.State
 
 
 enum class PlaybackMode {
@@ -129,116 +134,141 @@ enum class PlaybackMode {
 
 class MainActivity : ComponentActivity() {
 
-        private var spotifyAppRemote: SpotifyAppRemote? = null
+    private var spotifyAppRemote: SpotifyAppRemote? = null
+    private val spotifyTitleState = mutableStateOf("Spotify Track")
+    private val spotifyArtistState = mutableStateOf("Artist")
+    private val spotifyAlbumArtBitmap  = mutableStateOf<Bitmap?>(null)
+    private val spotifyIsPlayingState = mutableStateOf(false)
+    private val spotifyProgressState = mutableStateOf(0f)
 
-        @RequiresApi(Build.VERSION_CODES.O)
-        override fun onCreate(savedInstanceState: Bundle?) {
-            super.onCreate(savedInstanceState)
-            enableEdgeToEdge()
 
-            val userId = FirebaseAuth.getInstance().currentUser?.uid
-                ?: throw IllegalStateException("No authenticated user!")
+    @RequiresApi(Build.VERSION_CODES.O)
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
 
-            // Only open login if user isn't already connected — this avoids redundant login popups.
-            val request = AuthorizationRequest.Builder(
-                SpotifyConstants.CLIENT_ID,
-                AuthorizationResponse.Type.TOKEN,
-                SpotifyConstants.REDIRECT_URI
-            )
-                .setScopes(SpotifyConstants.SCOPES)
-                .build()
+        val userId = FirebaseAuth.getInstance().currentUser?.uid
+            ?: throw IllegalStateException("No authenticated user!")
 
-            AuthorizationClient.openLoginActivity(this, SpotifyConstants.REQUEST_CODE, request)
+        // Only open login if user isn't already connected — this avoids redundant login popups.
+        val request = AuthorizationRequest.Builder(
+            SpotifyConstants.CLIENT_ID,
+            AuthorizationResponse.Type.TOKEN,
+            SpotifyConstants.REDIRECT_URI
+        )
+            .setScopes(SpotifyConstants.SCOPES)
+            .build()
 
-            setContent {
-                DinoSyncTheme {
-                    MainScreen(userId = userId)
-                }
+        AuthorizationClient.openLoginActivity(this, SpotifyConstants.REQUEST_CODE, request)
+
+        setContent {
+            DinoSyncTheme {
+                MainScreen(
+                    userId = userId,
+                    spotifyAppRemote = spotifyAppRemote,
+                    spotifyTitle = spotifyTitleState,
+                    spotifyArtist = spotifyArtistState,
+                    spotifyAlbumArtBitmap  = spotifyAlbumArtBitmap,
+                    spotifyIsPlaying = spotifyIsPlayingState,
+                    spotifyProgress = spotifyProgressState
+                )
             }
         }
+    }
 
-        override fun onStart() {
-            super.onStart()
-            println("MainActivity onStart()")
+    override fun onStart() {
+        super.onStart()
+        println("MainActivity onStart()")
 
-            // Always disconnect first (Spotify's recommendation)
-            spotifyAppRemote?.let { SpotifyAppRemote.disconnect(it) }
+        // Always disconnect first (Spotify's recommendation)
+        spotifyAppRemote?.let { SpotifyAppRemote.disconnect(it) }
 
-            val connectionParams = ConnectionParams.Builder(SpotifyConstants.CLIENT_ID)
-                .setRedirectUri(SpotifyConstants.REDIRECT_URI)
-                .showAuthView(true)
-                .build()
+        val connectionParams = ConnectionParams.Builder(SpotifyConstants.CLIENT_ID)
+            .setRedirectUri(SpotifyConstants.REDIRECT_URI)
+            .showAuthView(true)
+            .build()
 
-            SpotifyAppRemote.connect(this, connectionParams, object : Connector.ConnectionListener {
-                override fun onConnected(remote: SpotifyAppRemote) {
-                    spotifyAppRemote = remote
-                    Log.d("Spotify", "Connected to Spotify App Remote")
-                    connected()
+        SpotifyAppRemote.connect(this, connectionParams, object : Connector.ConnectionListener {
+            override fun onConnected(remote: SpotifyAppRemote) {
+                spotifyAppRemote = remote
+                Log.d("♫ Spotify", "Connected to Spotify App Remote")
+                connected()
+            }
+
+            override fun onFailure(error: Throwable) {
+                Log.e("♫ Spotify", "Connection failed", error)
+                when (error) {
+                    is NotLoggedInException, is UserNotAuthorizedException -> {
+                        Log.e("♫ Spotify", "User not logged in or authorized.")
+                        // You could show a UI prompt or button to re-initiate login flow here.
+                    }
+
+                    is CouldNotFindSpotifyApp -> {
+                        Log.e("♫ Spotify", "Spotify app not found. Prompt to install.")
+                    }
                 }
+            }
+        })
+    }
 
-                override fun onFailure(error: Throwable) {
-                    Log.e("Spotify", "Connection failed", error)
-                    when (error) {
-                        is NotLoggedInException, is UserNotAuthorizedException -> {
-                            Log.e("Spotify", "User not logged in or authorized.")
-                            // You could show a UI prompt or button to re-initiate login flow here.
+    override fun onStop() {
+        super.onStop()
+        println("MainActivity onStop()")
+
+        spotifyAppRemote?.let {
+            SpotifyAppRemote.disconnect(it)
+            spotifyAppRemote = null
+            Log.d("♫ Spotify", "Disconnected from App Remote")
+        }
+    }
+
+    private fun connected() {
+        spotifyAppRemote?.apply {
+            playerApi.play("spotify:track:6fKIyDJHZ9m84jRhSmpuwS")
+
+            playerApi.subscribeToPlayerState()
+                .setEventCallback { playerState ->
+                    val track = playerState.track ?: return@setEventCallback
+
+                    // Update states
+                    spotifyTitleState.value = track.name
+                    spotifyArtistState.value = track.artist.name
+                    spotifyIsPlayingState.value = !playerState.isPaused
+
+                    val duration = track.duration.toFloat().coerceAtLeast(1f)
+                    spotifyProgressState.value = playerState.playbackPosition.toFloat() / duration
+
+                    // Load album art from Spotify API
+                    imagesApi.getImage(track.imageUri)
+                        .setResultCallback { bitmap ->
+                            spotifyAlbumArtBitmap.value = bitmap
                         }
-                        is CouldNotFindSpotifyApp -> {
-                            Log.e("Spotify", "Spotify app not found. Prompt to install.")
-                        }
-                    }
                 }
-            })
         }
+    }
 
-        override fun onStop() {
-            super.onStop()
-            println("MainActivity onStop()")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, intent: Intent?) {
+        super.onActivityResult(requestCode, resultCode, intent)
 
-            spotifyAppRemote?.let {
-                SpotifyAppRemote.disconnect(it)
-                spotifyAppRemote = null
-                Log.d("Spotify", "Disconnected from App Remote")
-            }
-        }
+        if (requestCode == SpotifyConstants.REQUEST_CODE) {
+            val response = AuthorizationClient.getResponse(resultCode, intent)
+            when (response.type) {
+                AuthorizationResponse.Type.TOKEN -> {
+                    val accessToken = response.accessToken
+                    Log.d("♫ SpotifyAuth", "Access token received: $accessToken")
+                    // You don't need accessToken here unless you're calling the Web API
+                }
 
-        private fun connected() {
-            spotifyAppRemote?.apply {
-                playerApi.play("spotify:playlist:37i9dQZF1DX2sUQwD7tbmL")
+                AuthorizationResponse.Type.ERROR -> {
+                    Log.e("♫ SpotifyAuth", "Auth error: ${response.error}")
+                }
 
-                playerApi.subscribeToPlayerState()
-                    .setEventCallback { playerState ->
-                        val track = playerState.track
-                        if (track != null) {
-                            Log.d("MainActivity", "${track.name} by ${track.artist.name}")
-                        }
-                    }
-            }
-        }
-
-        override fun onActivityResult(requestCode: Int, resultCode: Int, intent: Intent?) {
-            super.onActivityResult(requestCode, resultCode, intent)
-
-            if (requestCode == SpotifyConstants.REQUEST_CODE) {
-                val response = AuthorizationClient.getResponse(resultCode, intent)
-                when (response.type) {
-                    AuthorizationResponse.Type.TOKEN -> {
-                        val accessToken = response.accessToken
-                        Log.d("SpotifyAuth", "Access token received: $accessToken")
-                        // You don't need accessToken here unless you're calling the Web API
-                    }
-
-                    AuthorizationResponse.Type.ERROR -> {
-                        Log.e("SpotifyAuth", "Auth error: ${response.error}")
-                    }
-
-                    else -> {
-                        Log.w("SpotifyAuth", "Auth cancelled or unknown response.")
-                    }
+                else -> {
+                    Log.w("♫ SpotifyAuth", "Auth cancelled or unknown response.")
                 }
             }
         }
-
+    }
 
 
     /******** ACTIVITY LIFE CYCLE ******** */
@@ -275,11 +305,19 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-/******** MAIN SCREEN *********/
+    /******** MAIN SCREEN *********/
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreen(userId: String) {
+fun MainScreen(
+    userId: String,
+    spotifyAppRemote: SpotifyAppRemote?,
+    spotifyTitle: State<String>,
+    spotifyArtist: State<String>,
+    spotifyAlbumArtBitmap: State<Bitmap?>,
+    spotifyIsPlaying: State<Boolean>,
+    spotifyProgress: State<Float>
+) {
     val context = LocalContext.current
 
     // Collect ViewModels
@@ -296,6 +334,12 @@ fun MainScreen(userId: String) {
 
     var playbackMode by remember { mutableStateOf(PlaybackMode.IN_APP) }
 
+    // Spotify App Remote state
+    val spotifyTitleState = remember { mutableStateOf("Spotify Track") }
+    val spotifyArtistState = remember { mutableStateOf("Artist") }
+    val spotifyAlbumArtUriState = remember { mutableStateOf("") }
+    val spotifyIsPlayingState = remember { mutableStateOf(false) }
+    val spotifyProgressState = remember { mutableStateOf(0f) }
 
     val todoVM: TodoViewModel = viewModel()
     val todoDocs by todoVM.todos.collectAsState()
@@ -620,40 +664,7 @@ fun MainScreen(userId: String) {
 
             Spacer(modifier = Modifier.height(10.dp))
             /******** Music Activity *********/
-            /*
-            currentMusic?.let { safeMusic ->
-                AudioPlayerCard(
-                    currentMusic = safeMusic,
-                    progress = 0.5f,
-                    onShuffle = {
-                        val shuffled = musicList.shuffled().firstOrNull()
-                        currentMusic = shuffled
-                    },
-                    onPrevious = {
-                        val index = musicList.indexOf(safeMusic)
-                        if (index > 0) currentMusic = musicList[index - 1]
-                    },
-                    onPlayPause = {
-                        musicVM.createMusicSession(
-                            MusicSession(
-                                userId = userId,
-                                studySessionId = "",
-                                artist = safeMusic.artist,
-                                musicPlatform = "In-App",
-                                musicTitle = safeMusic.title,
-                                musicUri = safeMusic.albumArtUri,
-                                startTime = getCurrentTimestamp(),
-                                endTime = null
-                            )
-                        )
-                    },
-                    onNext = {
-                        val index = musicList.indexOf(safeMusic)
-                        if (index < musicList.lastIndex) currentMusic = musicList[index + 1]
-                    },
-                    onRepeat = { /* optional logic */ }
-                )
-            }*/
+
             when (playbackMode) {
                 PlaybackMode.IN_APP -> {
                     currentMusic?.let { safeMusic ->
@@ -692,18 +703,36 @@ fun MainScreen(userId: String) {
                 }
 
                 PlaybackMode.SPOTIFY -> {
-                    // Replace later
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(160.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(Color.LightGray),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text("Spotify mode UI coming soon…")
-                    }
+                    AudioPlayerCardSpotify(
+                        trackTitle = spotifyTitle.value,
+                        trackArtist = spotifyArtist.value,
+                        albumArtBitmap = spotifyAlbumArtBitmap.value,
+                        isPlaying = spotifyIsPlaying.value,
+                        progress = spotifyProgress.value,
+                        onPlayPause = {
+                            spotifyAppRemote?.playerApi?.playerState?.setResultCallback { state ->
+                                if (state.isPaused) {
+                                    spotifyAppRemote?.playerApi?.resume()
+                                } else {
+                                    spotifyAppRemote?.playerApi?.pause()
+                                }
+                            }
+                        },
+                        onNext = {
+                            spotifyAppRemote?.playerApi?.skipNext()
+                        },
+                        onPrevious = {
+                            spotifyAppRemote?.playerApi?.skipPrevious()
+                        },
+                        onShuffle = {
+                            spotifyAppRemote?.playerApi?.toggleShuffle()
+                        },
+                        onRepeat = {
+                            spotifyAppRemote?.playerApi?.toggleRepeat()
+                        }
+                    )
                 }
+
             }
         }
     }
@@ -1100,3 +1129,6 @@ fun TodoList(
         }
     }
 }
+
+
+
