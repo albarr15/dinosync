@@ -125,6 +125,7 @@ import com.spotify.sdk.android.auth.AuthorizationClient
 import com.spotify.sdk.android.auth.AuthorizationRequest
 import com.spotify.sdk.android.auth.AuthorizationResponse
 import androidx.compose.runtime.State
+import com.mobdeve.s18.group9.dinosync.repository.local.LocalPlaybackManager
 import com.mobdeve.s18.group9.dinosync.spotify.SpotifyPlaybackManager
 
 
@@ -141,7 +142,7 @@ class MainActivity : ComponentActivity() {
     private val spotifyIsPlayingState = mutableStateOf(false)
     private val spotifyProgressState = mutableStateOf(0f)
     private lateinit var spotifyPlaybackManager: SpotifyPlaybackManager
-
+    private lateinit var playbackManager: LocalPlaybackManager
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -161,6 +162,8 @@ class MainActivity : ComponentActivity() {
 
         AuthorizationClient.openLoginActivity(this, SpotifyConstants.REQUEST_CODE, request)
         spotifyPlaybackManager = SpotifyPlaybackManager(this)
+        playbackManager = LocalPlaybackManager(applicationContext)
+
         setContent {
             DinoSyncTheme {
                 MainScreen(
@@ -280,6 +283,8 @@ class MainActivity : ComponentActivity() {
     }
 
 
+
+
     /******** ACTIVITY LIFE CYCLE ******** */
 
     override fun onResume() {
@@ -333,16 +338,9 @@ fun MainScreen(
 
     var playbackMode by remember { mutableStateOf(PlaybackMode.IN_APP) }
 
-    // Spotify App Remote state
-    val spotifyTitleState = remember { mutableStateOf("Spotify Track") }
-    val spotifyArtistState = remember { mutableStateOf("Artist") }
-    val spotifyAlbumArtUriState = remember { mutableStateOf("") }
-    val spotifyIsPlayingState = remember { mutableStateOf(false) }
-    val spotifyProgressState = remember { mutableStateOf(0f) }
 
     val todoVM: TodoViewModel = viewModel()
     val todoDocs by todoVM.todos.collectAsState()
-    val todoItems = todoDocs.map { it.item }
 
     LaunchedEffect(musicList) {
         if (musicList.isNotEmpty() && currentMusic == null) {
@@ -612,8 +610,6 @@ fun MainScreen(
             Spacer(modifier = Modifier.height(5.dp))
             HorizontalDivider(modifier = Modifier, thickness = 1.dp, color = Color.Gray)
 
-
-
             /******** TodoList *********/
             TodoList(
                 todoItems = todoDocs,
@@ -663,7 +659,7 @@ fun MainScreen(
 
             Spacer(modifier = Modifier.height(10.dp))
             /******** Music Activity *********/
-
+            var isPlaying by remember { mutableStateOf(false) }
             when (playbackMode) {
                 PlaybackMode.IN_APP -> {
                     currentMusic?.let { safeMusic ->
@@ -679,24 +675,28 @@ fun MainScreen(
                                 if (index > 0) currentMusic = musicList[index - 1]
                             },
                             onPlayPause = {
-                                musicVM.createMusicSession(
-                                    MusicSession(
-                                        userId = userId,
-                                        studySessionId = "",
-                                        artist = safeMusic.artist,
-                                        musicPlatform = "In-App",
-                                        musicTitle = safeMusic.title,
-                                        musicUri = safeMusic.albumArtUri,
-                                        startTime = getCurrentTimestamp(),
-                                        endTime = null
+                                isPlaying = !isPlaying
+                                if (isPlaying) {
+                                    musicVM.createMusicSession(
+                                        MusicSession(
+                                            userId = userId,
+                                            studySessionId = "",
+                                            artist = safeMusic.artist,
+                                            musicPlatform = "In-App",
+                                            musicTitle = safeMusic.title,
+                                            musicUri = safeMusic.albumArtUri,
+                                            startTime = getCurrentTimestamp(),
+                                            endTime = null
+                                        )
                                     )
-                                )
+                                }
                             },
                             onNext = {
                                 val index = musicList.indexOf(safeMusic)
                                 if (index < musicList.lastIndex) currentMusic = musicList[index + 1]
                             },
-                            onRepeat = {}
+                            onRepeat = {},
+                            isPlaying = isPlaying
                         )
                     }
                 }
@@ -732,8 +732,6 @@ fun MainScreen(
                         }
                     )
                 }
-
-
             }
         }
     }

@@ -5,4 +5,5 @@ data class Music(
     val artist: String = "",
     val duration: Int = 0,
     val title: String = "",
+    val filename: String = ""
 )

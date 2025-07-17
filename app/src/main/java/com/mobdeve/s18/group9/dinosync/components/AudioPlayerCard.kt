@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material.icons.filled.Shuffle
@@ -37,18 +38,19 @@ import coil.compose.AsyncImage
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import com.mobdeve.s18.group9.dinosync.R
-
 @Composable
 fun AudioPlayerCard(
     currentMusic: Music,
-    progress: Float = 0.8f,
+    isPlaying: Boolean,
+    progress: Float,
     modifier: Modifier = Modifier,
-    onShuffle : () -> Unit = {},
+    onShuffle: () -> Unit = {},
     onPrevious: () -> Unit = {},
     onPlayPause: () -> Unit = {},
     onNext: () -> Unit = {},
     onRepeat: () -> Unit = {}
 ) {
+
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -68,7 +70,6 @@ fun AudioPlayerCard(
                     .clip(RoundedCornerShape(8.dp))
             )
 
-
             Column(
                 modifier = Modifier
                     .fillMaxHeight()
@@ -76,10 +77,7 @@ fun AudioPlayerCard(
                     .padding(horizontal = 15.dp, vertical = 30.dp),
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
-
-                Column(
-                    verticalArrangement = Arrangement.Center
-                ) {
+                Column {
                     Text(
                         text = currentMusic.title,
                         fontSize = 18.sp,
@@ -87,7 +85,6 @@ fun AudioPlayerCard(
                         color = Color.Black,
                         maxLines = 1
                     )
-
                     Text(
                         text = currentMusic.artist,
                         fontSize = 14.sp,
@@ -95,7 +92,9 @@ fun AudioPlayerCard(
                         maxLines = 1
                     )
                 }
+
                 Spacer(modifier = Modifier.height(15.dp))
+
                 LinearProgressIndicator(
                     progress = { progress },
                     modifier = Modifier
@@ -104,7 +103,9 @@ fun AudioPlayerCard(
                     color = Color.Black,
                     trackColor = Color.Gray
                 )
+
                 Spacer(modifier = Modifier.height(10.dp))
+
                 Row(
                     horizontalArrangement = Arrangement.SpaceEvenly,
                     modifier = Modifier.fillMaxWidth()
@@ -116,7 +117,11 @@ fun AudioPlayerCard(
                         Icon(Icons.Default.SkipPrevious, contentDescription = "Previous", modifier = Modifier.size(20.dp))
                     }
                     IconButton(onClick = onPlayPause) {
-                        Icon(Icons.Default.PlayArrow, contentDescription = "Play", modifier = Modifier.size(20.dp))
+                        Icon(
+                            imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow, // always pause even when clicked
+                            contentDescription = if (isPlaying) "Pause" else "Play",
+                            modifier = Modifier.size(24.dp)
+                        )
                     }
                     IconButton(onClick = onNext) {
                         Icon(Icons.Default.SkipNext, contentDescription = "Next", modifier = Modifier.size(20.dp))
