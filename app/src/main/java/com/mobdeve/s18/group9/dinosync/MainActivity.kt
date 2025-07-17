@@ -150,7 +150,6 @@ class MainActivity : ComponentActivity() {
         val userId = FirebaseAuth.getInstance().currentUser?.uid
             ?: throw IllegalStateException("No authenticated user!")
 
-        // Only open login if user isn't already connected — this avoids redundant login popups.
         val request = AuthorizationRequest.Builder(
             SpotifyConstants.CLIENT_ID,
             AuthorizationResponse.Type.TOKEN,
@@ -180,7 +179,6 @@ class MainActivity : ComponentActivity() {
         super.onStart()
         println("MainActivity onStart()")
 
-        // Always disconnect first (Spotify's recommendation)
         spotifyAppRemote?.let { SpotifyAppRemote.disconnect(it) }
 
         val connectionParams = ConnectionParams.Builder(SpotifyConstants.CLIENT_ID)
@@ -200,7 +198,6 @@ class MainActivity : ComponentActivity() {
                 when (error) {
                     is NotLoggedInException, is UserNotAuthorizedException -> {
                         Log.e("♫ Spotify", "User not logged in or authorized.")
-                        // You could show a UI prompt or button to re-initiate login flow here.
                     }
 
                     is CouldNotFindSpotifyApp -> {
@@ -224,7 +221,8 @@ class MainActivity : ComponentActivity() {
 
     private fun connected() {
         spotifyAppRemote?.apply {
-            playerApi.play("spotify:track:6fKIyDJHZ9m84jRhSmpuwS")
+            // Uncomment to instantly play 'Sun Beached Flies' upon logging in to Spotify.
+            // playerApi.play("spotify:track:6fKIyDJHZ9m84jRhSmpuwS")
 
             playerApi.subscribeToPlayerState()
                 .setEventCallback { playerState ->
@@ -256,7 +254,6 @@ class MainActivity : ComponentActivity() {
                 AuthorizationResponse.Type.TOKEN -> {
                     val accessToken = response.accessToken
                     Log.d("♫ SpotifyAuth", "Access token received: $accessToken")
-                    // You don't need accessToken here unless you're calling the Web API
                 }
 
                 AuthorizationResponse.Type.ERROR -> {
@@ -272,12 +269,6 @@ class MainActivity : ComponentActivity() {
 
 
     /******** ACTIVITY LIFE CYCLE ******** */
-    /*
-    override fun onStart() {
-        super.onStart()
-        println("MainActivity onStart()")
-    }
-    */
 
     override fun onResume() {
         super.onResume()
@@ -288,11 +279,6 @@ class MainActivity : ComponentActivity() {
         super.onPause()
         println("MainActivity onPause()")
     }
-    /*
-    override fun onStop() {
-        super.onStop()
-        println("MainActivity onStop()")
-    }*/
 
     override fun onRestart() {
         super.onRestart()
