@@ -5,4 +5,5 @@ data class StudyGroup(
     val image: String = "",
     val name: String = "",
     val rank: String = "",
+    val university: String = "", // to fetch in API https://github.com/Hipo/university-domains-list-api
 )
