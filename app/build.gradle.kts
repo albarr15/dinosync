@@ -56,6 +56,9 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+    implementation(files("D:\\Downloads\\spotify-app-remote-release-0.8.0.aar"))
+    implementation(files("D:\\Downloads\\spotify-app-remote-release-0.8.0.aar"))
+    implementation(libs.androidx.appcompat)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -81,6 +84,7 @@ dependencies {
     implementation(libs.coil.compose)
 
     // Import Spotify API
-    implementation ("com.spotify.android:auth:1.2.5")
+    implementation ("com.spotify.android:auth:1.2.5") // add mo rin to siguro
+
 
 }

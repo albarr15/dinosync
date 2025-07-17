@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -84,8 +85,6 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
-
 import com.mobdeve.s18.group9.dinosync.components.AudioPlayerCard
 import com.mobdeve.s18.group9.dinosync.components.BottomNavigationBar
 import com.mobdeve.s18.group9.dinosync.components.TopActionBar
@@ -110,37 +109,145 @@ import com.mobdeve.s18.group9.dinosync.viewmodel.StudySessionViewModel
 import com.mobdeve.s18.group9.dinosync.viewmodel.TodoViewModel
 import com.mobdeve.s18.group9.dinosync.viewmodel.UserViewModel
 import java.util.Date
-import coil.compose.AsyncImage
-import androidx.compose.ui.layout.ContentScale
+import com.mobdeve.s18.group9.dinosync.spotify.SpotifyConstants
+import com.spotify.android.appremote.api.ConnectionParams
+import com.spotify.android.appremote.api.Connector
+import com.spotify.android.appremote.api.SpotifyAppRemote
+import com.spotify.android.appremote.api.error.CouldNotFindSpotifyApp
+import com.spotify.android.appremote.api.error.NotLoggedInException
+import com.spotify.android.appremote.api.error.UserNotAuthorizedException
+
+import com.spotify.sdk.android.auth.AuthorizationClient
+import com.spotify.sdk.android.auth.AuthorizationRequest
+import com.spotify.sdk.android.auth.AuthorizationResponse
+
 
 enum class PlaybackMode {
     IN_APP,
-    SPOTIFY,
-    YOUTUBEMUSIC
+    SPOTIFY
 }
 
 class MainActivity : ComponentActivity() {
 
-    @RequiresApi(Build.VERSION_CODES.O)
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+        private var spotifyAppRemote: SpotifyAppRemote? = null
 
-        val userId = FirebaseAuth.getInstance().currentUser?.uid
-            ?: throw IllegalStateException("No authenticated user!")
+        @RequiresApi(Build.VERSION_CODES.O)
+        override fun onCreate(savedInstanceState: Bundle?) {
+            super.onCreate(savedInstanceState)
+            enableEdgeToEdge()
 
-        setContent {
-            DinoSyncTheme {
-                MainScreen(userId = userId)
+            val userId = FirebaseAuth.getInstance().currentUser?.uid
+                ?: throw IllegalStateException("No authenticated user!")
+
+            // Only open login if user isn't already connected — this avoids redundant login popups.
+            val request = AuthorizationRequest.Builder(
+                SpotifyConstants.CLIENT_ID,
+                AuthorizationResponse.Type.TOKEN,
+                SpotifyConstants.REDIRECT_URI
+            )
+                .setScopes(SpotifyConstants.SCOPES)
+                .build()
+
+            AuthorizationClient.openLoginActivity(this, SpotifyConstants.REQUEST_CODE, request)
+
+            setContent {
+                DinoSyncTheme {
+                    MainScreen(userId = userId)
+                }
             }
         }
-    }
+
+        override fun onStart() {
+            super.onStart()
+            println("MainActivity onStart()")
+
+            // Always disconnect first (Spotify's recommendation)
+            spotifyAppRemote?.let { SpotifyAppRemote.disconnect(it) }
+
+            val connectionParams = ConnectionParams.Builder(SpotifyConstants.CLIENT_ID)
+                .setRedirectUri(SpotifyConstants.REDIRECT_URI)
+                .showAuthView(true)
+                .build()
+
+            SpotifyAppRemote.connect(this, connectionParams, object : Connector.ConnectionListener {
+                override fun onConnected(remote: SpotifyAppRemote) {
+                    spotifyAppRemote = remote
+                    Log.d("Spotify", "Connected to Spotify App Remote")
+                    connected()
+                }
+
+                override fun onFailure(error: Throwable) {
+                    Log.e("Spotify", "Connection failed", error)
+                    when (error) {
+                        is NotLoggedInException, is UserNotAuthorizedException -> {
+                            Log.e("Spotify", "User not logged in or authorized.")
+                            // You could show a UI prompt or button to re-initiate login flow here.
+                        }
+                        is CouldNotFindSpotifyApp -> {
+                            Log.e("Spotify", "Spotify app not found. Prompt to install.")
+                        }
+                    }
+                }
+            })
+        }
+
+        override fun onStop() {
+            super.onStop()
+            println("MainActivity onStop()")
+
+            spotifyAppRemote?.let {
+                SpotifyAppRemote.disconnect(it)
+                spotifyAppRemote = null
+                Log.d("Spotify", "Disconnected from App Remote")
+            }
+        }
+
+        private fun connected() {
+            spotifyAppRemote?.apply {
+                playerApi.play("spotify:playlist:37i9dQZF1DX2sUQwD7tbmL")
+
+                playerApi.subscribeToPlayerState()
+                    .setEventCallback { playerState ->
+                        val track = playerState.track
+                        if (track != null) {
+                            Log.d("MainActivity", "${track.name} by ${track.artist.name}")
+                        }
+                    }
+            }
+        }
+
+        override fun onActivityResult(requestCode: Int, resultCode: Int, intent: Intent?) {
+            super.onActivityResult(requestCode, resultCode, intent)
+
+            if (requestCode == SpotifyConstants.REQUEST_CODE) {
+                val response = AuthorizationClient.getResponse(resultCode, intent)
+                when (response.type) {
+                    AuthorizationResponse.Type.TOKEN -> {
+                        val accessToken = response.accessToken
+                        Log.d("SpotifyAuth", "Access token received: $accessToken")
+                        // You don't need accessToken here unless you're calling the Web API
+                    }
+
+                    AuthorizationResponse.Type.ERROR -> {
+                        Log.e("SpotifyAuth", "Auth error: ${response.error}")
+                    }
+
+                    else -> {
+                        Log.w("SpotifyAuth", "Auth cancelled or unknown response.")
+                    }
+                }
+            }
+        }
+
+
 
     /******** ACTIVITY LIFE CYCLE ******** */
+    /*
     override fun onStart() {
         super.onStart()
         println("MainActivity onStart()")
     }
+    */
 
     override fun onResume() {
         super.onResume()
@@ -151,11 +258,11 @@ class MainActivity : ComponentActivity() {
         super.onPause()
         println("MainActivity onPause()")
     }
-
+    /*
     override fun onStop() {
         super.onStop()
         println("MainActivity onStop()")
-    }
+    }*/
 
     override fun onRestart() {
         super.onRestart()
@@ -509,16 +616,6 @@ fun MainScreen(userId: String) {
                     )) {
                     Text("Spotify")
                 }
-                Spacer(modifier = Modifier.width(10.dp))
-                Button(onClick = {
-                    playbackMode = PlaybackMode.YOUTUBEMUSIC
-                },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = DarkGreen,
-                        contentColor = Color.White
-                    )) {
-                    Text("Youtube Music")
-                }
             }
 
             Spacer(modifier = Modifier.height(10.dp))
@@ -605,19 +702,6 @@ fun MainScreen(userId: String) {
                         contentAlignment = Alignment.Center
                     ) {
                         Text("Spotify mode UI coming soon…")
-                    }
-                }
-                PlaybackMode.YOUTUBEMUSIC -> {
-                    // Replace later
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(160.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(Color.LightGray),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text("Youtube Music mode UI coming soon…")
                     }
                 }
             }
