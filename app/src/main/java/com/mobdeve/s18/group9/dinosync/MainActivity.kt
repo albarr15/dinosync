@@ -221,7 +221,7 @@ class MainActivity : ComponentActivity() {
 
     private fun connected() {
         spotifyAppRemote?.apply {
-            // Uncomment to instantly play 'Sun Beached Flies' upon logging in to Spotify.
+            // Uncomment to instantly play 'Sun Bleached Flies' upon logging in to Spotify.
             // playerApi.play("spotify:track:6fKIyDJHZ9m84jRhSmpuwS")
 
             playerApi.subscribeToPlayerState()
