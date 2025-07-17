@@ -125,6 +125,7 @@ import com.spotify.sdk.android.auth.AuthorizationClient
 import com.spotify.sdk.android.auth.AuthorizationRequest
 import com.spotify.sdk.android.auth.AuthorizationResponse
 import androidx.compose.runtime.State
+import com.mobdeve.s18.group9.dinosync.spotify.SpotifyPlaybackManager
 
 
 enum class PlaybackMode {
@@ -133,13 +134,13 @@ enum class PlaybackMode {
 }
 
 class MainActivity : ComponentActivity() {
-
     private var spotifyAppRemote: SpotifyAppRemote? = null
     private val spotifyTitleState = mutableStateOf("Spotify Track")
     private val spotifyArtistState = mutableStateOf("Artist")
     private val spotifyAlbumArtBitmap  = mutableStateOf<Bitmap?>(null)
     private val spotifyIsPlayingState = mutableStateOf(false)
     private val spotifyProgressState = mutableStateOf(0f)
+    private lateinit var spotifyPlaybackManager: SpotifyPlaybackManager
 
 
     @RequiresApi(Build.VERSION_CODES.O)
@@ -159,12 +160,13 @@ class MainActivity : ComponentActivity() {
             .build()
 
         AuthorizationClient.openLoginActivity(this, SpotifyConstants.REQUEST_CODE, request)
-
+        spotifyPlaybackManager = SpotifyPlaybackManager(this)
         setContent {
             DinoSyncTheme {
                 MainScreen(
                     userId = userId,
                     spotifyAppRemote = spotifyAppRemote,
+                    spotifyPlaybackManager = spotifyPlaybackManager,
                     spotifyTitle = spotifyTitleState,
                     spotifyArtist = spotifyArtistState,
                     spotifyAlbumArtBitmap  = spotifyAlbumArtBitmap,
@@ -206,6 +208,15 @@ class MainActivity : ComponentActivity() {
                 }
             }
         })
+        spotifyPlaybackManager.connect { success ->
+            if (success) {
+                spotifyPlaybackManager.subscribeToPlayerState(
+                    onPlayerStateChanged = { playerState ->
+                        Log.d("Spotify", "${playerState.track.name} by ${playerState.track.artist.name}")
+                    }
+                )
+            }
+        }
     }
 
     override fun onStop() {
@@ -217,6 +228,7 @@ class MainActivity : ComponentActivity() {
             spotifyAppRemote = null
             Log.d("♫ Spotify", "Disconnected from App Remote")
         }
+        spotifyPlaybackManager.disconnect() //Unresolved reference 'spotifyPlaybackManager'.
     }
 
     private fun connected() {
@@ -298,6 +310,7 @@ class MainActivity : ComponentActivity() {
 fun MainScreen(
     userId: String,
     spotifyAppRemote: SpotifyAppRemote?,
+    spotifyPlaybackManager: SpotifyPlaybackManager,
     spotifyTitle: State<String>,
     spotifyArtist: State<String>,
     spotifyAlbumArtBitmap: State<Bitmap?>,
@@ -696,28 +709,30 @@ fun MainScreen(
                         isPlaying = spotifyIsPlaying.value,
                         progress = spotifyProgress.value,
                         onPlayPause = {
-                            spotifyAppRemote?.playerApi?.playerState?.setResultCallback { state ->
-                                if (state.isPaused) {
-                                    spotifyAppRemote?.playerApi?.resume()
+                            //Unresolved reference 'spotifyPlaybackManager'.
+                            spotifyPlaybackManager.getCurrentPlayerState { state ->
+                                if (state?.isPaused == true) {
+                                    spotifyPlaybackManager.resume()
                                 } else {
-                                    spotifyAppRemote?.playerApi?.pause()
+                                    spotifyPlaybackManager.pause()
                                 }
                             }
                         },
                         onNext = {
-                            spotifyAppRemote?.playerApi?.skipNext()
+                            spotifyPlaybackManager.skipToNext()
                         },
                         onPrevious = {
-                            spotifyAppRemote?.playerApi?.skipPrevious()
+                            spotifyPlaybackManager.skipToPrevious()
                         },
                         onShuffle = {
-                            spotifyAppRemote?.playerApi?.toggleShuffle()
+                            Log.w("SpotifyUI", "Shuffle not supported via App Remote.")
                         },
                         onRepeat = {
-                            spotifyAppRemote?.playerApi?.toggleRepeat()
+                            Log.w("SpotifyUI", "Repeat not supported via App Remote.")
                         }
                     )
                 }
+
 
             }
         }

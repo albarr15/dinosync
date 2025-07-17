@@ -97,7 +97,7 @@ fun AudioPlayerCardSpotify(
                     horizontalArrangement = Arrangement.SpaceEvenly,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    IconButton(onClick = onShuffle) {
+                    IconButton(onClick = onShuffle, modifier = Modifier.size(0.dp)) {
                         Icon(Icons.Default.Shuffle, contentDescription = "Shuffle", modifier = Modifier.size(20.dp))
                     }
                     IconButton(onClick = onPrevious) {
@@ -113,7 +113,7 @@ fun AudioPlayerCardSpotify(
                     IconButton(onClick = onNext) {
                         Icon(Icons.Default.SkipNext, contentDescription = "Next", modifier = Modifier.size(20.dp))
                     }
-                    IconButton(onClick = onRepeat) {
+                    IconButton(onClick = onRepeat,  modifier = Modifier.size(0.dp)) {
                         Icon(Icons.Default.Repeat, contentDescription = "Repeat", modifier = Modifier.size(30.dp))
                     }
                 }
