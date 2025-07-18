@@ -300,3 +300,28 @@ class UserViewModel : ViewModel() {
         }
     }
 }
+
+class ProfileViewModel : ViewModel() {
+    private val repository = FirebaseRepository()
+
+    private val _user = MutableStateFlow<User?>(null)
+    val user: StateFlow<User?> = _user
+
+    private val _achievements = MutableStateFlow<List<Achievement>>(emptyList())
+    val achievements: StateFlow<List<Achievement>> = _achievements
+
+    private val _groups = MutableStateFlow<List<StudyGroup>>(emptyList())
+    val groups: StateFlow<List<StudyGroup>> = _groups
+
+    private val _moodHistory = MutableStateFlow<List<Mood>>(emptyList())
+    val moodHistory: StateFlow<List<Mood>> = _moodHistory
+
+    fun loadUserProfile(userId: String) {
+        viewModelScope.launch {
+            _user.value = repository.getUserById(userId)
+            _achievements.value = repository.getAchievementsByUserId(userId)
+            _groups.value = repository.getUserGroups(userId)
+            _moodHistory.value = repository.getUserMoodHistory(userId)
+        }
+    }
+}

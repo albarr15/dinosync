@@ -24,6 +24,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.SentimentDissatisfied
+import androidx.compose.material.icons.filled.SentimentNeutral
+import androidx.compose.material.icons.filled.SentimentSatisfied
+import androidx.compose.material.icons.filled.SentimentVeryDissatisfied
+import androidx.compose.material.icons.filled.SentimentVerySatisfied
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -63,9 +69,13 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.mobdeve.s18.group9.dinosync.viewmodel.UserViewModel
+import com.mobdeve.s18.group9.dinosync.model.Mood
+import com.mobdeve.s18.group9.dinosync.viewmodel.ProfileViewModel
 
+// TODO: NEED TO RECHECK DATA ONCE FIRESTORE IS UPDATED
 
 class ProfileActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -112,15 +122,18 @@ class ProfileActivity : ComponentActivity() {
 @Composable
 fun ProfileActivityScreen(userId: String) {
     val context = LocalContext.current
-    val userVM: UserViewModel = viewModel()
+    val profileVM: ProfileViewModel = viewModel()
 
     // Observe state from ViewModel
-    val user by userVM.user.collectAsState()
-    // TODO: Add achievements, groups, moodHistory state when implemented in ViewModel
+    val user by profileVM.user.collectAsState()
+
+    val achievements by profileVM.achievements.collectAsState()
+    val userGroups by profileVM.groups.collectAsState()
+    val moodHistory by profileVM.moodHistory.collectAsState()
 
     // Load data on first composition
     LaunchedEffect(userId) {
-        userVM.loadUser(userId)
+        profileVM.loadUserProfile(userId)
     }
 
     val provider = GoogleFont.Provider(
@@ -197,8 +210,8 @@ fun ProfileActivityScreen(userId: String) {
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
+                    // TODO: utilize user's custom profile (fetch from firestore db)
                     Image(
-                        // TODO: change to user profile
                         painter = painterResource(R.drawable.althea),
                         contentDescription = null,
                         modifier = Modifier
@@ -208,13 +221,13 @@ fun ProfileActivityScreen(userId: String) {
                     )
                     Column {
                         Text(
-                            user?.userName ?: "User",
+                            user?.userName ?: "Username",
                             fontWeight = FontWeight.Bold,
                             fontSize = 18.sp,
                             fontFamily = fontFamily
                         )
                         Text(
-                            user?.userBio ?: "user bio user bio",
+                            user?.userBio ?: "User Bio",
                             fontSize = 14.sp,
                             color = Color.Gray,
                             fontFamily = fontFamily
@@ -235,24 +248,85 @@ fun ProfileActivityScreen(userId: String) {
             Spacer(modifier = Modifier.height(24.dp))
             HorizontalDivider(modifier = Modifier, thickness = 1.dp, color = Color.Gray)
             Spacer(modifier = Modifier.height(30.dp))
-            // TODO: Achievements Section (use real data from ViewModel when available)
-            Text("Collection", fontWeight = FontWeight.Medium, fontSize = 18.sp)
+
+            // COLLECTION SECTION
+            Text("Achievements", fontWeight = FontWeight.Medium, fontSize = 18.sp)
             Spacer(modifier = Modifier.height(5.dp))
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                contentPadding = PaddingValues(horizontal = 4.dp)
-            ) {
-                // TODO: Replace with real achievements from ViewModel
+
+            if (achievements.isEmpty()) {
+                Text("No achievements yet.", color = Color.Gray)
+            } else {
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    contentPadding = PaddingValues(horizontal = 4.dp)
+                ) {
+                    items(achievements.size) { index ->
+                        val achievement = achievements[index]
+                        Box(
+                            modifier = Modifier
+                                .size(80.dp)
+                                .background(Color.LightGray, RoundedCornerShape(10.dp))
+                                .clickable {
+                                    // Navigate to Companion screen with achievement ID
+                                    val intent = Intent(context, CompanionActivity::class.java)
+                                    intent.putExtra("userId", userId)
+                                    context.startActivity(intent)
+                                },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Image(
+                                painter = painterResource(achievement.imageResId),
+                                contentDescription = null,
+                                modifier = Modifier.size(60.dp)
+                            )
+                        }
+                    }
+                }
             }
+
+
             Spacer(modifier = Modifier.height(30.dp))
-            // TODO: Groups Section (use real data from ViewModel when available)
+            // GROUPS SECTION
             Text("Groups", fontWeight = FontWeight.Medium, fontSize = 18.sp)
             Spacer(modifier = Modifier.height(5.dp))
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                contentPadding = PaddingValues(horizontal = 4.dp)
-            ) {
-                // TODO: Replace with real groups from ViewModel
+            if (userGroups.isEmpty()) {
+                Text("No groups yet.", color = Color.Gray)
+            } else {
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    contentPadding = PaddingValues(horizontal = 4.dp)
+                ) {
+                    items(userGroups.size) { index ->
+                        Box(
+                            modifier = Modifier
+                                .size(80.dp)
+                                .background(Color.LightGray, RoundedCornerShape(10.dp)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center,
+                                modifier = Modifier.padding(4.dp)
+                            ) {
+                                Image(
+                                    painter = painterResource(id = userGroups[index].image.toInt()),
+                                    contentDescription = null,
+                                    modifier = Modifier
+                                        .size(50.dp)
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = userGroups[index].name,
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        }
+
+                    }
+                }
             }
             Spacer(modifier = Modifier.height(30.dp))
             // Mood Log Section (placeholder, replace with real data when available)
@@ -266,7 +340,7 @@ fun ProfileActivityScreen(userId: String) {
                 )
             }
             Spacer(modifier = Modifier.height(5.dp))
-            MoodTrackerGrid()
+            MoodTrackerGrid(moods = moodHistory)
             Spacer(modifier = Modifier.weight(1f))
         }
     }
@@ -274,7 +348,6 @@ fun ProfileActivityScreen(userId: String) {
 
 fun getMoodColor(moodLevel: Int): Color {
     return when (moodLevel) {
-        0 -> Color.Gray
         1 -> Color(0xFFD32F2F) // Terrible - Red
         2 -> Color(0xFFF57C00) // Bad - Orange
         3 -> Color(0xFFFBC02D) // Meh - Yellow
@@ -284,29 +357,41 @@ fun getMoodColor(moodLevel: Int): Color {
     }
 }
 
-fun generateMoodSampleData(): List<Int> {
-    // Random mood levels from 0 to 5
-    return List(365) { (0..5).random() }
+
+fun getMoodLevel(moodName: String): Int {
+    return when (moodName) {
+        "very_dissatisfied" -> 1 // Terrible - Red
+        "dissatisfied" -> 2 // Bad - Orange
+        "neutral" -> 3 // Meh - Yellow
+        "satisfied" -> 4 // Good - Light Green
+        "very_satisfied" -> 5 // Great - Green
+        else -> 0
+    }
 }
+
+
 
 @Composable
 fun MoodTrackerGrid(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    moods: List<Mood>
 ) {
-    // val moods = listOf(0, 1, 0, 2, 2, 0, 0), latest mood at end of list
-    val moods = generateMoodSampleData()
     val daysToShow = 60
     val columns = 15
     val rows = 4
 
-    // Pad moods to always be full grid
-    val recentMoods = moods.takeLast(daysToShow)
-        .let {
-            if (it.size < daysToShow) List(daysToShow - it.size) { 0 } + it else it
-        }
+    // Placeholder mood with empty name for padding
+    val placeholderMood = Mood(name = "", imageKey = "")
 
-    // Fill grid in top-down, right-to-left row-major order
-    val moodGrid = Array(rows) { Array(columns) { 0 } }
+    // Pad moods with placeholders to make up 60 items
+    val recentMoods = moods.takeLast(daysToShow).let {
+        if (it.size < daysToShow)
+            List(daysToShow - it.size) { placeholderMood } + it
+        else it
+    }
+
+    // Fill grid top-down, right-to-left row-major order
+    val moodGrid = Array(rows) { Array(columns) { placeholderMood } }
 
     for (i in recentMoods.indices) {
         val row = i / columns
@@ -317,8 +402,7 @@ fun MoodTrackerGrid(
     }
 
     Column(
-        modifier = modifier
-            .fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         for (row in 0 until rows) {
@@ -328,12 +412,13 @@ fun MoodTrackerGrid(
             ) {
                 for (col in 0 until columns) {
                     val mood = moodGrid[row][col]
+                    val moodLevel = getMoodLevel(mood.name)
                     Box(
                         modifier = Modifier
                             .weight(1f)
                             .aspectRatio(1f)
                             .background(
-                                color = getMoodColor(mood),
+                                color = getMoodColor(moodLevel),
                                 shape = RoundedCornerShape(3.dp)
                             )
                     )
@@ -342,4 +427,3 @@ fun MoodTrackerGrid(
         }
     }
 }
-
