@@ -43,6 +43,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.ViewModelProvider
 /*
 import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeAchievements
 import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeDailyStudyHistory
@@ -58,21 +59,21 @@ import com.mobdeve.s18.group9.dinosync.components.TopActionBar
 import com.mobdeve.s18.group9.dinosync.ui.theme.DarkGreen
 import com.mobdeve.s18.group9.dinosync.ui.theme.DinoSyncTheme
 import java.util.Calendar
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.mobdeve.s18.group9.dinosync.viewmodel.UserViewModel
 
 
 class ProfileActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        val userId = intent.getIntExtra("userId", -1)
+        val userId = intent.getStringExtra("userId") ?: ""
         setContent {
             DinoSyncTheme {
-                //ProfileActivityScreen(userId = userId)
-
-                // TEMPORARY CHECKER FOR SCREEN ACTIVITY
-                androidx.compose.material3.Surface {
-                    androidx.compose.material3.Text(text = "Profile Activity Screen")
-                }
+                ProfileActivityScreen(userId = userId)
             }
         }
     }
@@ -108,18 +109,19 @@ class ProfileActivity : ComponentActivity() {
     }
 }
 
-/*
 @Composable
-fun ProfileActivityScreen(userId : Int) {
-    val feelingEntries = initializeFeelingEntry()
-    val dailyStudyHistory = initializeDailyStudyHistory()
-    val studyGroups = initializeStudyGroups()
-    val achievements = initializeAchievements()
-    val users = initializeUsers()
-    val moods = initializeMoods()
-
+fun ProfileActivityScreen(userId: String) {
     val context = LocalContext.current
-    val groupMembers = initializeGroupMembers()
+    val userVM: UserViewModel = viewModel()
+
+    // Observe state from ViewModel
+    val user by userVM.user.collectAsState()
+    // TODO: Add achievements, groups, moodHistory state when implemented in ViewModel
+
+    // Load data on first composition
+    LaunchedEffect(userId) {
+        userVM.loadUser(userId)
+    }
 
     val provider = GoogleFont.Provider(
         providerAuthority = "com.google.android.gms.fonts",
@@ -134,33 +136,6 @@ fun ProfileActivityScreen(userId : Int) {
             weight = FontWeight.Medium
         )
     )
-
-    val selectedUser = users.find { it.userId == userId }
-
-    // Prepare data for mood log (only for current month)
-    val currentMonth = Calendar.getInstance().get(Calendar.MONTH)
-    val currentYear = Calendar.getInstance().get(Calendar.YEAR)
-
-    val userFeelingsThisMonth = feelingEntries.filter { it.userId == userId &&
-            it.entryDate.month == currentMonth && it.entryDate.year + 1900 == currentYear
-    }
-
-    val moodMap = moods.associateBy { it.moodId }
-    val totalDaysInMonth = Calendar.getInstance().getActualMaximum(Calendar.DAY_OF_MONTH)
-    val moodEntries = MutableList(totalDaysInMonth) { Color.LightGray }
-
-    userFeelingsThisMonth.forEach { feelingEntry ->
-        val day = feelingEntry.entryDate.date - 1 // day of month is 1-based
-        val mood = moodMap[feelingEntry.moodId]
-        moodEntries[day] = when (mood?.name) {
-            "Happy" -> Color.Yellow
-            "Sad" -> Color.Blue
-            "Angry" -> Color.Red
-            "Neutral" -> Color.Gray
-            "Productive" -> Color.Green
-            else -> Color.LightGray
-        }
-    }
 
     Scaffold(
         containerColor = DarkGreen,
@@ -191,7 +166,6 @@ fun ProfileActivityScreen(userId : Int) {
                 .background(Color.White)
                 .padding(16.dp)
         ) {
-
             TopActionBar(
                 onProfileClick = {
                     val intent = Intent(context, ProfileActivity::class.java)
@@ -204,9 +178,7 @@ fun ProfileActivityScreen(userId : Int) {
                     context.startActivity(intent)
                 }
             )
-
             Spacer(modifier = Modifier.height(16.dp))
-
             // Profile Info Section
             Text(
                 text = "Profile",
@@ -215,7 +187,6 @@ fun ProfileActivityScreen(userId : Int) {
                 color = Color.Black,
                 modifier = Modifier.align(Alignment.Start)
             )
-
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -227,7 +198,8 @@ fun ProfileActivityScreen(userId : Int) {
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Image(
-                        painter = painterResource(id = selectedUser?.userProfileImage ?: R.drawable.althea),
+                        // TODO: change to user profile
+                        painter = painterResource(R.drawable.althea),
                         contentDescription = null,
                         modifier = Modifier
                             .size(120.dp)
@@ -236,13 +208,13 @@ fun ProfileActivityScreen(userId : Int) {
                     )
                     Column {
                         Text(
-                            selectedUser?.userName ?: "User",
+                            user?.userName ?: "User",
                             fontWeight = FontWeight.Bold,
                             fontSize = 18.sp,
                             fontFamily = fontFamily
                         )
                         Text(
-                            selectedUser?.userBio ?: "user bio user bio",
+                            user?.userBio ?: "user bio user bio",
                             fontSize = 14.sp,
                             color = Color.Gray,
                             fontFamily = fontFamily
@@ -260,91 +232,30 @@ fun ProfileActivityScreen(userId : Int) {
                     }
                 }
             }
-
             Spacer(modifier = Modifier.height(24.dp))
             HorizontalDivider(modifier = Modifier, thickness = 1.dp, color = Color.Gray)
             Spacer(modifier = Modifier.height(30.dp))
-
-            // Achievements Section (Filtered by userId)
+            // TODO: Achievements Section (use real data from ViewModel when available)
             Text("Collection", fontWeight = FontWeight.Medium, fontSize = 18.sp)
             Spacer(modifier = Modifier.height(5.dp))
             LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 contentPadding = PaddingValues(horizontal = 4.dp)
             ) {
-                val userAchievements = achievements.filter { it.userId == userId }
-                items(userAchievements.size) { index ->
-                    val achievement = userAchievements[index]
-                    Box(
-                        modifier = Modifier
-                            .size(80.dp)
-                            .background(Color.LightGray, RoundedCornerShape(10.dp))
-                            .clickable {
-                                // Navigate to AchievementDetailActivity with achievement ID
-                                val intent = Intent(context, CompanionActivity::class.java)
-                                intent.putExtra("userId", userId)
-                                context.startActivity(intent)
-                            },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Image(
-                            painter = painterResource(id = achievement.image),
-                            contentDescription = null,
-                            modifier = Modifier.size(60.dp)
-                        )
-                    }
-                }
+                // TODO: Replace with real achievements from ViewModel
             }
-
             Spacer(modifier = Modifier.height(30.dp))
-
-            // Groups Section (Filtered)
+            // TODO: Groups Section (use real data from ViewModel when available)
             Text("Groups", fontWeight = FontWeight.Medium, fontSize = 18.sp)
             Spacer(modifier = Modifier.height(5.dp))
-
             LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 contentPadding = PaddingValues(horizontal = 4.dp)
             ) {
-                val userGroups = groupMembers
-                    .filter { it.userId == userId }
-                    .mapNotNull { member -> studyGroups.find { it.groupId == member.groupId } }
-
-                items(userGroups.size) { index ->
-                    Box(
-                        modifier = Modifier
-                            .size(80.dp)
-                            .background(Color.LightGray, RoundedCornerShape(10.dp)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center,
-                            modifier = Modifier.padding(4.dp)
-                        ) {
-                            Image(
-                                painter = painterResource(id = userGroups[index].image),
-                                contentDescription = null,
-                                modifier = Modifier
-                                    .size(50.dp)
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = userGroups[index].name,
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
-                    }
-
-                }
+                // TODO: Replace with real groups from ViewModel
             }
-
             Spacer(modifier = Modifier.height(30.dp))
-
-            // Mood Log Section
+            // Mood Log Section (placeholder, replace with real data when available)
             Row {
                 Text("Mood Log", fontWeight = FontWeight.Medium, fontSize = 18.sp)
                 Text(
@@ -354,10 +265,8 @@ fun ProfileActivityScreen(userId : Int) {
                     modifier = Modifier.fillMaxWidth()
                 )
             }
-
             Spacer(modifier = Modifier.height(5.dp))
             MoodTrackerGrid()
-
             Spacer(modifier = Modifier.weight(1f))
         }
     }
@@ -433,5 +342,4 @@ fun MoodTrackerGrid(
         }
     }
 }
-*/
 
