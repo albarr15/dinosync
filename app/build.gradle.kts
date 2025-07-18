@@ -59,6 +59,8 @@ dependencies {
     implementation(files("D:\\Downloads\\spotify-app-remote-release-0.8.0.aar"))
     implementation(files("D:\\Downloads\\spotify-app-remote-release-0.8.0.aar"))
     implementation(libs.androidx.appcompat)
+    implementation(files("D:\\Downloads\\spotify-app-remote-release-0.8.0.aar"))
+    implementation(libs.androidx.constraintlayout)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -73,6 +75,7 @@ dependencies {
     implementation("androidx.compose.material3:material3-window-size-class:1.3.2")
     implementation("androidx.compose.material3:material3-adaptive-navigation-suite:1.4.0-alpha15")
     implementation ("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.2")
+    implementation (libs.androidx.constraintlayout.compose)
     implementation(libs.vico.compose)
     implementation (libs.compose.charts)
 

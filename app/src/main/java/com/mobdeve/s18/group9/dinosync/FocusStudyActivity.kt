@@ -44,6 +44,7 @@ import com.mobdeve.s18.group9.dinosync.viewmodel.StudySessionViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.platform.LocalConfiguration
 import com.mobdeve.s18.group9.dinosync.components.AudioPlayerCardSpotify
 import com.mobdeve.s18.group9.dinosync.repository.local.LocalPlaybackManager
 import com.mobdeve.s18.group9.dinosync.spotify.SpotifyConstants
@@ -56,6 +57,7 @@ import com.spotify.android.appremote.api.error.NotLoggedInException
 import com.spotify.android.appremote.api.error.UserNotAuthorizedException
 import com.spotify.sdk.android.auth.AuthorizationClient
 import com.spotify.sdk.android.auth.AuthorizationResponse
+import androidx.constraintlayout.compose.ConstraintLayout
 
 class FocusStudyActivity : ComponentActivity() {
     private var spotifyAppRemote: SpotifyAppRemote? = null
@@ -225,7 +227,6 @@ class FocusStudyActivity : ComponentActivity() {
 }
 
 
-
 @Composable
 fun FocusStudyScreen(
     userId: String,
@@ -274,30 +275,13 @@ fun FocusStudyScreen(
         else -> YellowGreen
     }
 
-    val provider = GoogleFont.Provider(
-        providerAuthority = "com.google.android.gms.fonts",
-        providerPackage = "com.google.android.gms",
-        certificates = R.array.com_google_android_gms_fonts_certs
-    )
-    val interFontName = GoogleFont("Inter")
-    val fontFamily = FontFamily(
-        androidx.compose.ui.text.googlefonts.Font(
-            googleFont = interFontName,
-            fontProvider = provider,
-            weight = FontWeight.Normal
-        )
-    )
-
-    var showHatchCard by remember { mutableStateOf(false) }
-    var showNewEggCard by remember { mutableStateOf(false) }
-
+    // ✅ Timer countdown logic
     LaunchedEffect(isRunning) {
         if (isRunning) {
             while (timeLeft > 0) {
                 delay(1000L)
                 timeLeft--
             }
-
             if (timeLeft == 0 && !isStopped) {
                 isRunning = false
                 isStopped = true
@@ -309,14 +293,10 @@ fun FocusStudyScreen(
         }
     }
 
-    LaunchedEffect(Unit) {
-        musicVM.loadMusic()
-    }
-
+    // ✅ Load music
+    LaunchedEffect(Unit) { musicVM.loadMusic() }
     LaunchedEffect(musicList) {
-        if (musicList.isNotEmpty() && currentMusic == null) {
-            currentMusic = musicList.first()
-        }
+        if (musicList.isNotEmpty() && currentMusic == null) currentMusic = musicList.first()
     }
 
     Scaffold(
@@ -324,26 +304,13 @@ fun FocusStudyScreen(
         bottomBar = {
             BottomNavigationBar(
                 selectedItem = null,
-                onGroupsClick = {
-                    context.startActivity(
-                        Intent(
-                            context,
-                            DiscoverGroupsActivity::class.java
-                        )
-                    )
-                },
+                onGroupsClick = { context.startActivity(Intent(context, DiscoverGroupsActivity::class.java)) },
                 onHomeClick = { context.startActivity(Intent(context, MainActivity::class.java)) },
-                onStatsClick = {
-                    context.startActivity(
-                        Intent(
-                            context,
-                            StatisticsActivity::class.java
-                        )
-                    )
-                }
+                onStatsClick = { context.startActivity(Intent(context, StatisticsActivity::class.java)) }
             )
         }
     ) { padding ->
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -352,36 +319,38 @@ fun FocusStudyScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Spacer(modifier = Modifier.height(16.dp))
+
+            // ✅ Top Bar
             TopActionBar(
                 onProfileClick = {
-                    context.startActivity(Intent(context, ProfileActivity::class.java).apply {
+                    val intent = Intent(context, ProfileActivity::class.java).apply {
                         putExtra("userId", userId)
-                    })
+                    }
+                    context.startActivity(intent)
                 },
                 onSettingsClick = {
-                    context.startActivity(Intent(context, SettingsActivity::class.java).apply {
+                    val intent = Intent(context, SettingsActivity::class.java).apply {
                         putExtra("userId", userId)
-                    })
+                    }
+                    context.startActivity(intent)
                 }
             )
+
             Spacer(modifier = Modifier.height(12.dp))
 
+            // ✅ Subject Title
             Box(
                 modifier = Modifier
                     .background(Color.Transparent, RoundedCornerShape(10.dp))
                     .border(1.dp, Color.White, RoundedCornerShape(8.dp))
                     .padding(horizontal = 50.dp, vertical = 10.dp)
             ) {
-                Text(
-                    subject,
-                    fontWeight = FontWeight.ExtraBold,
-                    fontFamily = fontFamily,
-                    color = Color.White
-                )
+                Text(subject, fontWeight = FontWeight.ExtraBold, color = Color.White)
             }
 
-            Spacer(modifier = Modifier.height(50.dp))
+            Spacer(modifier = Modifier.height(40.dp))
 
+            // ✅ Timer Arc
             Box(contentAlignment = Alignment.Center, modifier = Modifier.size(360.dp)) {
                 Canvas(modifier = Modifier.fillMaxSize()) {
                     val strokeWidth = 50f
@@ -411,220 +380,181 @@ fun FocusStudyScreen(
                     color = Color.White,
                     fontSize = 50.sp,
                     fontWeight = FontWeight.Bold,
-                    fontFamily = fontFamily,
                     modifier = Modifier.align(Alignment.TopCenter).padding(top = 90.dp)
                 )
             }
 
-            Row(
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.align(Alignment.CenterHorizontally).offset(y = (-190).dp)
-            ) {
-                OutlinedButton(
-                    onClick = {
-                        timeLeft = 0
-                        isRunning = false
-                        isStopped = true
-                        val endTime = System.currentTimeMillis()
-                        val endTimestamp =
-                            Timestamp(endTime / 1000, ((endTime % 1000) * 1000000).toInt())
-                        val updates = mapOf("endedAt" to endTimestamp, "status" to "completed")
-                        studySessionVM.updateStudySession(currentSessionId, updates)
-                    },
-                    colors = ButtonDefaults.outlinedButtonColors(Color.Transparent),
-                    modifier = Modifier.width(100.dp).height(35.dp)
-                ) {
-                    Text("Stop", color = Color.White, fontFamily = fontFamily)
-                }
-                Spacer(modifier = Modifier.width(30.dp))
-                Button(
-                    onClick = {
-                        val now = System.currentTimeMillis()
-
-                        if (isStopped || timeLeft == 0) {
-                            coroutineScope.launch {
-                                val newSession = StudySession(
-                                    userId = userId.toString(),
-                                    courseId = subject,
-                                    hourSet = hours,
-                                    minuteSet = minutes,
-                                    moodId = moodId,
-                                    sessionDate = getCurrentDate(),
-                                    startedAt = Timestamp.now(),
-                                    status = "active"
-                                )
-
-                                studySessionVM.createStudySessionAndGetId(newSession) { newId ->
-                                    currentSessionId = newId
-                                    timeLeft = totalTime
-                                    isRunning = true
-                                    isStopped = false
-                                    pauseTimestamps.clear()
-                                    resumeTimestamps.clear()
-                                }
-                            }
-                        } else {
-                            isRunning = !isRunning
-
-                            coroutineScope.launch {
-                                val updates = mapOf(
-                                    "status" to if (isRunning) "active" else "paused"
-                                )
-                                studySessionVM.updateStudySession(currentSessionId, updates)
-
-                                if (isRunning) {
-                                    resumeTimestamps.add(now)
-                                } else {
-                                    pauseTimestamps.add(now)
-                                }
-                            }
-                        }
-                    },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.White,
-                        contentColor = Color.DarkGray
-                    ),
-                    modifier = Modifier
-                        .width(100.dp)
-                        .height(35.dp)
-                ) {
-                    Text(
-                        text = when {
-                            isStopped || timeLeft == 0 -> "Repeat"
-                            isRunning -> "Pause"
-                            else -> "Resume"
-                        },
-                        fontFamily = fontFamily
-                    )
-                }
-            }
-            /******** Music Activity *********/
-            Spacer(modifier = Modifier.height(5.dp))
-
-            Box(
+            // ✅ Buttons + Music Section
+            ConstraintLayout(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .offset(y = (-140).dp),
-                contentAlignment = Alignment.Center
+                    .offset(y = (-200).dp)
             ) {
-                Row(horizontalArrangement = Arrangement.Center) {
-                    Button(
-                        onClick = {
-                            playbackMode = PlaybackMode.IN_APP
-                        },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = DarkGreen,
-                            contentColor = Color.White
-                        )
-                    ) {
-                        Text("In-App")
+                val (stopPauseRow, musicSection) = createRefs()
+
+                // Stop / Pause Buttons
+                Row(
+                    horizontalArrangement = Arrangement.Center,
+                    modifier = Modifier.constrainAs(stopPauseRow) {
+                        top.linkTo(parent.top)
+                        start.linkTo(parent.start)
+                        end.linkTo(parent.end)
                     }
-                    Spacer(modifier = Modifier.width(10.dp))
+                ) {
+                    OutlinedButton(
+                        onClick = {
+                            timeLeft = 0
+                            isRunning = false
+                            isStopped = true
+                            val endTime = System.currentTimeMillis()
+                            val endTimestamp =
+                                Timestamp(endTime / 1000, ((endTime % 1000) * 1000000).toInt())
+                            val updates = mapOf("endedAt" to endTimestamp, "status" to "completed")
+                            studySessionVM.updateStudySession(currentSessionId, updates)
+                        },
+                        colors = ButtonDefaults.outlinedButtonColors(Color.Transparent),
+                        modifier = Modifier.width(100.dp).height(35.dp)
+                    ) {
+                        Text("Stop", color = Color.White)
+                    }
+                    Spacer(modifier = Modifier.width(30.dp))
                     Button(
                         onClick = {
-                            playbackMode = PlaybackMode.SPOTIFY
+                            val now = System.currentTimeMillis()
+                            if (isStopped || timeLeft == 0) {
+                                coroutineScope.launch {
+                                    val newSession = StudySession(
+                                        userId = userId,
+                                        courseId = subject,
+                                        hourSet = hours,
+                                        minuteSet = minutes,
+                                        moodId = moodId,
+                                        sessionDate = getCurrentDate(),
+                                        startedAt = Timestamp.now(),
+                                        status = "active"
+                                    )
+                                    studySessionVM.createStudySessionAndGetId(newSession) { newId ->
+                                        currentSessionId = newId
+                                        timeLeft = totalTime
+                                        isRunning = true
+                                        isStopped = false
+                                        pauseTimestamps.clear()
+                                        resumeTimestamps.clear()
+                                    }
+                                }
+                            } else {
+                                isRunning = !isRunning
+                                coroutineScope.launch {
+                                    val updates = mapOf("status" to if (isRunning) "active" else "paused")
+                                    studySessionVM.updateStudySession(currentSessionId, updates)
+                                    if (isRunning) resumeTimestamps.add(now) else pauseTimestamps.add(now)
+                                }
+                            }
                         },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = DarkGreen,
-                            contentColor = Color.White
-                        )
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.DarkGray),
+                        modifier = Modifier.width(100.dp).height(35.dp)
                     ) {
-                        Text("Spotify")
+                        Text(if (isStopped || timeLeft == 0) "Repeat" else if (isRunning) "Pause" else "Resume")
                     }
                 }
-                Spacer(modifier = Modifier.height(30.dp))
-                var isPlaying by remember { mutableStateOf(false) }
-                when (playbackMode) {
-                    PlaybackMode.IN_APP -> {
-                        currentMusic?.let { safeMusic ->
-                            AudioPlayerCard(
-                                currentMusic = safeMusic,
-                                progress = 0.5f,
-                                onShuffle = {
-                                    val shuffled = musicList.shuffled().firstOrNull()
-                                    currentMusic = shuffled
-                                },
-                                onPrevious = {
-                                    val index = musicList.indexOf(safeMusic)
-                                    if (index > 0) currentMusic = musicList[index - 1]
-                                },
-                                onPlayPause = {
-                                    isPlaying = !isPlaying
-                                    if (isPlaying) {
-                                        musicVM.createMusicSession(
-                                            MusicSession(
-                                                userId = userId,
-                                                studySessionId = "",
-                                                artist = safeMusic.artist,
-                                                musicPlatform = "In-App",
-                                                musicTitle = safeMusic.title,
-                                                musicUri = safeMusic.albumArtUri,
-                                                startTime = getCurrentTimestamp(),
-                                                endTime = null
-                                            )
-                                        )
-                                    }
-                                },
-                                onNext = {
-                                    val index = musicList.indexOf(safeMusic)
-                                    if (index < musicList.lastIndex) currentMusic =
-                                        musicList[index + 1]
-                                },
-                                onRepeat = {},
-                                isPlaying = isPlaying
-                            )
+
+                Spacer(modifier = Modifier.width(30.dp))
+                // Music Section
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.constrainAs(musicSection) {
+                        top.linkTo(stopPauseRow.bottom, margin = 30.dp)
+                        start.linkTo(parent.start)
+                        end.linkTo(parent.end)
+                    }
+                ) {
+                    Row(horizontalArrangement = Arrangement.Center) {
+                        Button(
+                            onClick = { playbackMode = PlaybackMode.IN_APP },
+                            colors = ButtonDefaults.buttonColors(containerColor = DarkGreen, contentColor = Color.White)
+                        ) {
+                            Text("In-App")
+                        }
+                        Spacer(modifier = Modifier.width(30.dp))
+                        Button(
+                            onClick = { playbackMode = PlaybackMode.SPOTIFY },
+                            colors = ButtonDefaults.buttonColors(containerColor = DarkGreen, contentColor = Color.White)
+                        ) {
+                            Text("Spotify")
                         }
                     }
 
-                    PlaybackMode.SPOTIFY -> {
-                        AudioPlayerCardSpotify(
-                            trackTitle = spotifyTitle.value,
-                            trackArtist = spotifyArtist.value,
-                            albumArtBitmap = spotifyAlbumArtBitmap.value,
-                            isPlaying = spotifyIsPlaying.value,
-                            progress = spotifyProgress.value,
-                            onPlayPause = {
-                                //Unresolved reference 'spotifyPlaybackManager'.
-                                spotifyPlaybackManager.getCurrentPlayerState { state ->
-                                    if (state?.isPaused == true) {
-                                        spotifyPlaybackManager.resume()
-                                    } else {
-                                        spotifyPlaybackManager.pause()
-                                    }
+                    var isPlaying by remember { mutableStateOf(false) }
+
+                    if (musicList.isEmpty()) {
+                        CircularProgressIndicator(color = Color.White)
+                    } else {
+                        if (currentMusic == null) {
+                            currentMusic = musicList.first()
+                        }
+
+                        when (playbackMode) {
+                            PlaybackMode.IN_APP -> {
+                                currentMusic?.let { safeMusic ->
+                                    AudioPlayerCard(
+                                        currentMusic = safeMusic,
+                                        progress = 0.5f, // TODO: replace with real playback progress
+                                        onShuffle = { currentMusic = musicList.shuffled().firstOrNull() },
+                                        onPrevious = {
+                                            val index = musicList.indexOf(safeMusic)
+                                            if (index > 0) currentMusic = musicList[index - 1]
+                                        },
+                                        onPlayPause = {
+                                            isPlaying = !isPlaying
+                                            if (isPlaying) {
+                                                musicVM.createMusicSession(
+                                                    MusicSession(
+                                                        userId = userId,
+                                                        studySessionId = currentSessionId,
+                                                        artist = safeMusic.artist,
+                                                        musicPlatform = "In-App",
+                                                        musicTitle = safeMusic.title,
+                                                        musicUri = safeMusic.albumArtUri,
+                                                        startTime = getCurrentTimestamp(),
+                                                        endTime = null
+                                                    )
+                                                )
+                                            }
+                                        },
+                                        onNext = {
+                                            val index = musicList.indexOf(safeMusic)
+                                            if (index < musicList.lastIndex) currentMusic = musicList[index + 1]
+                                        },
+                                        onRepeat = {},
+                                        isPlaying = isPlaying
+                                    )
                                 }
-                            },
-                            onNext = {
-                                spotifyPlaybackManager.skipToNext()
-                            },
-                            onPrevious = {
-                                spotifyPlaybackManager.skipToPrevious()
-                            },
-                            onShuffle = {
-                                Log.w("SpotifyUI", "Shuffle not supported via App Remote.")
-                            },
-                            onRepeat = {
-                                Log.w("SpotifyUI", "Repeat not supported via App Remote.")
                             }
-                        )
+
+                            PlaybackMode.SPOTIFY -> {
+                                AudioPlayerCardSpotify(
+                                    trackTitle = spotifyTitle.value,
+                                    trackArtist = spotifyArtist.value,
+                                    albumArtBitmap = spotifyAlbumArtBitmap.value,
+                                    isPlaying = spotifyIsPlaying.value,
+                                    progress = spotifyProgress.value,
+                                    onPlayPause = {
+                                        spotifyPlaybackManager.getCurrentPlayerState { state ->
+                                            if (state?.isPaused == true) spotifyPlaybackManager.resume()
+                                            else spotifyPlaybackManager.pause()
+                                        }
+                                    },
+                                    onNext = { spotifyPlaybackManager.skipToNext() },
+                                    onPrevious = { spotifyPlaybackManager.skipToPrevious() },
+                                    onShuffle = { },
+                                    onRepeat = {  }
+                                )
+                            }
+                        }
                     }
-
                 }
-            }
-        }
-    }
 
-    if (showHatchCard) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            HatchCard()
-        }
-    }
-    if (showNewEggCard) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            NewEggCard(onContinueClick = {
-                showHatchCard = false
-                showNewEggCard = false
-            })
+            }
         }
     }
 }
