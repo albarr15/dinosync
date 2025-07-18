@@ -1166,6 +1166,7 @@ fun CreditsModal(onDismiss: () -> Unit) {
                             "• pch.vector / Freepik\n" +
                             "• pikisuperstar / Freepik\n" +
                             "• macrovector / Freepik\n" +
+                            "• Gstudioimagen / Freepik\n"
                             "• Orin zuu / the Noun Project\n" +
                             "• etika ariatna / the Noun Project\n",
                     style = MaterialTheme.typography.bodyMedium,

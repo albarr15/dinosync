@@ -230,18 +230,10 @@ fun ProfileActivityScreen(userId: String) {
                             user?.userBio ?: "User Bio",
                             fontSize = 14.sp,
                             color = Color.Gray,
-                            fontFamily = fontFamily
+                            fontFamily = fontFamily,
+                            lineHeight = 17.sp
                         )
                         Spacer(modifier = Modifier.height(15.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            repeat(3) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(30.dp)
-                                        .background(Color.LightGray, shape = CircleShape)
-                                )
-                            }
-                        }
                     }
                 }
             }
@@ -275,7 +267,7 @@ fun ProfileActivityScreen(userId: String) {
                             contentAlignment = Alignment.Center
                         ) {
                             Image(
-                                painter = painterResource(achievement.imageResId),
+                                painter = painterResource(achievement.getDrawableRes()),
                                 contentDescription = null,
                                 modifier = Modifier.size(60.dp)
                             )
@@ -309,7 +301,7 @@ fun ProfileActivityScreen(userId: String) {
                                 modifier = Modifier.padding(4.dp)
                             ) {
                                 Image(
-                                    painter = painterResource(id = userGroups[index].image.toInt()),
+                                    painter = painterResource(R.drawable.group_default),
                                     contentDescription = null,
                                     modifier = Modifier
                                         .size(50.dp)
@@ -329,7 +321,8 @@ fun ProfileActivityScreen(userId: String) {
                 }
             }
             Spacer(modifier = Modifier.height(30.dp))
-            // Mood Log Section (placeholder, replace with real data when available)
+
+            // MOOD LOG SECTION
             Row {
                 Text("Mood Log", fontWeight = FontWeight.Medium, fontSize = 18.sp)
                 Text(
@@ -356,19 +349,6 @@ fun getMoodColor(moodLevel: Int): Color {
         else -> Color.Gray
     }
 }
-
-
-fun getMoodLevel(moodName: String): Int {
-    return when (moodName) {
-        "very_dissatisfied" -> 1 // Terrible - Red
-        "dissatisfied" -> 2 // Bad - Orange
-        "neutral" -> 3 // Meh - Yellow
-        "satisfied" -> 4 // Good - Light Green
-        "very_satisfied" -> 5 // Great - Green
-        else -> 0
-    }
-}
-
 
 
 @Composable
@@ -412,7 +392,7 @@ fun MoodTrackerGrid(
             ) {
                 for (col in 0 until columns) {
                     val mood = moodGrid[row][col]
-                    val moodLevel = getMoodLevel(mood.name)
+                    val moodLevel = mood.level
                     Box(
                         modifier = Modifier
                             .weight(1f)

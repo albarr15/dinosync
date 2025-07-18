@@ -184,7 +184,7 @@ class FirebaseRepository {
         val groups = mutableListOf<StudyGroup>()
 
         groupIds.chunked(10).forEach { chunk ->
-            val groupSnapshot = db.collection("studygroups")
+            val groupSnapshot = db.collection("studygroup")
                 .whereIn(FieldPath.documentId(), chunk)
                 .get().await()
 
@@ -200,6 +200,7 @@ class FirebaseRepository {
 
         val dailyStudyHistorySnapshot = db.collection("dailystudyhistory")
             .whereEqualTo("userId", userId)
+            .orderBy("date")
             .get().await()
 
         val moodEntryIds = dailyStudyHistorySnapshot.documents.mapNotNull {
