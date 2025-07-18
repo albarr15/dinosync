@@ -1,8 +1,9 @@
 package com.mobdeve.s18.group9.dinosync.model
 
+// refers to each collectible / dinosaur
+// rewards new dino for each hr of study completed
 data class DinoCatalog(
-    val awardedForHours: Int = 0,
     val description:String = "",
     val image:String = "",
-    val title:String = "",
+    val name:String = "",
 )
