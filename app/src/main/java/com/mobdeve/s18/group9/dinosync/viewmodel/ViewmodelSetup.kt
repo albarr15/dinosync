@@ -1,5 +1,6 @@
 package com.mobdeve.s18.group9.dinosync.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mobdeve.s18.group9.dinosync.model.*
@@ -26,16 +27,30 @@ class AchievementViewModel : ViewModel() {
 
 class CourseViewModel : ViewModel() {
     private val repository = FirebaseRepository()
-
     private val _courses = MutableStateFlow<List<Course>>(emptyList())
     val courses: StateFlow<List<Course>> = _courses
 
     fun loadCourses() {
         viewModelScope.launch {
-            _courses.value = repository.getAllCourses()
+            try {
+                val courseList = repository.getAllCourses()
+                _courses.value = courseList
+            } catch (e: Exception) {
+                Log.e("CourseViewModel", "Error loading courses: ${e.message}")
+            }
+        }
+    }
+    fun addCourseIfNew(courseName: String) {
+        viewModelScope.launch {
+            if (courseName.isNotBlank() && !_courses.value.any { it.name == courseName }) {
+                val newCourse = Course(name = courseName)
+                repository.addCourse(newCourse)
+                loadCourses()
+            }
         }
     }
 }
+
 
 class DailyStudyHistoryViewModel : ViewModel() {
     private val repository = FirebaseRepository()

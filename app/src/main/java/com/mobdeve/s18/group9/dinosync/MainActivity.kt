@@ -167,15 +167,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             DinoSyncTheme {
                 MainScreen(
-                    userId = userId,
-                    spotifyAppRemote = spotifyAppRemote,
-                    spotifyPlaybackManager = spotifyPlaybackManager,
-                    spotifyTitle = spotifyTitleState,
-                    spotifyArtist = spotifyArtistState,
-                    spotifyAlbumArtBitmap  = spotifyAlbumArtBitmap,
-                    spotifyIsPlaying = spotifyIsPlayingState,
-                    spotifyProgress = spotifyProgressState
-                )
+                    userId = userId)
             }
         }
     }
@@ -313,14 +305,7 @@ class MainActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
-    userId: String,
-    spotifyAppRemote: SpotifyAppRemote?,
-    spotifyPlaybackManager: SpotifyPlaybackManager,
-    spotifyTitle: State<String>,
-    spotifyArtist: State<String>,
-    spotifyAlbumArtBitmap: State<Bitmap?>,
-    spotifyIsPlaying: State<Boolean>,
-    spotifyProgress: State<Float>
+    userId: String
 ) {
     val context = LocalContext.current
 
@@ -333,11 +318,7 @@ fun MainScreen(
     val musicVM: MusicViewModel = viewModel()
 
     val musicList by musicVM.musicList.collectAsState()
-    val musicSessions by musicVM.observeMusicSessions(userId).collectAsState(initial = emptyList())
     var currentMusic by remember { mutableStateOf<Music?>(null) }
-
-    var playbackMode by remember { mutableStateOf(PlaybackMode.IN_APP) }
-
 
     val todoVM: TodoViewModel = viewModel()
     val todoDocs by todoVM.todos.collectAsState()
@@ -348,7 +329,6 @@ fun MainScreen(
         }
     }
 
-
     LaunchedEffect(Unit) {
         moodVM.loadMoods()
         studySessionVM.loadStudySessions(userId)
@@ -358,16 +338,12 @@ fun MainScreen(
         musicVM.loadMusic()
     }
 
-    val currentUser by userVM.user.collectAsState()
     val moods by moodVM.moods.collectAsState()
-    val courseList by courseVM.courses.collectAsState()
-
-
     var hoursSet by remember { mutableStateOf("") }
     var minutesSet by remember { mutableStateOf("") }
     var showMoodDialog by remember { mutableStateOf(false) }
     var selectedMood by remember { mutableStateOf<Mood?>(null) }
-
+    val courseList by courseVM.courses.collectAsState()
 
     Scaffold(
         bottomBar = {
@@ -418,23 +394,33 @@ fun MainScreen(
                 modifier = Modifier.align(Alignment.Start)
             )
 
-            /******** Course Box *********/
+            /******** Editable Course Dropdown ********/
             val courseNames = courseList.map { it.name }
             var expanded by remember { mutableStateOf(false) }
             var selectedCourse by remember { mutableStateOf("") }
+
+            val filteredCourses = if (selectedCourse.isBlank()) {
+                courseNames
+            } else {
+                courseNames.filter {
+                    it.contains(selectedCourse, ignoreCase = true)
+                }
+            }
 
             ExposedDropdownMenuBox(
                 expanded = expanded,
                 onExpandedChange = { expanded = !expanded },
                 modifier = Modifier
-                    .width(250.dp)
+                    .width(350.dp)
                     .padding(horizontal = 16.dp, vertical = 8.dp)
             ) {
                 OutlinedTextField(
                     value = selectedCourse,
-                    onValueChange = {},
-                    readOnly = true,
-                    label = { Text("Select Subject") },
+                    onValueChange = {
+                        selectedCourse = it
+                        expanded = true
+                    },
+                    label = { Text("Select or Type Subject") },
                     trailingIcon = {
                         ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
                     },
@@ -451,12 +437,11 @@ fun MainScreen(
                         .fillMaxWidth()
                 )
 
-
                 ExposedDropdownMenu(
-                    expanded = expanded,
+                    expanded = expanded && filteredCourses.isNotEmpty(),
                     onDismissRequest = { expanded = false }
                 ) {
-                    courseNames.forEach { courseName ->
+                    filteredCourses.forEach { courseName ->
                         DropdownMenuItem(
                             text = { Text(courseName) },
                             onClick = {
@@ -467,6 +452,20 @@ fun MainScreen(
                     }
                 }
             }
+            if (selectedCourse.isNotBlank() && !courseNames.contains(selectedCourse)) {
+                Button(
+                    onClick = {
+                        courseVM.addCourseIfNew(selectedCourse.trim())
+                        selectedCourse = ""
+                    },
+                    modifier = Modifier
+                        .padding(top = 8.dp)
+                        .align(Alignment.CenterHorizontally)
+                ) {
+                    Text("Add \"$selectedCourse\" as New Course")
+                }
+            }
+
 
             Spacer(modifier = Modifier.height(10.dp))
 

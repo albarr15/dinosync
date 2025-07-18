@@ -28,6 +28,10 @@ class FirebaseRepository {
         return snapshot.toObjects(Course::class.java)
     }
 
+    suspend fun addCourse(course: Course) {
+        db.collection("course").add(course).await()
+    }
+
 
 
     // DAILY STUDY HISTORY ✔️
