@@ -20,12 +20,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.PaintingStyle.Companion.Stroke
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.Font
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.googlefonts.GoogleFont
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -67,7 +63,7 @@ class FocusStudyActivity : ComponentActivity() {
     private val spotifyIsPlayingState = mutableStateOf(false)
     private val spotifyProgressState = mutableStateOf(0f)
     private lateinit var spotifyPlaybackManager: SpotifyPlaybackManager
-    private lateinit var playbackManager: LocalPlaybackManager
+    private lateinit var localPlaybackManager: LocalPlaybackManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -81,7 +77,7 @@ class FocusStudyActivity : ComponentActivity() {
         val moodId = intent.getStringExtra("moodId") ?: ""
 
         spotifyPlaybackManager = SpotifyPlaybackManager(this)
-        playbackManager = LocalPlaybackManager(applicationContext)
+        localPlaybackManager = LocalPlaybackManager(applicationContext)
 
         setContent {
             DinoSyncTheme {
@@ -94,6 +90,7 @@ class FocusStudyActivity : ComponentActivity() {
                     moodId = moodId,
                     spotifyAppRemote = spotifyAppRemote,
                     spotifyPlaybackManager = spotifyPlaybackManager,
+                    localPlaybackManager = localPlaybackManager,
                     spotifyTitle = spotifyTitleState,
                     spotifyArtist = spotifyArtistState,
                     spotifyAlbumArtBitmap  = spotifyAlbumArtBitmap,
@@ -168,6 +165,7 @@ class FocusStudyActivity : ComponentActivity() {
             Log.d("♫ Spotify", "Disconnected from App Remote")
         }
         spotifyPlaybackManager.disconnect()
+        localPlaybackManager.stop()
     }
 
     override fun onRestart() {
@@ -178,6 +176,8 @@ class FocusStudyActivity : ComponentActivity() {
     override fun onDestroy() {
         super.onDestroy()
         println("FocusStudyActivity onDestroy()")
+        spotifyPlaybackManager.disconnect()
+        localPlaybackManager.stop()
     }
 
     private fun connected() {
@@ -237,6 +237,7 @@ fun FocusStudyScreen(
     moodId: String,
     spotifyAppRemote: SpotifyAppRemote?,
     spotifyPlaybackManager: SpotifyPlaybackManager,
+    localPlaybackManager: LocalPlaybackManager,
     spotifyTitle: State<String>,
     spotifyArtist: State<String>,
     spotifyAlbumArtBitmap: State<Bitmap?>,
@@ -256,11 +257,8 @@ fun FocusStudyScreen(
     var isStopped by remember { mutableStateOf(false) }
     val pauseTimestamps = remember { mutableStateListOf<Long>() }
     val resumeTimestamps = remember { mutableStateListOf<Long>() }
-    val startTime = remember { System.currentTimeMillis() }
 
     val studySessionVM: StudySessionViewModel = viewModel()
-    val musicSessionVM: MusicSessionViewModel = viewModel()
-    val musicSessions by musicVM.observeMusicSessions(userId).collectAsState(initial = emptyList())
     var playbackMode by remember { mutableStateOf(PlaybackMode.IN_APP) }
 
     var currentSessionId by remember { mutableStateOf(studySessionId) }
@@ -292,6 +290,19 @@ fun FocusStudyScreen(
             }
         }
     }
+
+    var localProgress by remember { mutableStateOf(0f) }
+    var isPlaying by remember { mutableStateOf(false) }
+
+    LaunchedEffect(isPlaying) {
+        while (isPlaying && localPlaybackManager.isPlaying()) {
+            delay(1000)
+            val duration = localPlaybackManager.getDuration()
+            val position = localPlaybackManager.getCurrentPosition()
+            localProgress = if (duration > 0) position / duration.toFloat() else 0f
+        }
+    }
+
 
     // ✅ Load music
     LaunchedEffect(Unit) { musicVM.loadMusic() }
@@ -388,6 +399,7 @@ fun FocusStudyScreen(
             ConstraintLayout(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .fillMaxHeight()
                     .offset(y = (-200).dp)
             ) {
                 val (stopPauseRow, musicSection) = createRefs()
@@ -498,15 +510,23 @@ fun FocusStudyScreen(
                                 currentMusic?.let { safeMusic ->
                                     AudioPlayerCard(
                                         currentMusic = safeMusic,
-                                        progress = 0.5f, // TODO: replace with real playback progress
-                                        onShuffle = { currentMusic = musicList.shuffled().firstOrNull() },
+                                        progress = 0.0f,
+                                        onShuffle = {
+                                            currentMusic = musicList.shuffled().firstOrNull()?.also {
+                                                localPlaybackManager.play(it.filename)
+                                            }
+                                        },
                                         onPrevious = {
                                             val index = musicList.indexOf(safeMusic)
-                                            if (index > 0) currentMusic = musicList[index - 1]
+                                            if (index > 0) {
+                                                currentMusic = musicList[index - 1]
+                                                localPlaybackManager.play(musicList[index - 1].filename)
+                                            }
                                         },
                                         onPlayPause = {
                                             isPlaying = !isPlaying
                                             if (isPlaying) {
+                                                localPlaybackManager.play(safeMusic.filename)
                                                 musicVM.createMusicSession(
                                                     MusicSession(
                                                         userId = userId,
@@ -519,15 +539,25 @@ fun FocusStudyScreen(
                                                         endTime = null
                                                     )
                                                 )
+                                            } else {
+                                                localPlaybackManager.pause()
                                             }
                                         },
                                         onNext = {
                                             val index = musicList.indexOf(safeMusic)
-                                            if (index < musicList.lastIndex) currentMusic = musicList[index + 1]
+                                            if (index < musicList.lastIndex) {
+                                                currentMusic = musicList[index + 1]
+                                                localPlaybackManager.play(musicList[index + 1].filename)
+                                            }
                                         },
-                                        onRepeat = {},
+                                        onRepeat = {
+                                            currentMusic?.let {
+                                                localPlaybackManager.play(it.filename)
+                                            }
+                                        },
                                         isPlaying = isPlaying
                                     )
+
                                 }
                             }
 

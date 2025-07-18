@@ -74,7 +74,7 @@ fun AudioPlayerCard(
                 modifier = Modifier
                     .fillMaxHeight()
                     .weight(1f)
-                    .padding(horizontal = 15.dp, vertical = 30.dp),
+                    .padding(horizontal = 15.dp, vertical = 20.dp),
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
                 Column {

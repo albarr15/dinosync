@@ -52,4 +52,7 @@ class LocalPlaybackManager(private val context: Context) {
     fun isPlaying(): Boolean {
         return mediaPlayer?.isPlaying == true
     }
+
+    fun getCurrentPosition(): Int = mediaPlayer?.currentPosition ?: 0
+    fun getDuration(): Int = mediaPlayer?.duration ?: 0
 }
