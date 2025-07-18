@@ -497,7 +497,7 @@ fun FocusStudyScreen(
                     }
 
                     var isPlaying by remember { mutableStateOf(false) }
-
+                    var isRepeatEnabled by remember { mutableStateOf(false) }
                     if (musicList.isEmpty()) {
                         CircularProgressIndicator(color = Color.White)
                     } else {
@@ -510,7 +510,7 @@ fun FocusStudyScreen(
                                 currentMusic?.let { safeMusic ->
                                     AudioPlayerCard(
                                         currentMusic = safeMusic,
-                                        progress = 0.0f,
+                                        progress = localPlaybackManager.getCurrentPosition().toFloat() / localPlaybackManager.getDuration().coerceAtLeast(1),
                                         onShuffle = {
                                             currentMusic = musicList.shuffled().firstOrNull()?.also {
                                                 localPlaybackManager.play(it.filename)
@@ -524,24 +524,30 @@ fun FocusStudyScreen(
                                             }
                                         },
                                         onPlayPause = {
-                                            isPlaying = !isPlaying
                                             if (isPlaying) {
-                                                localPlaybackManager.play(safeMusic.filename)
-                                                musicVM.createMusicSession(
-                                                    MusicSession(
-                                                        userId = userId,
-                                                        studySessionId = currentSessionId,
-                                                        artist = safeMusic.artist,
-                                                        musicPlatform = "In-App",
-                                                        musicTitle = safeMusic.title,
-                                                        musicUri = safeMusic.albumArtUri,
-                                                        startTime = getCurrentTimestamp(),
-                                                        endTime = null
-                                                    )
-                                                )
-                                            } else {
                                                 localPlaybackManager.pause()
+                                            } else {
+                                                if (localPlaybackManager.getCurrentPosition() > 0) {
+                                                    localPlaybackManager.resume()
+                                                } else {
+                                                    safeMusic.let {
+                                                        localPlaybackManager.play(it.filename)
+                                                        musicVM.createMusicSession(
+                                                            MusicSession(
+                                                                userId = userId,
+                                                                studySessionId = currentSessionId,
+                                                                artist = it.artist,
+                                                                musicPlatform = "In-App",
+                                                                musicTitle = it.title,
+                                                                musicUri = it.albumArtUri,
+                                                                startTime = getCurrentTimestamp(),
+                                                                endTime = null
+                                                            )
+                                                        )
+                                                    }
+                                                }
                                             }
+                                            isPlaying = !isPlaying
                                         },
                                         onNext = {
                                             val index = musicList.indexOf(safeMusic)
@@ -551,13 +557,13 @@ fun FocusStudyScreen(
                                             }
                                         },
                                         onRepeat = {
-                                            currentMusic?.let {
-                                                localPlaybackManager.play(it.filename)
-                                            }
-                                        },
-                                        isPlaying = isPlaying
+                                            isRepeatEnabled = !isRepeatEnabled
+                                            localPlaybackManager.setRepeatMode(isRepeatEnabled)
+                                        }
+                                        ,
+                                        isPlaying = isPlaying,
+                                        isRepeatEnabled = isRepeatEnabled
                                     )
-
                                 }
                             }
 
