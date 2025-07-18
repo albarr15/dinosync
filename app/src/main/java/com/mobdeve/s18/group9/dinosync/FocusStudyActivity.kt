@@ -539,6 +539,7 @@ fun FocusStudyScreen(
                                     isPlaying = spotifyIsPlaying.value,
                                     progress = spotifyProgress.value,
                                     onPlayPause = {
+                                        // when play create also a MusicSession
                                         spotifyPlaybackManager.getCurrentPlayerState { state ->
                                             if (state?.isPaused == true) spotifyPlaybackManager.resume()
                                             else spotifyPlaybackManager.pause()

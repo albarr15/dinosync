@@ -607,8 +607,9 @@ fun MainScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(5.dp))
+            Spacer(modifier = Modifier.height(30.dp))
             HorizontalDivider(modifier = Modifier, thickness = 1.dp, color = Color.Gray)
+            Spacer(modifier = Modifier.height(20.dp))
 
             /******** TodoList *********/
             TodoList(
@@ -635,104 +636,7 @@ fun MainScreen(
             )
 
             Spacer(modifier = Modifier.height(5.dp))
-            Row(horizontalArrangement = Arrangement.Center) {
-                Button(onClick = {
-                    playbackMode = PlaybackMode.IN_APP
-                },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = DarkGreen,
-                        contentColor = Color.White
-                    )) {
-                    Text("In-App")
-                }
-                Spacer(modifier = Modifier.width(10.dp))
-                Button(onClick = {
-                    playbackMode = PlaybackMode.SPOTIFY
-                },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = DarkGreen,
-                        contentColor = Color.White
-                    )) {
-                    Text("Spotify")
-                }
-            }
 
-            Spacer(modifier = Modifier.height(10.dp))
-            /******** Music Activity *********/
-            var isPlaying by remember { mutableStateOf(false) }
-            when (playbackMode) {
-                PlaybackMode.IN_APP -> {
-                    currentMusic?.let { safeMusic ->
-                        AudioPlayerCard(
-                            currentMusic = safeMusic,
-                            progress = 0.5f,
-                            onShuffle = {
-                                val shuffled = musicList.shuffled().firstOrNull()
-                                currentMusic = shuffled
-                            },
-                            onPrevious = {
-                                val index = musicList.indexOf(safeMusic)
-                                if (index > 0) currentMusic = musicList[index - 1]
-                            },
-                            onPlayPause = {
-                                isPlaying = !isPlaying
-                                if (isPlaying) {
-                                    musicVM.createMusicSession(
-                                        MusicSession(
-                                            userId = userId,
-                                            studySessionId = "",
-                                            artist = safeMusic.artist,
-                                            musicPlatform = "In-App",
-                                            musicTitle = safeMusic.title,
-                                            musicUri = safeMusic.albumArtUri,
-                                            startTime = getCurrentTimestamp(),
-                                            endTime = null
-                                        )
-                                    )
-                                }
-                            },
-                            onNext = {
-                                val index = musicList.indexOf(safeMusic)
-                                if (index < musicList.lastIndex) currentMusic = musicList[index + 1]
-                            },
-                            onRepeat = {},
-                            isPlaying = isPlaying
-                        )
-                    }
-                }
-
-                PlaybackMode.SPOTIFY -> {
-                    AudioPlayerCardSpotify(
-                        trackTitle = spotifyTitle.value,
-                        trackArtist = spotifyArtist.value,
-                        albumArtBitmap = spotifyAlbumArtBitmap.value,
-                        isPlaying = spotifyIsPlaying.value,
-                        progress = spotifyProgress.value,
-                        onPlayPause = {
-                            //Unresolved reference 'spotifyPlaybackManager'.
-                            spotifyPlaybackManager.getCurrentPlayerState { state ->
-                                if (state?.isPaused == true) {
-                                    spotifyPlaybackManager.resume()
-                                } else {
-                                    spotifyPlaybackManager.pause()
-                                }
-                            }
-                        },
-                        onNext = {
-                            spotifyPlaybackManager.skipToNext()
-                        },
-                        onPrevious = {
-                            spotifyPlaybackManager.skipToPrevious()
-                        },
-                        onShuffle = {
-                            Log.w("SpotifyUI", "Shuffle not supported via App Remote.")
-                        },
-                        onRepeat = {
-                            Log.w("SpotifyUI", "Repeat not supported via App Remote.")
-                        }
-                    )
-                }
-            }
         }
     }
 }
