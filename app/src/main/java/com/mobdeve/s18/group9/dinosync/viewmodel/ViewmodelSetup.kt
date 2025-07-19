@@ -8,7 +8,6 @@ import com.mobdeve.s18.group9.dinosync.repository.FirebaseRepository
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import com.google.firebase.Timestamp
-import com.mobdeve.s18.group9.dinosync.repository.local.LocalPlaybackManager
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -64,18 +63,39 @@ class DailyStudyHistoryViewModel : ViewModel() {
         }
     }
 
+    fun createDailyHistory(
+        userId: String,
+        date: String,
+        moodId: String,
+    ) {
+        viewModelScope.launch {
+            val newEntry = DailyStudyHistory(
+                userId = userId,
+                hasStudied = true,
+                date = date,
+                moodEntryId = moodId,
+                totalIndividualMinutes = 0,
+                totalGroupStudyMinutes = 0
+
+            )
+            repository.insertDailyStudyHistory(newEntry)
+        }
+        Log.d("DailyHistoryVM", "createDailyHistory, ${userId},  ${date}, ${moodId}")
+
+    }
+
+
     fun updateDailyHistory(
         userId: String,
         date: String,
         moodId: String,
         additionalMinutes: Long
     ) {
+        Log.d("DailyHistoryVM", "updateDailyHistory, ${userId},  ${date}, ${moodId}, ${additionalMinutes}")
         viewModelScope.launch {
             val existing = repository.getDailyStudyHistoryByDate(userId, date)
 
             val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-            val parsedDate = dateFormat.parse(date)
-            val timestamp = parsedDate?.let { Timestamp(it) }
 
             val currentMinutes = existing?.totalIndividualMinutes ?: 0
             val cappedMinutes = (currentMinutes + additionalMinutes).coerceAtMost(1440) // 24 hours * 60 minutes
@@ -86,14 +106,20 @@ class DailyStudyHistoryViewModel : ViewModel() {
                 totalIndividualMinutes = cappedMinutes
             ) ?: DailyStudyHistory(
                 userId = userId,
-                date = timestamp,
+                date = dateFormat.format(Date()),
                 hasStudied = true,
                 moodEntryId = moodId,
                 totalIndividualMinutes = additionalMinutes
             )
-            repository.setDailyStudyHistory(updated)
+            repository.updateDailyStudyHistory(updated)
         }
     }
+    fun recordHistory(userId: String, date: String, moodId: String, minutes: Long) {
+        viewModelScope.launch {
+            updateDailyHistory(userId, date, moodId, minutes)
+        }
+    }
+
 
 
 }

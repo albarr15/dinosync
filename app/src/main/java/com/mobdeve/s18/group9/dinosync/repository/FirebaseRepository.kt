@@ -5,9 +5,12 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.mobdeve.s18.group9.dinosync.model.*
 import kotlinx.coroutines.tasks.await
 import com.google.firebase.firestore.ListenerRegistration
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.withContext
+import java.sql.Timestamp
 
 class FirebaseRepository {
     private val db = FirebaseFirestore.getInstance()
@@ -43,24 +46,38 @@ class FirebaseRepository {
 
     suspend fun getDailyStudyHistoryByDate(userId: String, date: String): DailyStudyHistory? {
         val db = FirebaseFirestore.getInstance()
-        val querySnapshot = db.collection("dailystudyhistory")
+        val snapshot = db.collection("dailystudyhistory")
             .whereEqualTo("userId", userId)
             .whereEqualTo("date", date)
             .get()
             .await()
-
-        return querySnapshot.documents.firstOrNull()?.toObject(DailyStudyHistory::class.java)
+        return snapshot.documents.firstOrNull()?.toObject(DailyStudyHistory::class.java)
     }
 
-    suspend fun setDailyStudyHistory(history: DailyStudyHistory) {
+
+    suspend fun updateDailyStudyHistory(history: DailyStudyHistory) = withContext(Dispatchers.IO) {
         val db = FirebaseFirestore.getInstance()
-        val docId = "${history.userId}_${history.date}"
-        db.collection("dailystudyhistory")
-            .document(docId)
-            .set(history)
+        val querySnapshot = db.collection("dailystudyhistory")
+            .whereEqualTo("userId", history.userId)
+            .whereEqualTo("date", history.date)
+            .get()
+            .await()
+
+        val doc = querySnapshot.documents.firstOrNull()
+        if (doc != null) {
+            db.collection("dailystudyhistory")
+                .document(doc.id)
+                .set(history)
+                .await()
+        }
+    }
+
+    suspend fun insertDailyStudyHistory(history: DailyStudyHistory) {
+        val db = FirebaseFirestore.getInstance()
+        val docRef = db.collection("dailystudyhistory")
+            .add(history)
             .await()
     }
-
 
 
 

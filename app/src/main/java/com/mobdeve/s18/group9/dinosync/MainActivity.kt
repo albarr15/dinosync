@@ -127,11 +127,28 @@ import com.spotify.sdk.android.auth.AuthorizationResponse
 import androidx.compose.runtime.State
 import com.mobdeve.s18.group9.dinosync.repository.local.LocalPlaybackManager
 import com.mobdeve.s18.group9.dinosync.spotify.SpotifyPlaybackManager
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
 
 
 enum class PlaybackMode {
     IN_APP,
     SPOTIFY
+}
+
+fun getTodayTimestampAtMidnight(): Timestamp {
+    val calendar = Calendar.getInstance()
+    calendar.set(Calendar.HOUR_OF_DAY, 0)
+    calendar.set(Calendar.MINUTE, 0)
+    calendar.set(Calendar.SECOND, 0)
+    calendar.set(Calendar.MILLISECOND, 0)
+    return Timestamp(calendar.time)
+}
+
+fun fetchCurDate(): String {
+    val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+    return sdf.format(Date())
 }
 
 class MainActivity : ComponentActivity() {
@@ -510,12 +527,10 @@ fun MainScreen(
                                 )
 
                                 studySessionVM.createStudySessionAndGetId(session) { sessionId ->
-                                    dailyHistoryVM.updateDailyHistory(
+                                    dailyHistoryVM.createDailyHistory(
                                         userId = userId,
-                                        date = sessionDate,
-                                        moodId = moodId,
-                                        //Argument type mismatch: actual type is 'kotlin.Float', but 'kotlin.Long' was expected.
-                                        additionalMinutes = (hourInt * 60 + minuteInt).toLong()
+                                        date = fetchCurDate(),
+                                        moodId = moodId
                                     )
 
                                     Toast.makeText(

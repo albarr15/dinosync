@@ -62,7 +62,10 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-
+fun getCurDate(): String {
+    val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+    return sdf.format(Date())
+}
 
 class FocusStudyActivity : ComponentActivity() {
     private var spotifyAppRemote: SpotifyAppRemote? = null
@@ -267,10 +270,6 @@ fun FocusStudyScreen(
     val pauseTimestamps = remember { mutableStateListOf<Long>() }
     val resumeTimestamps = remember { mutableStateListOf<Long>() }
 
-    /*
-        That converts Long values (pause and resume) in milliseconds into
-        Firestore Timestamp format. That part is good and accurate.
-    **/
     val pauseResumeList: List<PauseResumeTimestamp> = pauseTimestamps.zip(resumeTimestamps) { pause, resume ->
         PauseResumeTimestamp(
             pausedAt = Timestamp(pause / 1000, ((pause % 1000) * 1000000).toInt()),
@@ -300,7 +299,7 @@ fun FocusStudyScreen(
     }
 
     // ✅ Timer countdown logic
-    LaunchedEffect(isRunning) {
+    LaunchedEffect(currentSessionId) {
         if (isRunning) {
             while (timeLeft > 0) {
                 delay(1000L)
@@ -309,23 +308,24 @@ fun FocusStudyScreen(
             if (timeLeft == 0 && !isStopped) {
                 isRunning = false
                 isStopped = true
+
                 val endTime = System.currentTimeMillis()
                 val endTimestamp = Timestamp(endTime / 1000, ((endTime % 1000) * 1000000).toInt())
                 val updates = mapOf("endedAt" to endTimestamp, "status" to "completed")
                 studySessionVM.updateStudySession(currentSessionId, updates)
 
-
-                val elapsedMinutes = calculateActualElapsedMinutes(
+                val elapsedMinutes = calculateActualElapsedSeconds(
+                    context = context,
                     totalTime = totalTime,
                     timeLeft = timeLeft,
                     pauses = pauseResumeList
                 )
                 val currentDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-                dailyStudyHistoryVM.updateDailyHistory(
+                dailyStudyHistoryVM.recordHistory(
                     userId = userId,
-                    date = currentDate,
+                    date = getCurDate(),
                     moodId = moodId,
-                    additionalMinutes = elapsedMinutes
+                    minutes = (elapsedMinutes / 60).toLong()
                 )
             }
 
@@ -474,37 +474,52 @@ fun FocusStudyScreen(
                 ) {
                     OutlinedButton(
                         onClick = {
-                            val timeLeftBeforeStop = timeLeft  // Save before overwriting!
-                            timeLeft = 0
-                            isRunning = false
-                            isStopped = true
+                            coroutineScope.launch {
+                                val timeLeftBeforeStop = timeLeft  // Save before overwriting!
+                                timeLeft = 0
+                                isRunning = false
+                                isStopped = true
 
-                            val millis = System.currentTimeMillis()
-                            val seconds = millis / 1000
-                            val nanoseconds = ((millis % 1000) * 1_000_000).toInt()
-                            val timestamp = Timestamp(seconds, nanoseconds)
+                                val millis = System.currentTimeMillis()
+                                val seconds = millis / 1000
+                                val nanoseconds = ((millis % 1000) * 1_000_000).toInt()
+                                val timestamp = Timestamp(seconds, nanoseconds)
 
-                            val endTime = System.currentTimeMillis()
-                            val endTimestamp = Timestamp(endTime / 1000, ((endTime % 1000) * 1000000).toInt())
-                            val updates = mapOf("endedAt" to endTimestamp, "status" to "completed")
-                            studySessionVM.updateStudySession(currentSessionId, updates)
+                                val endTime = System.currentTimeMillis()
+                                val endTimestamp =
+                                    Timestamp(endTime / 1000, ((endTime % 1000) * 1000000).toInt())
+                                val updates =
+                                    mapOf("endedAt" to endTimestamp, "status" to "completed")
+                                studySessionVM.updateStudySession(currentSessionId, updates)
 
-                            Toast.makeText(context, "Stopped! timeLeft: $timeLeftBeforeStop", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, "Stopped! timeLeft: $timeLeftBeforeStop", Toast.LENGTH_SHORT).show()
 
-                            val elapsedMinutes = calculateActualElapsedMinutes(
-                                totalTime = totalTime,
-                                timeLeft = timeLeftBeforeStop,
-                                pauses = pauseResumeList
-                            )
-                            Toast.makeText(context, "Elapsed (actual): $elapsedMinutes mins", Toast.LENGTH_SHORT).show()
+                                val elapsedMinutes = calculateActualElapsedSeconds(
+                                    context = context,
+                                    totalTime = totalTime,
+                                    timeLeft = timeLeftBeforeStop,
+                                    pauses = pauseResumeList
+                                )
+                                val minutesPart = (elapsedMinutes % 3600) / 60
+                                val secondsPart = elapsedMinutes % 60
 
-                            val currentDate = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-                            dailyStudyHistoryVM.updateDailyHistory(
-                                userId = userId,
-                                date = currentDate,
-                                moodId = moodId,
-                                additionalMinutes = elapsedMinutes
-                            )
+                                Toast.makeText(context,  "Elapsed (actual): ${minutesPart}m ${secondsPart}s", Toast.LENGTH_SHORT).show()
+                                val currentDate = SimpleDateFormat(
+                                    "yyyy-MM-dd",
+                                    Locale.getDefault()
+                                ).format(Date())
+                                /*
+                                dailyStudyHistoryVM.recordHistory(
+                                    userId = userId,
+                                    date = getCurDate(),
+                                    moodId = moodId,
+                                    minutes = (elapsedMinutes / 60).toLong()
+                                )
+                                */
+
+                                Toast.makeText(context, "Stop. ${currentDate}, ${elapsedMinutes / 60}m to history", Toast.LENGTH_SHORT).show()
+
+                            }
                         },
                         colors = ButtonDefaults.outlinedButtonColors(Color.Transparent),
                         modifier = Modifier
@@ -518,19 +533,52 @@ fun FocusStudyScreen(
 
                     Button(
                         onClick = {
-                            val now = System.currentTimeMillis()
                             val startTimestamp = Timestamp.now()
+                            coroutineScope.launch {
+                                if (isStopped || timeLeft == 0) {
+                                    // Record previous session before repeating
+                                    val endTime = System.currentTimeMillis()
+                                    val endTimestamp = Timestamp(
+                                        endTime / 1000,
+                                        ((endTime % 1000) * 1000000).toInt()
+                                    )
+                                    val updates =
+                                        mapOf("endedAt" to endTimestamp, "status" to "completed")
+                                    studySessionVM.updateStudySession(currentSessionId, updates)
 
-                            if (isStopped || timeLeft == 0) {
-                                Toast.makeText(context, "totalTime: $totalTime seconds", Toast.LENGTH_SHORT).show()
-                                coroutineScope.launch {
+                                    val elapsedMinutes = calculateActualElapsedSeconds(
+                                        context = context,
+                                        totalTime = totalTime,
+                                        timeLeft = timeLeft,
+                                        pauses = pauseResumeList
+                                    )
+                                    val minutesPart = (elapsedMinutes % 3600) / 60
+                                    val secondsPart = elapsedMinutes % 60
+                                    Toast.makeText(context, "Elapsed (actual): ${minutesPart}m ${secondsPart}s", Toast.LENGTH_SHORT).show()
+
+                                    val currentDate = getCurDate()
+                                    Log.d("DEBUG", "Calling updateDailyHistory with: $currentDate, $elapsedMinutes secs")
+                                    /*
+                                    dailyStudyHistoryVM.recordHistory(
+                                        userId = userId,
+                                        date = getCurDate(),
+                                        moodId = moodId,
+                                        minutes = ((elapsedMinutes) / 60).toLong()
+                                    )
+                                     */
+                                    Toast.makeText(
+                                        context,
+                                        "Repeat. ${currentDate}, ${elapsedMinutes / 60}m to history",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+
                                     val newSession = StudySession(
                                         userId = userId,
                                         courseId = subject,
                                         hourSet = hours,
                                         minuteSet = minutes,
                                         moodId = moodId,
-                                        sessionDate = getCurrentDate(),
+                                        sessionDate = getCurDate(),
                                         startedAt = startTimestamp,
                                         status = "active"
                                     )
@@ -538,41 +586,54 @@ fun FocusStudyScreen(
                                         currentSessionId = newId
                                         currentStartedAt = startTimestamp
                                         timeLeft = totalTime
-                                        isRunning = true
-                                        isStopped = false
                                         pauseTimestamps.clear()
                                         resumeTimestamps.clear()
+                                        isRunning = true
+                                        isStopped = false
+
                                     }
-                                }
-                            } else {
-                                isRunning = !isRunning
-                                coroutineScope.launch {
-                                    val updates = mapOf("status" to if (isRunning) "active" else "paused")
-                                    studySessionVM.updateStudySession(currentSessionId, updates)
+                                } else {
+                                    isRunning = !isRunning
+                                    coroutineScope.launch {
+                                        val updates =
+                                            mapOf("status" to if (isRunning) "active" else "paused")
+                                        studySessionVM.updateStudySession(currentSessionId, updates)
 
-                                    if (isRunning) {
-                                        val nowInSeconds = timeLeft
-                                        resumeTimestamps.add(System.currentTimeMillis() / 1000)
-                                        Toast.makeText(context, "Resumed at: $nowInSeconds ", Toast.LENGTH_SHORT).show()
-                                        // Store the current time stamp in Play,need for computing elapsed time later
+                                        if (isRunning) {
+                                            val nowInSeconds = timeLeft
+                                            resumeTimestamps.add(System.currentTimeMillis() / 1000)
+                                            Toast.makeText(
+                                                context,
+                                                "Resumed at: $nowInSeconds ",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
 
-                                        val pairedCount = minOf(pauseTimestamps.size, resumeTimestamps.size)
-                                        pauseTimestamps.take(pairedCount).zip(resumeTimestamps.take(pairedCount)).forEachIndexed { index, (pausedAt, resumedAt) ->
-                                            val duration = resumedAt - pausedAt
-                                            Toast.makeText(context, "Pause[$index] duration: ${(duration%3600)/60} min, ${duration%60} seconds", Toast.LENGTH_SHORT).show()
+                                            val pairedCount =
+                                                minOf(pauseTimestamps.size, resumeTimestamps.size)
+                                            pauseTimestamps.take(pairedCount)
+                                                .zip(resumeTimestamps.take(pairedCount))
+                                                .forEachIndexed { index, (pausedAt, resumedAt) ->
+                                                    val duration = resumedAt - pausedAt
+                                                    Toast.makeText(
+                                                        context,
+                                                        "Pause[$index] duration: ${(duration % 3600) / 60} min, ${duration % 60} seconds",
+                                                        Toast.LENGTH_SHORT
+                                                    ).show()
+                                                }
+
+                                        } else {
+                                            val nowInSeconds = timeLeft
+                                            pauseTimestamps.add(System.currentTimeMillis() / 1000)
+                                            Toast.makeText(
+                                                context,
+                                                "Paused  at: $nowInSeconds ",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+
                                         }
-
-                                    } else {
-                                        val nowInSeconds = timeLeft
-                                        pauseTimestamps.add(System.currentTimeMillis() / 1000)
-                                        Toast.makeText(context, "Paused  at: $nowInSeconds ", Toast.LENGTH_SHORT).show()
-                                        // Store the current time stamp in Pause, need for computing elapsed time later
-                                        // Where the pair of pause and resumed timestamp dictates the break time to be deducted from the total time
-
                                     }
                                 }
                             }
-
                         },
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Color.White,
@@ -741,7 +802,8 @@ fun FocusStudyScreen(
 }
 
 
-fun calculateActualElapsedMinutes(
+fun calculateActualElapsedSeconds(
+    context: Context,
     totalTime: Int, // in seconds
     timeLeft: Int,  // in seconds
     pauses: List<PauseResumeTimestamp>
@@ -755,13 +817,13 @@ fun calculateActualElapsedMinutes(
         } else 0L
     }
 
+    // 2. Actual elapsed = time actually spent studying
+    val elapsedTimeInSeconds = (totalTime - timeLeft - totalPausedSeconds.toInt()).toLong()
 
-    // 2. Actual elapsed = time actually spent studying = (total - timeLeft - paused)
-    val elapsedSeconds = totalTime - timeLeft - totalPausedSeconds.toInt()
-
-    // 3. Convert to minutes (round down or up as needed)
-    return maxOf(0, elapsedSeconds / 60).toLong()
+    //Toast.makeText(context, "Actual elapsed: ${(elapsedTimeInSeconds%3600)/60} min, ${elapsedTimeInSeconds%60} secs", Toast.LENGTH_SHORT).show()
+    return elapsedTimeInSeconds
 }
+
 
 
 
