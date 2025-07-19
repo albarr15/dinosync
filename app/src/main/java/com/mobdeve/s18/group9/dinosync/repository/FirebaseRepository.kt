@@ -5,10 +5,13 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.mobdeve.s18.group9.dinosync.model.*
 import kotlinx.coroutines.tasks.await
 import com.google.firebase.firestore.ListenerRegistration
+import kotlinx.coroutines.Dispatchers
 import com.google.firebase.firestore.toObjects
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.withContext
+import java.sql.Timestamp
 import java.util.Calendar
 
 class FirebaseRepository {
@@ -30,6 +33,9 @@ class FirebaseRepository {
         return snapshot.toObjects(Course::class.java)
     }
 
+    suspend fun addCourse(course: Course) {
+        db.collection("course").add(course).await()
+    }
 
 
     // DAILY STUDY HISTORY ✔️
@@ -42,21 +48,36 @@ class FirebaseRepository {
 
     suspend fun getDailyStudyHistoryByDate(userId: String, date: String): DailyStudyHistory? {
         val db = FirebaseFirestore.getInstance()
-        val querySnapshot = db.collection("dailystudyhistory")
+        val snapshot = db.collection("dailystudyhistory")
             .whereEqualTo("userId", userId)
             .whereEqualTo("date", date)
             .get()
             .await()
-
-        return querySnapshot.documents.firstOrNull()?.toObject(DailyStudyHistory::class.java)
+        return snapshot.documents.firstOrNull()?.toObject(DailyStudyHistory::class.java)
     }
 
-    suspend fun setDailyStudyHistory(history: DailyStudyHistory) {
+
+    suspend fun updateDailyStudyHistory(history: DailyStudyHistory) = withContext(Dispatchers.IO) {
         val db = FirebaseFirestore.getInstance()
-        val docId = "${history.userId}_${history.date}"
-        db.collection("dailystudyhistory")
-            .document(docId)
-            .set(history)
+        val querySnapshot = db.collection("dailystudyhistory")
+            .whereEqualTo("userId", history.userId)
+            .whereEqualTo("date", history.date)
+            .get()
+            .await()
+
+        val doc = querySnapshot.documents.firstOrNull()
+        if (doc != null) {
+            db.collection("dailystudyhistory")
+                .document(doc.id)
+                .set(history)
+                .await()
+        }
+    }
+
+    suspend fun insertDailyStudyHistory(history: DailyStudyHistory) {
+        val db = FirebaseFirestore.getInstance()
+        val docRef = db.collection("dailystudyhistory")
+            .add(history)
             .await()
     }
 
@@ -93,39 +114,6 @@ class FirebaseRepository {
         val snapshot = db.collection("music").get().await()
         return snapshot.toObjects(Music::class.java)
     }
-
-
-
-    // MUSIC SESSION ✔️
-    suspend fun getMusicSessionsByUser(userId: String): List<MusicSession> {
-        val snapshot = db.collection("musicsession")
-            .whereEqualTo("userId", userId)
-            .get().await()
-        return snapshot.toObjects(MusicSession::class.java)
-    }
-    suspend fun createMusicSession(musicSession: MusicSession) {
-        db.collection("musicsession")
-            .add(musicSession)
-            .await()
-    }
-
-
-    // Real-time listener for MusicSession
-    fun listenToMusicSessions(userId: String): Flow<List<MusicSession>> = callbackFlow {
-        val listener = db.collection("musicsession")
-            .whereEqualTo("userId", userId)
-            .addSnapshotListener { snapshot, error ->
-                if (error != null) {
-                    close(error)
-                    return@addSnapshotListener
-                }
-                val sessions = snapshot?.toObjects(MusicSession::class.java) ?: emptyList()
-                trySend(sessions)
-            }
-
-        awaitClose { listener.remove() }
-    }
-
 
 
     // USERS ✔️
