@@ -166,41 +166,9 @@ class MusicViewModel : ViewModel() {
             _musicList.value = repository.getAllMusic()
         }
     }
-    fun observeMusicSessions(userId: String): Flow<List<MusicSession>> {
-        return repository.listenToMusicSessions(userId)
-    }
-    fun createMusicSession(session: MusicSession) {
-        viewModelScope.launch {
-            repository.createMusicSession(session)
-        }
-    }
+
 
 }
-
-class MusicSessionViewModel : ViewModel() {
-    private val repository = FirebaseRepository()
-
-    private val _musicSessions = MutableStateFlow<List<MusicSession>>(emptyList())
-    val musicSessions: StateFlow<List<MusicSession>> = _musicSessions
-
-    fun loadMusicSessions(userId: String) {
-        viewModelScope.launch {
-            _musicSessions.value = repository.getMusicSessionsByUser(userId)
-        }
-    }
-
-    fun musicSessionsFlow(userId: String): StateFlow<List<MusicSession>> {
-        return repository.listenToMusicSessions(userId)
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-    }
-
-    fun createMusicSession(session: MusicSession) {
-        viewModelScope.launch {
-            repository.createMusicSession(session)
-        }
-    }
-}
-
 
 class StudyGroupViewModel : ViewModel() {
     private val repository = FirebaseRepository()

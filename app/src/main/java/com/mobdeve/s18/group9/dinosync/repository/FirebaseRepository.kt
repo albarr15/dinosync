@@ -124,39 +124,6 @@ class FirebaseRepository {
     }
 
 
-
-    // MUSIC SESSION ✔️
-    suspend fun getMusicSessionsByUser(userId: String): List<MusicSession> {
-        val snapshot = db.collection("musicsession")
-            .whereEqualTo("userId", userId)
-            .get().await()
-        return snapshot.toObjects(MusicSession::class.java)
-    }
-    suspend fun createMusicSession(musicSession: MusicSession) {
-        db.collection("musicsession")
-            .add(musicSession)
-            .await()
-    }
-
-
-    // Real-time listener for MusicSession
-    fun listenToMusicSessions(userId: String): Flow<List<MusicSession>> = callbackFlow {
-        val listener = db.collection("musicsession")
-            .whereEqualTo("userId", userId)
-            .addSnapshotListener { snapshot, error ->
-                if (error != null) {
-                    close(error)
-                    return@addSnapshotListener
-                }
-                val sessions = snapshot?.toObjects(MusicSession::class.java) ?: emptyList()
-                trySend(sessions)
-            }
-
-        awaitClose { listener.remove() }
-    }
-
-
-
     // USERS ✔️
     suspend fun getUserById(userId: String): User? {
         val snapshot = db.collection("users").document(userId).get().await()

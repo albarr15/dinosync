@@ -3,18 +3,30 @@ package com.mobdeve.s18.group9.dinosync.repository.local
 import android.content.Context
 import android.media.MediaPlayer
 import android.util.Log
+
 class LocalPlaybackManager(
     private val context: Context,
-    private val onCompletion: (() -> Unit)? = null // optional callback
+    private val onCompletion: (() -> Unit)? = null
 ) {
     private var mediaPlayer: MediaPlayer? = null
     private var currentTrack: String? = null
     private var repeatMode = false
     private var isPaused = false
+    private var onTrackEnded: (() -> Unit)? = null
+    private var shuffleEnabled = false
+
+
+    fun setOnTrackEndedListener(listener: () -> Unit) {
+        onTrackEnded = listener
+    }
+
+    fun setShuffleMode(enabled: Boolean) {
+        shuffleEnabled = enabled
+    }
 
     fun setRepeatMode(enabled: Boolean) {
         repeatMode = enabled
-        mediaPlayer?.isLooping = enabled // update current player if playing
+        mediaPlayer?.isLooping = enabled
     }
 
     fun play(trackFileName: String) {
@@ -34,22 +46,20 @@ class LocalPlaybackManager(
                 prepare()
                 isLooping = repeatMode
                 start()
+                setOnCompletionListener {
+                    Log.d("LocalPlaybackManager", "Playback finished.")
+                    currentTrack = null
+                    onTrackEnded?.invoke() ?: onCompletion?.invoke() // 🔥 this triggers next song
+                }
             }
 
             currentTrack = trackFileName
             isPaused = false
 
-            mediaPlayer?.setOnCompletionListener {
-                Log.d("LocalPlaybackManager", "Playback finished.")
-                currentTrack = null
-            }
-
         } catch (e: Exception) {
             Log.e("LocalPlaybackManager", "Error playing $trackFileName", e)
         }
     }
-
-
 
     fun pause() {
         mediaPlayer?.takeIf { it.isPlaying }?.apply {
@@ -58,12 +68,10 @@ class LocalPlaybackManager(
         }
     }
 
-
     fun resume() {
         mediaPlayer?.start()
         isPaused = false
     }
-
 
     fun stop() {
         mediaPlayer?.stop()
@@ -73,9 +81,7 @@ class LocalPlaybackManager(
         isPaused = false
     }
 
-
     fun isPlaying(): Boolean = mediaPlayer?.isPlaying == true
-
     fun getCurrentPosition(): Int = mediaPlayer?.currentPosition ?: 0
     fun getDuration(): Int = mediaPlayer?.duration ?: 0
 }

@@ -4,10 +4,10 @@
     <selectionStates>
       <SelectionState runConfigName="DinoSync.app">
         <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2025-07-18T03:44:53.946625500Z">
+        <DropdownSelection timestamp="2025-07-19T06:40:04.754834100Z">
           <Target type="DEFAULT_BOOT">
             <handle>
-              <DeviceId pluginId="LocalEmulator" identifier="path=C:\Users\USER\.android\avd\Pixel_5.avd" />
+              <DeviceId pluginId="LocalEmulator" identifier="path=C:\Users\USER\.android\avd\Pixel_7.avd" />
             </handle>
           </Target>
         </DropdownSelection>

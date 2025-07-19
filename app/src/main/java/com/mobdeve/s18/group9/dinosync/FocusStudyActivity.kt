@@ -2,6 +2,7 @@
 package com.mobdeve.s18.group9.dinosync
 
 import HatchCard
+import android.app.Activity
 import android.content.Intent
 import android.graphics.Bitmap
 import android.os.Bundle
@@ -34,7 +35,6 @@ import com.mobdeve.s18.group9.dinosync.model.Music
 import com.mobdeve.s18.group9.dinosync.model.MusicSession
 import com.mobdeve.s18.group9.dinosync.model.StudySession
 import com.mobdeve.s18.group9.dinosync.ui.theme.*
-import com.mobdeve.s18.group9.dinosync.viewmodel.MusicSessionViewModel
 import com.mobdeve.s18.group9.dinosync.viewmodel.MusicViewModel
 import com.mobdeve.s18.group9.dinosync.viewmodel.StudySessionViewModel
 import kotlinx.coroutines.delay
@@ -273,6 +273,8 @@ fun FocusStudyScreen(
         else -> YellowGreen
     }
 
+
+
     // ✅ Timer countdown logic
     LaunchedEffect(isRunning) {
         if (isRunning) {
@@ -306,9 +308,27 @@ fun FocusStudyScreen(
 
     // ✅ Load music
     LaunchedEffect(Unit) { musicVM.loadMusic() }
+
     LaunchedEffect(musicList) {
         if (musicList.isNotEmpty() && currentMusic == null) currentMusic = musicList.first()
     }
+
+    val localPlaybackManager = remember {
+        LocalPlaybackManager(context) {
+            currentMusic?.let { current ->
+                val index = musicList.indexOf(current)
+                if (index in musicList.indices && index < musicList.lastIndex) {
+                    val nextMusic = musicList[index + 1]
+                    currentMusic = nextMusic
+                    localPlaybackManager.play(nextMusic.filename)
+                }
+            }
+        }
+    }
+    var currentTrackIndex = 0
+    var isShuffleEnabled = false
+    var isRepeatEnabled = false
+
 
     Scaffold(
         containerColor = DarkGreen,
@@ -508,19 +528,30 @@ fun FocusStudyScreen(
                         when (playbackMode) {
                             PlaybackMode.IN_APP -> {
                                 currentMusic?.let { safeMusic ->
+
+                                    // UI Composable
                                     AudioPlayerCard(
                                         currentMusic = safeMusic,
                                         progress = localPlaybackManager.getCurrentPosition().toFloat() / localPlaybackManager.getDuration().coerceAtLeast(1),
+                                        isPlaying = isPlaying,
+                                        isRepeatEnabled = isRepeatEnabled,
                                         onShuffle = {
-                                            currentMusic = musicList.shuffled().firstOrNull()?.also {
-                                                localPlaybackManager.play(it.filename)
+                                            isShuffleEnabled = !isShuffleEnabled
+                                            if (isShuffleEnabled) {
+                                                val shuffled = musicList.shuffled()
+                                                val newTrack = shuffled.firstOrNull()
+                                                newTrack?.let {
+                                                    currentTrackIndex = musicList.indexOf(it)
+                                                    currentMusic = it
+                                                    localPlaybackManager.play(it.filename)
+                                                }
                                             }
                                         },
                                         onPrevious = {
-                                            val index = musicList.indexOf(safeMusic)
-                                            if (index > 0) {
-                                                currentMusic = musicList[index - 1]
-                                                localPlaybackManager.play(musicList[index - 1].filename)
+                                            if (musicList.isNotEmpty()) {
+                                                currentTrackIndex = if (currentTrackIndex > 0) currentTrackIndex - 1 else musicList.lastIndex
+                                                currentMusic = musicList[currentTrackIndex]
+                                                currentMusic?.let { localPlaybackManager.play(it.filename) }
                                             }
                                         },
                                         onPlayPause = {
@@ -532,40 +563,54 @@ fun FocusStudyScreen(
                                                 } else {
                                                     safeMusic.let {
                                                         localPlaybackManager.play(it.filename)
-                                                        musicVM.createMusicSession(
-                                                            MusicSession(
-                                                                userId = userId,
-                                                                studySessionId = currentSessionId,
-                                                                artist = it.artist,
-                                                                musicPlatform = "In-App",
-                                                                musicTitle = it.title,
-                                                                musicUri = it.albumArtUri,
-                                                                startTime = getCurrentTimestamp(),
-                                                                endTime = null
-                                                            )
-                                                        )
                                                     }
                                                 }
                                             }
                                             isPlaying = !isPlaying
                                         },
                                         onNext = {
-                                            val index = musicList.indexOf(safeMusic)
-                                            if (index < musicList.lastIndex) {
-                                                currentMusic = musicList[index + 1]
-                                                localPlaybackManager.play(musicList[index + 1].filename)
+                                            if (musicList.isNotEmpty()) {
+                                                if (isShuffleEnabled) {
+                                                    val shuffled = musicList.shuffled()
+                                                    val newTrack = shuffled.firstOrNull()
+                                                    newTrack?.let {
+                                                        currentTrackIndex = musicList.indexOf(it)
+                                                        currentMusic = it
+                                                        localPlaybackManager.play(it.filename)
+                                                    }
+                                                } else {
+                                                    currentTrackIndex = if (currentTrackIndex < musicList.lastIndex) currentTrackIndex + 1 else 0
+                                                    currentMusic = musicList[currentTrackIndex]
+                                                    currentMusic?.let { localPlaybackManager.play(it.filename) }
+                                                }
                                             }
                                         },
                                         onRepeat = {
                                             isRepeatEnabled = !isRepeatEnabled
                                             localPlaybackManager.setRepeatMode(isRepeatEnabled)
                                         }
-                                        ,
-                                        isPlaying = isPlaying,
-                                        isRepeatEnabled = isRepeatEnabled
                                     )
+
+                                    // Track-ended listener setup (runs only once per currentMusic change)
+                                    LaunchedEffect(currentMusic, isRepeatEnabled, musicList) {
+                                        localPlaybackManager.setOnTrackEndedListener {
+                                            val currentIndex = musicList.indexOf(currentMusic)
+
+                                            if (isRepeatEnabled) {
+                                                currentMusic?.let { localPlaybackManager.play(it.filename) }
+                                            } else if (currentIndex < musicList.lastIndex) {
+                                                currentMusic = musicList[currentIndex + 1]
+                                                currentMusic?.let { localPlaybackManager.play(it.filename) }
+                                            } else {
+                                                isPlaying = false
+                                                context.startActivity(Intent(context, MainActivity::class.java))
+                                                (context as Activity).finish()
+                                            }
+                                        }
+                                    }
                                 }
                             }
+
 
                             PlaybackMode.SPOTIFY -> {
                                 AudioPlayerCardSpotify(
@@ -587,7 +632,9 @@ fun FocusStudyScreen(
                                     onRepeat = {  }
                                 )
                             }
+
                         }
+
                     }
                 }
 
@@ -595,3 +642,19 @@ fun FocusStudyScreen(
         }
     }
 }
+
+/*
+fun calculateActualElapsedTime(startedAt: Timestamp?, endedAt: Timestamp?, pauses: List<PauseResumeTimestamp>): Long {
+    if (startedAt == null || endedAt == null) return 0
+
+    val totalDuration = endedAt.seconds - startedAt.seconds
+
+    val totalPaused = pauses.sumOf {
+        val resumedAt = it.resumedAt ?: Timestamp.now()
+        (resumedAt.seconds - it.pausedAt.seconds)
+    }
+
+    return totalDuration - totalPaused
+}
+*/
+
