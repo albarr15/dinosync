@@ -7,9 +7,6 @@ import com.mobdeve.s18.group9.dinosync.model.*
 import com.mobdeve.s18.group9.dinosync.repository.FirebaseRepository
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import com.google.firebase.Timestamp
-import java.text.SimpleDateFormat
-import java.util.*
 
 class AchievementViewModel : ViewModel() {
     private val repository = FirebaseRepository()
@@ -74,8 +71,8 @@ class DailyStudyHistoryViewModel : ViewModel() {
                 hasStudied = true,
                 date = date,
                 moodEntryId = moodId,
-                totalIndividualMinutes = 0,
-                totalGroupStudyMinutes = 0
+                totalIndividualMinutes = 0f,
+                totalGroupStudyMinutes = 0f
 
             )
             repository.insertDailyStudyHistory(newEntry)
@@ -84,43 +81,52 @@ class DailyStudyHistoryViewModel : ViewModel() {
 
     }
 
-
     fun updateDailyHistory(
         userId: String,
         date: String,
         moodId: String,
-        additionalMinutes: Long
+        additionalMinutes: Float
     ) {
-        Log.d("DailyHistoryVM", "updateDailyHistory, ${userId},  ${date}, ${moodId}, ${additionalMinutes}")
+        Log.d("DailyHistoryVM", "updateDailyHistory called → userId: $userId, date: $date, moodId: $moodId, additionalMinutes: $additionalMinutes")
+
         viewModelScope.launch {
             val existing = repository.getDailyStudyHistoryByDate(userId, date)
 
-            val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+            val currentMinutes = existing?.totalIndividualMinutes ?: 0f
+            val cappedMinutes = (currentMinutes + additionalMinutes).coerceAtMost(1440f)
 
-            val currentMinutes = existing?.totalIndividualMinutes ?: 0
-            val cappedMinutes = (currentMinutes + additionalMinutes).coerceAtMost(1440) // 24 hours * 60 minutes
+            if (existing != null) {
+                Log.d("DailyHistoryVM", "Updating existing DailyStudyHistory for date: $date")
+                val updatedEntry =  existing.copy(
+                    hasStudied = true,
+                    moodEntryId = moodId,
+                    totalIndividualMinutes = cappedMinutes
+                )
+                repository.updateDailyStudyHistory(updatedEntry)
 
-            val updated = existing?.copy(
-                hasStudied = true,
-                moodEntryId = moodId,
-                totalIndividualMinutes = cappedMinutes
-            ) ?: DailyStudyHistory(
-                userId = userId,
-                date = dateFormat.format(Date()),
-                hasStudied = true,
-                moodEntryId = moodId,
-                totalIndividualMinutes = additionalMinutes
-            )
-            repository.updateDailyStudyHistory(updated)
+            } else {
+                Log.d("DailyHistoryVM", "Creating new DailyStudyHistory for date: $date")
+                val create = DailyStudyHistory(
+                    userId = userId,
+                    date = date,
+                    hasStudied = true,
+                    moodEntryId = moodId,
+                    totalIndividualMinutes = 0f,
+                    totalGroupStudyMinutes = 0f
+                )
+                repository.insertDailyStudyHistory(create)
+            }
         }
     }
-    fun recordHistory(userId: String, date: String, moodId: String, minutes: Long) {
+
+
+    /*
+    fun recordHistory(userId: String, date: String, moodId: String, minutes: Float) {
         viewModelScope.launch {
             updateDailyHistory(userId, date, moodId, minutes)
         }
     }
-
-
+    */
 
 }
 

@@ -5,8 +5,10 @@ data class DailyStudyHistory(
     val date: String = "",
     val hasStudied: Boolean = false,
     val moodEntryId: String = "",
-    val totalGroupStudyMinutes: Long = 0,
-    val totalIndividualMinutes: Long = 0,
+    val totalGroupStudyMinutes: Float = 0f,
+    val totalIndividualMinutes: Float = 0f,
     val userId: String = ""
-)
+){
+    constructor() : this("", false ,"", 0f, 0f)
+}
 

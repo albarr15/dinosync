@@ -130,6 +130,7 @@ import com.mobdeve.s18.group9.dinosync.spotify.SpotifyPlaybackManager
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
+import java.util.TimeZone
 
 
 enum class PlaybackMode {
@@ -137,19 +138,13 @@ enum class PlaybackMode {
     SPOTIFY
 }
 
-fun getTodayTimestampAtMidnight(): Timestamp {
-    val calendar = Calendar.getInstance()
-    calendar.set(Calendar.HOUR_OF_DAY, 0)
-    calendar.set(Calendar.MINUTE, 0)
-    calendar.set(Calendar.SECOND, 0)
-    calendar.set(Calendar.MILLISECOND, 0)
-    return Timestamp(calendar.time)
-}
 
 fun fetchCurDate(): String {
     val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+    sdf.timeZone = TimeZone.getTimeZone("Asia/Manila")
     return sdf.format(Date())
 }
+
 
 class MainActivity : ComponentActivity() {
     private var spotifyAppRemote: SpotifyAppRemote? = null
@@ -500,6 +495,13 @@ fun MainScreen(
             )
 
             if (showMoodDialog) {
+                /*
+                *Now, on MainActivity. Need to check if there is a current DailyStudyHistory document with the same
+Date with the fetchCurDate(). If no, then create a new DailyStudyHistory like the
+current implementation otherwise update the DailyStudyHistory document's totalIndividualMinutes
+with same date with the hourSet and MinuteSet in minutes unit.
+
+                * */
                 AlertDialog(
                     onDismissRequest = { showMoodDialog = false },
                     confirmButton = {
@@ -520,24 +522,22 @@ fun MainScreen(
                                     hourSet = hourInt,
                                     minuteSet = minuteInt,
                                     moodId = moodId,
-                                    sessionDate = sessionDate,
+                                    sessionDate = fetchCurDate(),
                                     startedAt = getCurrentTimestamp(),
                                     endedAt = null,
                                     status = "active" // active,pause, reset, completed
                                 )
-
                                 studySessionVM.createStudySessionAndGetId(session) { sessionId ->
-                                    dailyHistoryVM.createDailyHistory(
+                                    val totalMinutes = hourInt * 60 + minuteInt
+
+                                    dailyHistoryVM.updateDailyHistory(
                                         userId = userId,
                                         date = fetchCurDate(),
-                                        moodId = moodId
+                                        moodId = moodId,
+                                        additionalMinutes = totalMinutes.toFloat()
                                     )
 
-                                    Toast.makeText(
-                                        context,
-                                        "Session logged successfully!",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
+                                    Toast.makeText(context, "Session logged successfully!", Toast.LENGTH_SHORT).show()
 
                                     // Reset fields
                                     hoursSet = ""
@@ -583,7 +583,7 @@ fun MainScreen(
                                 hourSet = hourInt,
                                 minuteSet = minuteInt,
                                 moodId = "",
-                                sessionDate = sessionDate,
+                                sessionDate = fetchCurDate(),
                                 startedAt = startedAt,
                                 endedAt = null,
                                 status = "active"
