@@ -50,15 +50,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModelProvider
-/*
-import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeAchievements
-import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeDailyStudyHistory
-import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeFeelingEntry
-import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeGroupMembers
-import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeMoods
-import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeStudyGroups
-import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeUsers
-*/
 
 import com.mobdeve.s18.group9.dinosync.components.BottomNavigationBar
 import com.mobdeve.s18.group9.dinosync.components.TopActionBar
@@ -75,7 +66,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mobdeve.s18.group9.dinosync.model.Mood
 import com.mobdeve.s18.group9.dinosync.viewmodel.ProfileViewModel
 
-// TODO: NEED TO RECHECK DATA ONCE FIRESTORE IS UPDATED
 
 class ProfileActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -127,7 +117,7 @@ fun ProfileActivityScreen(userId: String) {
     // Observe state from ViewModel
     val user by profileVM.user.collectAsState()
 
-    val achievements by profileVM.achievements.collectAsState()
+    val companions by profileVM.companions.collectAsState()
     val userGroups by profileVM.groups.collectAsState()
     val moodHistory by profileVM.moodHistory.collectAsState()
 
@@ -242,24 +232,24 @@ fun ProfileActivityScreen(userId: String) {
             Spacer(modifier = Modifier.height(30.dp))
 
             // COLLECTION SECTION
-            Text("Achievements", fontWeight = FontWeight.Medium, fontSize = 18.sp)
+            Text("Collection", fontWeight = FontWeight.Medium, fontSize = 18.sp)
             Spacer(modifier = Modifier.height(5.dp))
 
-            if (achievements.isEmpty()) {
-                Text("No achievements yet.", color = Color.Gray)
+            if (companions.isEmpty()) {
+                Text("No companions yet.", color = Color.Gray)
             } else {
                 LazyRow(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     contentPadding = PaddingValues(horizontal = 4.dp)
                 ) {
-                    items(achievements.size) { index ->
-                        val achievement = achievements[index]
+                    items(companions.size) { index ->
+                        val companion = companions[index]
                         Box(
                             modifier = Modifier
                                 .size(80.dp)
                                 .background(Color.LightGray, RoundedCornerShape(10.dp))
                                 .clickable {
-                                    // Navigate to Companion screen with achievement ID
+                                    // Navigate to Companion screen with user ID
                                     val intent = Intent(context, CompanionActivity::class.java)
                                     intent.putExtra("userId", userId)
                                     context.startActivity(intent)
@@ -267,7 +257,7 @@ fun ProfileActivityScreen(userId: String) {
                             contentAlignment = Alignment.Center
                         ) {
                             Image(
-                                painter = painterResource(achievement.getDrawableRes()),
+                                painter = painterResource(companion.getDrawableRes()),
                                 contentDescription = null,
                                 modifier = Modifier.size(60.dp)
                             )

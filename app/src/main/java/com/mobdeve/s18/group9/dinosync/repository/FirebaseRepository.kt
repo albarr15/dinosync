@@ -1,6 +1,5 @@
 package com.mobdeve.s18.group9.dinosync.repository
 
-import android.util.Log
 import com.google.firebase.firestore.FieldPath
 import com.google.firebase.firestore.FirebaseFirestore
 import com.mobdeve.s18.group9.dinosync.model.*
@@ -15,14 +14,14 @@ import java.util.Calendar
 class FirebaseRepository {
     private val db = FirebaseFirestore.getInstance()
 
-    // ACHIEVEMENTS ✔️
-    suspend fun getAchievementsByUserId(userId: String): List<Achievement> {
-        val snapshot = db.collection("achievement")
+    // COMPANION ✔️
+    suspend fun getCompanionsByUserId(userId: String): List<Companion> {
+        val snapshot = db.collection("companion")
             .whereEqualTo("userId", userId)
+            .whereNotEqualTo("dateAwarded", null)
             .get().await()
-        return snapshot.toObjects(Achievement::class.java)
+        return snapshot.toObjects(Companion::class.java)
     }
-
 
 
     // COURSES ✔️
@@ -61,33 +60,6 @@ class FirebaseRepository {
             .await()
     }
 
-
-
-
-
-    // DINO CATALOG✔️
-    suspend fun getAllDino(): List<DinoCatalog> {
-        val snapshot = db.collection("dino_catalog").get().await()
-        return snapshot.toObjects(DinoCatalog::class.java)
-    }
-
-    suspend fun getDinoById(dinoId: String): DinoCatalog? {
-        val snapshot = db.collection("dino_catalog").document(dinoId).get().await()
-        return snapshot.toObject(DinoCatalog::class.java)
-    }
-    fun listenToDinoCatalog(): Flow<List<DinoCatalog>> = callbackFlow {
-        val listener = db.collection("dino_catalog")
-            .addSnapshotListener { snapshot, error ->
-                if (error != null) {
-                    close(error)
-                    return@addSnapshotListener
-                }
-                val dinos = snapshot?.toObjects(DinoCatalog::class.java) ?: emptyList()
-                trySend(dinos)
-            }
-
-        awaitClose { listener.remove() }
-    }
 
 
     // GROUP MEMBERS ✔️
