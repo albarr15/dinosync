@@ -1,5 +1,6 @@
 package com.mobdeve.s18.group9.dinosync.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mobdeve.s18.group9.dinosync.model.*
@@ -22,16 +23,30 @@ class AchievementViewModel : ViewModel() {
 
 class CourseViewModel : ViewModel() {
     private val repository = FirebaseRepository()
-
     private val _courses = MutableStateFlow<List<Course>>(emptyList())
     val courses: StateFlow<List<Course>> = _courses
 
     fun loadCourses() {
         viewModelScope.launch {
-            _courses.value = repository.getAllCourses()
+            try {
+                val courseList = repository.getAllCourses()
+                _courses.value = courseList
+            } catch (e: Exception) {
+                Log.e("CourseViewModel", "Error loading courses: ${e.message}")
+            }
+        }
+    }
+    fun addCourseIfNew(courseName: String) {
+        viewModelScope.launch {
+            if (courseName.isNotBlank() && !_courses.value.any { it.name == courseName }) {
+                val newCourse = Course(name = courseName)
+                repository.addCourse(newCourse)
+                loadCourses()
+            }
         }
     }
 }
+
 
 class DailyStudyHistoryViewModel : ViewModel() {
     private val repository = FirebaseRepository()
@@ -44,6 +59,75 @@ class DailyStudyHistoryViewModel : ViewModel() {
             _dailyHistory.value = repository.getDailyStudyHistory(userId)
         }
     }
+
+    fun createDailyHistory(
+        userId: String,
+        date: String,
+        moodId: String,
+    ) {
+        viewModelScope.launch {
+            val newEntry = DailyStudyHistory(
+                userId = userId,
+                hasStudied = true,
+                date = date,
+                moodEntryId = moodId,
+                totalIndividualMinutes = 0f,
+                totalGroupStudyMinutes = 0f
+
+            )
+            repository.insertDailyStudyHistory(newEntry)
+        }
+        Log.d("DailyHistoryVM", "createDailyHistory, ${userId},  ${date}, ${moodId}")
+
+    }
+
+    fun updateDailyHistory(
+        userId: String,
+        date: String,
+        moodId: String,
+        additionalMinutes: Float
+    ) {
+        Log.d("DailyHistoryVM", "updateDailyHistory called → userId: $userId, date: $date, moodId: $moodId, additionalMinutes: $additionalMinutes")
+
+        viewModelScope.launch {
+            val existing = repository.getDailyStudyHistoryByDate(userId, date)
+
+            val currentMinutes = existing?.totalIndividualMinutes ?: 0f
+            val cappedMinutes = (currentMinutes + additionalMinutes).coerceAtMost(1440f)
+
+            if (existing != null) {
+                Log.d("DailyHistoryVM", "Updating existing DailyStudyHistory for date: $date")
+                val updatedEntry =  existing.copy(
+                    hasStudied = true,
+                    moodEntryId = moodId,
+                    totalIndividualMinutes = cappedMinutes
+                )
+                repository.updateDailyStudyHistory(updatedEntry)
+
+            } else {
+                Log.d("DailyHistoryVM", "Creating new DailyStudyHistory for date: $date")
+                val create = DailyStudyHistory(
+                    userId = userId,
+                    date = date,
+                    hasStudied = true,
+                    moodEntryId = moodId,
+                    totalIndividualMinutes = 0f,
+                    totalGroupStudyMinutes = 0f
+                )
+                repository.insertDailyStudyHistory(create)
+            }
+        }
+    }
+
+
+    /*
+    fun recordHistory(userId: String, date: String, moodId: String, minutes: Float) {
+        viewModelScope.launch {
+            updateDailyHistory(userId, date, moodId, minutes)
+        }
+    }
+    */
+
 }
 
 class DinoCatalogViewModel : ViewModel() {
@@ -108,6 +192,7 @@ class MoodViewModel : ViewModel() {
             _moods.value = repository.getAllMoods()
         }
     }
+
 }
 
 class MusicViewModel : ViewModel() {
@@ -121,30 +206,8 @@ class MusicViewModel : ViewModel() {
             _musicList.value = repository.getAllMusic()
         }
     }
-    fun observeMusicSessions(userId: String): Flow<List<MusicSession>> {
-        return repository.listenToMusicSessions(userId)
-    }
-}
 
-class MusicSessionViewModel : ViewModel() {
-    private val repository = FirebaseRepository()
 
-    private val _musicSessions = MutableStateFlow<List<MusicSession>>(emptyList())
-    val musicSessions: StateFlow<List<MusicSession>> = _musicSessions
-
-    fun loadMusicSessions(userId: String) {
-        viewModelScope.launch {
-            _musicSessions.value = repository.getMusicSessionsByUser(userId)
-        }
-    }
-    fun musicSessionsFlow(userId: String): StateFlow<List<MusicSession>> {
-        return repository.listenToMusicSessions(userId)
-            .stateIn(
-                viewModelScope,
-                SharingStarted.WhileSubscribed(5000),
-                emptyList()
-            )
-    }
 }
 
 class StudyGroupViewModel : ViewModel() {
@@ -171,28 +234,73 @@ class StudySessionViewModel : ViewModel() {
             _studySessions.value = repository.getStudySessionsByUserId(userId)
         }
     }
+
     fun studySessionsFlow(userId: String): StateFlow<List<StudySession>> {
         return repository.listenToStudySessions(userId)
-            .stateIn(
-                viewModelScope,
-                SharingStarted.WhileSubscribed(5000),
-                emptyList()
-            )
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    }
+
+    fun createStudySession(session: StudySession) {
+        viewModelScope.launch {
+            repository.addStudySession(session)
+        }
+    }
+
+    fun createStudySessionAndGetId(session: StudySession, onComplete: (String) -> Unit) {
+        viewModelScope.launch {
+            val id = repository.createStudySessionAndReturnId(session)
+            onComplete(id)
+        }
+    }
+
+    fun updateStudySession(sessionId: String, updates: Map<String, Any>) {
+        viewModelScope.launch {
+            repository.updateStudySession(sessionId, updates)
+        }
     }
 }
+
 
 class TodoViewModel : ViewModel() {
     private val repository = FirebaseRepository()
 
-    private val _todos = MutableStateFlow<List<TodoItem>>(emptyList())
-    val todos: StateFlow<List<TodoItem>> = _todos
+    private val _todos = MutableStateFlow<List<TodoDocument>>(emptyList())
+    val todos: StateFlow<List<TodoDocument>> = _todos
 
     fun loadTodos(userId: String) {
         viewModelScope.launch {
             _todos.value = repository.getTodosByUserId(userId)
         }
     }
+
+    fun getTodoItems(): List<TodoItem> = _todos.value.map { it.item }
+    fun addTodo(item: TodoItem) {
+        viewModelScope.launch {
+            repository.addTodoItem(item)
+            _todos.value = repository.getTodosByUserId(item.userId) // Refresh list
+        }
+    }
+
+    fun updateTodo(id: String, updatedItem: TodoItem) {
+        viewModelScope.launch {
+            repository.updateTodoItem(id, updatedItem)
+            //_todos.value = repository.getTodosByUserId(updatedItem.userId)
+            _todos.update { list ->
+                list.map { if (it.id == id) TodoDocument(id, updatedItem) else it }
+            }
+        }
+    }
+
+    fun deleteTodo(id: String, userId: String) {
+        viewModelScope.launch {
+            repository.deleteTodoItem(id)
+            _todos.value = repository.getTodosByUserId(userId)
+
+        }
+    }
+
 }
+
 
 class UserViewModel : ViewModel() {
     private val repository = FirebaseRepository()

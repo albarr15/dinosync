@@ -3,10 +3,15 @@ package com.mobdeve.s18.group9.dinosync
 
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
+import android.os.Build
 import android.os.Bundle
+import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -30,6 +35,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckBox
 import androidx.compose.material.icons.filled.CheckBoxOutlineBlank
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Schedule
@@ -57,6 +63,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -76,11 +83,18 @@ import androidx.compose.ui.text.googlefonts.GoogleFont
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.google.firebase.firestore.FirebaseFirestore
-
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.google.firebase.Timestamp
+import com.google.firebase.auth.FirebaseAuth
 import com.mobdeve.s18.group9.dinosync.components.AudioPlayerCard
+import com.mobdeve.s18.group9.dinosync.components.AudioPlayerCardSpotify
 import com.mobdeve.s18.group9.dinosync.components.BottomNavigationBar
 import com.mobdeve.s18.group9.dinosync.components.TopActionBar
+import com.mobdeve.s18.group9.dinosync.model.Mood
+import com.mobdeve.s18.group9.dinosync.model.Music
+import com.mobdeve.s18.group9.dinosync.model.MusicSession
+import com.mobdeve.s18.group9.dinosync.model.StudySession
+import com.mobdeve.s18.group9.dinosync.model.TodoDocument
 import com.mobdeve.s18.group9.dinosync.model.TodoItem
 import com.mobdeve.s18.group9.dinosync.model.User
 import com.mobdeve.s18.group9.dinosync.ui.theme.DarkGreen
@@ -89,30 +103,193 @@ import com.mobdeve.s18.group9.dinosync.ui.theme.DirtyGreen
 import com.mobdeve.s18.group9.dinosync.ui.theme.GreenGray
 import com.mobdeve.s18.group9.dinosync.ui.theme.Lime
 import com.mobdeve.s18.group9.dinosync.ui.theme.YellowGreen
+import com.mobdeve.s18.group9.dinosync.viewmodel.CourseViewModel
+import com.mobdeve.s18.group9.dinosync.viewmodel.DailyStudyHistoryViewModel
+import com.mobdeve.s18.group9.dinosync.viewmodel.MoodViewModel
+import com.mobdeve.s18.group9.dinosync.viewmodel.MusicViewModel
+import com.mobdeve.s18.group9.dinosync.viewmodel.StudySessionViewModel
+import com.mobdeve.s18.group9.dinosync.viewmodel.TodoViewModel
+import com.mobdeve.s18.group9.dinosync.viewmodel.UserViewModel
+import java.util.Date
+import com.mobdeve.s18.group9.dinosync.spotify.SpotifyConstants
+import com.spotify.android.appremote.api.ConnectionParams
+import com.spotify.android.appremote.api.Connector
+import com.spotify.android.appremote.api.SpotifyAppRemote
+import com.spotify.android.appremote.api.error.CouldNotFindSpotifyApp
+import com.spotify.android.appremote.api.error.NotLoggedInException
+import com.spotify.android.appremote.api.error.UserNotAuthorizedException
+import com.spotify.protocol.types.PlayerState
+import com.spotify.protocol.types.Track
+
+import com.spotify.sdk.android.auth.AuthorizationClient
+import com.spotify.sdk.android.auth.AuthorizationRequest
+import com.spotify.sdk.android.auth.AuthorizationResponse
+import androidx.compose.runtime.State
+import com.mobdeve.s18.group9.dinosync.repository.local.LocalPlaybackManager
+import com.mobdeve.s18.group9.dinosync.spotify.SpotifyPlaybackManager
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
+import java.util.TimeZone
+
+
+enum class PlaybackMode {
+    IN_APP,
+    SPOTIFY
+}
+
+
+fun fetchCurDate(): String {
+    val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+    sdf.timeZone = TimeZone.getTimeZone("Asia/Manila")
+    return sdf.format(Date())
+}
+
 
 class MainActivity : ComponentActivity() {
+    private var spotifyAppRemote: SpotifyAppRemote? = null
+    private val spotifyTitleState = mutableStateOf("Spotify Track")
+    private val spotifyArtistState = mutableStateOf("Artist")
+    private val spotifyAlbumArtBitmap  = mutableStateOf<Bitmap?>(null)
+    private val spotifyIsPlayingState = mutableStateOf(false)
+    private val spotifyProgressState = mutableStateOf(0f)
+    private lateinit var spotifyPlaybackManager: SpotifyPlaybackManager
+    private lateinit var playbackManager: LocalPlaybackManager
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        val userId = FirebaseAuth.getInstance().currentUser?.uid
+            ?: throw IllegalStateException("No authenticated user!")
+
+        val request = AuthorizationRequest.Builder(
+            SpotifyConstants.CLIENT_ID,
+            AuthorizationResponse.Type.TOKEN,
+            SpotifyConstants.REDIRECT_URI
+        )
+            .setScopes(SpotifyConstants.SCOPES)
+            .build()
+
+        AuthorizationClient.openLoginActivity(this, SpotifyConstants.REQUEST_CODE, request)
+        spotifyPlaybackManager = SpotifyPlaybackManager(this)
+        playbackManager = LocalPlaybackManager(applicationContext)
+
         setContent {
             DinoSyncTheme {
-                //val context = LocalContext.current
-                //MainScreen(context = context)
-                // TEMPORARY CHECKER FOR SCREEN ACTIVITY
-                androidx.compose.material3.Surface {
-                    androidx.compose.material3.Text(text = "Main Screen")
-                }
-
+                MainScreen(
+                    userId = userId)
             }
         }
     }
 
-    /******** ACTIVITY LIFE CYCLE ******** */
     override fun onStart() {
         super.onStart()
         println("MainActivity onStart()")
+
+        spotifyAppRemote?.let { SpotifyAppRemote.disconnect(it) }
+
+        val connectionParams = ConnectionParams.Builder(SpotifyConstants.CLIENT_ID)
+            .setRedirectUri(SpotifyConstants.REDIRECT_URI)
+            .showAuthView(true)
+            .build()
+
+        SpotifyAppRemote.connect(this, connectionParams, object : Connector.ConnectionListener {
+            override fun onConnected(remote: SpotifyAppRemote) {
+                spotifyAppRemote = remote
+                Log.d("♫ Spotify", "Connected to Spotify App Remote")
+                connected()
+            }
+
+            override fun onFailure(error: Throwable) {
+                Log.e("♫ Spotify", "Connection failed", error)
+                when (error) {
+                    is NotLoggedInException, is UserNotAuthorizedException -> {
+                        Log.e("♫ Spotify", "User not logged in or authorized.")
+                    }
+
+                    is CouldNotFindSpotifyApp -> {
+                        Log.e("♫ Spotify", "Spotify app not found. Prompt to install.")
+                    }
+                }
+            }
+        })
+        spotifyPlaybackManager.connect { success ->
+            if (success) {
+                spotifyPlaybackManager.subscribeToPlayerState(
+                    onPlayerStateChanged = { playerState ->
+                        Log.d("Spotify", "${playerState.track.name} by ${playerState.track.artist.name}")
+                    }
+                )
+            }
+        }
     }
+
+    override fun onStop() {
+        super.onStop()
+        println("MainActivity onStop()")
+
+        spotifyAppRemote?.let {
+            SpotifyAppRemote.disconnect(it)
+            spotifyAppRemote = null
+            Log.d("♫ Spotify", "Disconnected from App Remote")
+        }
+        spotifyPlaybackManager.disconnect() //Unresolved reference 'spotifyPlaybackManager'.
+    }
+
+    private fun connected() {
+        spotifyAppRemote?.apply {
+            // Uncomment to instantly play 'Sun Bleached Flies' upon logging in to Spotify.
+            // playerApi.play("spotify:track:6fKIyDJHZ9m84jRhSmpuwS")
+
+            playerApi.subscribeToPlayerState()
+                .setEventCallback { playerState ->
+                    val track = playerState.track ?: return@setEventCallback
+
+                    // Update states
+                    spotifyTitleState.value = track.name
+                    spotifyArtistState.value = track.artist.name
+                    spotifyIsPlayingState.value = !playerState.isPaused
+
+                    val duration = track.duration.toFloat().coerceAtLeast(1f)
+                    spotifyProgressState.value = playerState.playbackPosition.toFloat() / duration
+
+                    // Load album art from Spotify API
+                    imagesApi.getImage(track.imageUri)
+                        .setResultCallback { bitmap ->
+                            spotifyAlbumArtBitmap.value = bitmap
+                        }
+                }
+        }
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, intent: Intent?) {
+        super.onActivityResult(requestCode, resultCode, intent)
+
+        if (requestCode == SpotifyConstants.REQUEST_CODE) {
+            val response = AuthorizationClient.getResponse(resultCode, intent)
+            when (response.type) {
+                AuthorizationResponse.Type.TOKEN -> {
+                    val accessToken = response.accessToken
+                    Log.d("♫ SpotifyAuth", "Access token received: $accessToken")
+                }
+
+                AuthorizationResponse.Type.ERROR -> {
+                    Log.e("♫ SpotifyAuth", "Auth error: ${response.error}")
+                }
+
+                else -> {
+                    Log.w("♫ SpotifyAuth", "Auth cancelled or unknown response.")
+                }
+            }
+        }
+    }
+
+
+
+
+    /******** ACTIVITY LIFE CYCLE ******** */
 
     override fun onResume() {
         super.onResume()
@@ -122,11 +299,6 @@ class MainActivity : ComponentActivity() {
     override fun onPause() {
         super.onPause()
         println("MainActivity onPause()")
-    }
-
-    override fun onStop() {
-        super.onStop()
-        println("MainActivity onStop()")
     }
 
     override fun onRestart() {
@@ -139,23 +311,51 @@ class MainActivity : ComponentActivity() {
         println("MainActivity onDestroy()")
     }
 }
-/*
-/******** MAIN SCREEN *********/
+
+    /******** MAIN SCREEN *********/
+@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreen(context : Context) {
-    var isRunning by remember { mutableStateOf(false) }
-    var showMoodDialog by remember { mutableStateOf(false) }
-    var hoursSet by remember { mutableStateOf("") }
-    var minutesSet by remember { mutableStateOf("") }
+fun MainScreen(
+    userId: String
+) {
     val context = LocalContext.current
 
-    val db = FirebaseFirestore.getInstance()
-    var userList by remember { mutableStateOf<List<User>>(emptyList()) }
-    var selectedUser by remember { mutableStateOf<User?>(null) }
-    var todoItems by remember { mutableStateOf<List<TodoItem>>(emptyList()) }
-    var courseList by remember { mutableStateOf<List<String>>(emptyList()) }
+    // Collect ViewModels
+    val moodVM: MoodViewModel = viewModel()
+    val studySessionVM: StudySessionViewModel = viewModel()
+    val dailyHistoryVM: DailyStudyHistoryViewModel = viewModel()
+    val userVM: UserViewModel = viewModel()
+    val courseVM: CourseViewModel = viewModel()
+    val musicVM: MusicViewModel = viewModel()
 
+    val musicList by musicVM.musicList.collectAsState()
+    var currentMusic by remember { mutableStateOf<Music?>(null) }
+
+    val todoVM: TodoViewModel = viewModel()
+    val todoDocs by todoVM.todos.collectAsState()
+
+    LaunchedEffect(musicList) {
+        if (musicList.isNotEmpty() && currentMusic == null) {
+            currentMusic = musicList.first()
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        moodVM.loadMoods()
+        studySessionVM.loadStudySessions(userId)
+        dailyHistoryVM.loadDailyHistory(userId)
+        userVM.loadUser(userId)
+        courseVM.loadCourses()
+        musicVM.loadMusic()
+    }
+
+    val moods by moodVM.moods.collectAsState()
+    var hoursSet by remember { mutableStateOf("") }
+    var minutesSet by remember { mutableStateOf("") }
+    var showMoodDialog by remember { mutableStateOf(false) }
+    var selectedMood by remember { mutableStateOf<Mood?>(null) }
+    val courseList by courseVM.courses.collectAsState()
 
     Scaffold(
         bottomBar = {
@@ -163,17 +363,17 @@ fun MainScreen(context : Context) {
                 selectedItem = "Home",
                 onGroupsClick = {
                     val intent = Intent(context, DiscoverGroupsActivity::class.java)
-                    intent.putExtra("userId", selectedUser.userId)
+                    intent.putExtra("userId", userId)
                     context.startActivity(intent)
                 },
                 onHomeClick = {
                     val intent = Intent(context, MainActivity::class.java)
-                    intent.putExtra("userId", selectedUser.userId)
+                    intent.putExtra("userId", userId)
                     context.startActivity(intent)
                 },
                 onStatsClick = {
                     val intent = Intent(context, StatisticsActivity::class.java)
-                    intent.putExtra("userId", selectedUser.userId)
+                    intent.putExtra("userId", userId)
                     context.startActivity(intent)
                 }
             )
@@ -188,13 +388,14 @@ fun MainScreen(context : Context) {
             TopActionBar(
                 onProfileClick = {
                     val intent = Intent(context, ProfileActivity::class.java)
-                    intent.putExtra("userId", selectedUser.userId)
+                    intent.putExtra("userId", userId)
                     context.startActivity(intent)
-                                 },
+                },
                 onSettingsClick = {
                     val intent = Intent(context, SettingsActivity::class.java)
-                    intent.putExtra("userId", selectedUser.userId)
-                    context.startActivity(intent) }
+                    intent.putExtra("userId", userId)
+                    context.startActivity(intent)
+                }
             )
 
             Text(
@@ -205,24 +406,33 @@ fun MainScreen(context : Context) {
                 modifier = Modifier.align(Alignment.Start)
             )
 
-            /******** Course Box *********/
-            val courseList = initializeCourses()
-            val subjects = courseList.map { it.name }
+            /******** Editable Course Dropdown ********/
+            val courseNames = courseList.map { it.name }
             var expanded by remember { mutableStateOf(false) }
-            var selectedSubject by remember { mutableStateOf("") }
+            var selectedCourse by remember { mutableStateOf("") }
+
+            val filteredCourses = if (selectedCourse.isBlank()) {
+                courseNames
+            } else {
+                courseNames.filter {
+                    it.contains(selectedCourse, ignoreCase = true)
+                }
+            }
 
             ExposedDropdownMenuBox(
                 expanded = expanded,
                 onExpandedChange = { expanded = !expanded },
                 modifier = Modifier
-                    .width(250.dp)
+                    .width(350.dp)
                     .padding(horizontal = 16.dp, vertical = 8.dp)
             ) {
                 OutlinedTextField(
-                    value = selectedSubject,
-                    onValueChange = {},
-                    readOnly = true,
-                    label = { Text("Select Subject") },
+                    value = selectedCourse,
+                    onValueChange = {
+                        selectedCourse = it
+                        expanded = true
+                    },
+                    label = { Text("Select or Type Subject") },
                     trailingIcon = {
                         ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
                     },
@@ -239,22 +449,36 @@ fun MainScreen(context : Context) {
                         .fillMaxWidth()
                 )
 
-
                 ExposedDropdownMenu(
-                    expanded = expanded,
+                    expanded = expanded && filteredCourses.isNotEmpty(),
                     onDismissRequest = { expanded = false }
                 ) {
-                    subjects.forEach { subject ->
+                    filteredCourses.forEach { courseName ->
                         DropdownMenuItem(
-                            text = { Text(subject) },
+                            text = { Text(courseName) },
                             onClick = {
-                                selectedSubject = subject
+                                selectedCourse = courseName
                                 expanded = false
                             }
                         )
                     }
                 }
             }
+            if (selectedCourse.isNotBlank() && !courseNames.contains(selectedCourse)) {
+                Button(
+                    onClick = {
+                        courseVM.addCourseIfNew(selectedCourse.trim())
+                        selectedCourse = ""
+                    },
+                    modifier = Modifier
+                        .padding(top = 8.dp)
+                        .align(Alignment.CenterHorizontally)
+                ) {
+                    Text("Add \"$selectedCourse\" as New Course")
+                }
+            }
+
+
             Spacer(modifier = Modifier.height(10.dp))
 
             /******** Timer Activity *********/
@@ -264,7 +488,6 @@ fun MainScreen(context : Context) {
                 minutesSet = minutesSet,
                 onMinutesChange = { minutesSet = it },
                 onReset = {
-                    isRunning = false
                     hoursSet = ""
                     minutesSet = ""
                 },
@@ -272,27 +495,75 @@ fun MainScreen(context : Context) {
             )
 
             if (showMoodDialog) {
+                /*
+                *Now, on MainActivity. Need to check if there is a current DailyStudyHistory document with the same
+Date with the fetchCurDate(). If no, then create a new DailyStudyHistory like the
+current implementation otherwise update the DailyStudyHistory document's totalIndividualMinutes
+with same date with the hourSet and MinuteSet in minutes unit.
+
+                * */
                 AlertDialog(
                     onDismissRequest = { showMoodDialog = false },
                     confirmButton = {
-                        Button(onClick = {
-                            showMoodDialog = false
-                            val hourInt = hoursSet.toIntOrNull() ?: 0
-                            val minuteInt = minutesSet.toIntOrNull() ?: 0
-                            if (hourInt == 0 && minuteInt == 0) return@Button
+                        Button(
+                            onClick = {
+                                showMoodDialog = false
+                                val hourInt = hoursSet.toIntOrNull() ?: 0
+                                val minuteInt = minutesSet.toIntOrNull() ?: 0
+                                if (hourInt == 0 && minuteInt == 0) return@Button
 
-                            val intent = Intent(context, FocusStudyActivity::class.java).apply {
-                                putExtra("userId", selectedUser.userId)
-                                putExtra("hours", hourInt)
-                                putExtra("minutes", minuteInt)
-                                putExtra("selected_subject", selectedSubject)
-                            }
-                            context.startActivity(intent)
-                        },
+                                val moodId = selectedMood?.imageKey ?: return@Button
+                                val sessionDate = getCurrentDate()
+                                val startedAt = getCurrentDateTime()
+
+                                val session = StudySession(
+                                    userId = userId,
+                                    courseId = selectedCourse,
+                                    hourSet = hourInt,
+                                    minuteSet = minuteInt,
+                                    moodId = moodId,
+                                    sessionDate = fetchCurDate(),
+                                    startedAt = getCurrentTimestamp(),
+                                    endedAt = null,
+                                    status = "active" // active,pause, reset, completed
+                                )
+                                studySessionVM.createStudySessionAndGetId(session) { sessionId ->
+                                    val totalMinutes = hourInt * 60 + minuteInt
+
+                                    dailyHistoryVM.updateDailyHistory(
+                                        userId = userId,
+                                        date = fetchCurDate(),
+                                        moodId = moodId,
+                                        additionalMinutes = totalMinutes.toFloat()
+                                    )
+
+                                    Toast.makeText(context, "Session logged successfully!", Toast.LENGTH_SHORT).show()
+
+                                    // Reset fields
+                                    hoursSet = ""
+                                    minutesSet = ""
+                                    selectedMood = null
+                                    showMoodDialog = false
+
+                                    // Start FocusStudyActivity with sessionId
+                                    val intent =
+                                        Intent(context, FocusStudyActivity::class.java).apply {
+                                            putExtra("userId", userId)
+                                            putExtra("hours", hourInt)
+                                            putExtra("minutes", minuteInt)
+                                            putExtra("selected_subject", selectedCourse)
+                                            putExtra("study_session_id", sessionId)
+                                            putExtra("moodId", moodId)
+                                        }
+                                    context.startActivity(intent)
+                                }
+
+                            },
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = DarkGreen,
                                 contentColor = Color.Black
-                            )) {
+                            )
+                        ) {
                             Text("Log", color = Color.White)
                         }
                     },
@@ -303,21 +574,47 @@ fun MainScreen(context : Context) {
                             val minuteInt = minutesSet.toIntOrNull() ?: 0
                             if (hourInt == 0 && minuteInt == 0) return@OutlinedButton
 
-                            val intent = Intent(context, FocusStudyActivity::class.java).apply {
-                                putExtra("userId", selectedUser.userId)
-                                putExtra("hours", hourInt)
-                                putExtra("minutes", minuteInt)
-                                putExtra("selected_subject", selectedSubject)
+                            val sessionDate = getCurrentDate()
+                            val startedAt = getCurrentTimestamp()
+
+                            val skippedSession = StudySession(
+                                userId = userId,
+                                courseId = selectedCourse,
+                                hourSet = hourInt,
+                                minuteSet = minuteInt,
+                                moodId = "",
+                                sessionDate = fetchCurDate(),
+                                startedAt = startedAt,
+                                endedAt = null,
+                                status = "active"
+                            )
+
+                            studySessionVM.createStudySessionAndGetId(skippedSession) { sessionId ->
+                                val intent = Intent(context, FocusStudyActivity::class.java).apply {
+                                    putExtra("userId", userId)
+                                    putExtra("hours", hourInt)
+                                    putExtra("minutes", minuteInt)
+                                    putExtra("selected_subject", selectedCourse)
+                                    putExtra("study_session_id", sessionId)
+                                    putExtra("moodId", "")
+                                }
+                                context.startActivity(intent)
+
+                                // Reset state after skip
+                                hoursSet = ""
+                                minutesSet = ""
+                                selectedMood = null
+                                showMoodDialog = false
                             }
-                            context.startActivity(intent)
                         }) {
                             Text("Skip")
                         }
                     },
                     text = {
                         MoodInput(
-                            selectedIcon = selectedMoodIcon,
-                            onIconSelected = { selectedMoodIcon = it }
+                            moods = moods,
+                            selectedMood = selectedMood,
+                            onMoodSelected = { selectedMood = it }
                         )
                     },
                     containerColor = Color.White,
@@ -325,46 +622,58 @@ fun MainScreen(context : Context) {
                 )
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(30.dp))
             HorizontalDivider(modifier = Modifier, thickness = 1.dp, color = Color.Gray)
             Spacer(modifier = Modifier.height(20.dp))
 
-
             /******** TodoList *********/
-
             TodoList(
-                todoItems = todoItems,
-                onItemsChange = { updatedList -> todoItems = ArrayList(updatedList) },
-                onAddItem = {
-                    val nextId = (todoItems.maxOfOrNull { it.id } ?: 0) + 1
-                    val updated = ArrayList(todoItems)
-                    updated.add(TodoItem(id = nextId, title = "New Task"))
-                    todoItems = updated
+                todoItems = todoDocs,
+                onAddItem = { title ->
+                    val newItem = TodoItem(
+                        title = title,
+                        userId = userId,
+                        isChecked = false
+                    )
+                    todoVM.addTodo(newItem)
+                },
+                onToggleCheck = { id, item ->
+                    val updated = item.copy(isChecked = !item.isChecked)
+                    todoVM.updateTodo(id, updated)
+                },
+                onEditTitle = { id, newTitle ->
+                    val item = todoDocs.find { it.id == id }?.item ?: return@TodoList
+                    todoVM.updateTodo(id, item.copy(title = newTitle))
+                },
+                onDelete = { id ->
+                    todoVM.deleteTodo(id, userId)
                 }
             )
 
-            Spacer(modifier = Modifier.height(25.dp))
-
-            /******** Music Activity *********/
-            AudioPlayerCard(
-                currentMusic = currentMusic,
-                progress = 0.5f,
-                onShuffle = { },
-                onPrevious = { /* previous logic */ },
-                onPlayPause = { /* play pause logic */ },
-                onNext = { /* next logic */ },
-                onRepeat = { /* repeat logic */ }
-            )
-
+            Spacer(modifier = Modifier.height(5.dp))
 
         }
     }
 }
 
+fun getCurrentDate(): String {
+    val sdf = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
+    return sdf.format(java.util.Date())
+}
+
+fun getCurrentDateTime(): String {
+    val sdf = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", java.util.Locale.getDefault())
+    return sdf.format(java.util.Date())
+}
+fun getCurrentTimestamp(): Timestamp {
+    return Timestamp(Date())
+}
+
 @Composable
 fun MoodInput(
-    selectedIcon: ImageVector?,
-    onIconSelected: (ImageVector?) -> Unit
+    moods: List<Mood>,
+    selectedMood: Mood?,
+    onMoodSelected: (Mood?) -> Unit
 ) {
     val provider = GoogleFont.Provider(
         providerAuthority = "com.google.android.gms.fonts",
@@ -379,6 +688,25 @@ fun MoodInput(
             weight = FontWeight.Normal
         )
     )
+
+    val moodIcons = mapOf(
+        "very_dissatisfied" to Icons.Filled.SentimentVeryDissatisfied,
+        "dissatisfied" to Icons.Filled.SentimentDissatisfied,
+        "neutral" to Icons.Filled.SentimentNeutral,
+        "satisfied" to Icons.Filled.SentimentSatisfied,
+        "very_satisfied" to Icons.Filled.SentimentVerySatisfied
+    )
+
+    val moodOrder = listOf(
+        "very_dissatisfied",
+        "dissatisfied",
+        "neutral",
+        "satisfied",
+        "very_satisfied"
+    )
+
+    // Map imageKey -> Mood for easy lookup
+    val moodMap = moods.associateBy { it.imageKey }
 
     Box(
         modifier = Modifier
@@ -400,29 +728,24 @@ fun MoodInput(
                 horizontalArrangement = Arrangement.SpaceEvenly,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                val icons = listOf(
-                    Icons.Filled.SentimentVeryDissatisfied,
-                    Icons.Filled.SentimentDissatisfied,
-                    Icons.Filled.SentimentNeutral,
-                    Icons.Filled.SentimentSatisfied,
-                    Icons.Filled.SentimentVerySatisfied
-                )
+                moodOrder.forEach { key ->
+                    val mood = moodMap[key] ?: return@forEach
+                    val icon = moodIcons[mood.imageKey] ?: Icons.Filled.SentimentNeutral
+                    val isSelected = selectedMood?.imageKey == mood.imageKey
 
-                icons.forEach { icon ->
-                    val isSelected = selectedIcon == icon
                     Box(
                         modifier = Modifier
                             .size(20.dp).scale(1.5f)
                             .clip(RoundedCornerShape(28.dp))
                             .background(if (isSelected) YellowGreen else Color.LightGray)
                             .clickable {
-                                onIconSelected(if (isSelected) null else icon)
+                                onMoodSelected(if (isSelected) null else mood)
                             },
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = icon,
-                            contentDescription = null,
+                            contentDescription = mood.name,
                             tint = if (isSelected) Color.White else Color.DarkGray,
                             modifier = Modifier.size(50.dp)
                         )
@@ -596,9 +919,11 @@ fun TimerInput(
 
 @Composable
 fun TodoList(
-    todoItems: List<TodoItem>,
-    onItemsChange: (List<TodoItem>) -> Unit,
-    onAddItem: () -> Unit
+    todoItems: List<TodoDocument>,
+    onAddItem: (String) -> Unit,
+    onToggleCheck: (String, TodoItem) -> Unit,
+    onEditTitle: (String, String) -> Unit,
+    onDelete: (String) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
     var newItemTitle by remember { mutableStateOf("") }
@@ -660,8 +985,7 @@ fun TodoList(
 
                             IconButton(onClick = {
                                 if (newItemTitle.isNotBlank()) {
-                                    val newId = if (todoItems.isEmpty()) 1 else (todoItems.maxOf { it.id } + 1)
-                                    onItemsChange(todoItems + TodoItem(id = newId, title = newItemTitle))
+                                    onAddItem(newItemTitle)
                                     newItemTitle = ""
                                 }
                             }) {
@@ -670,7 +994,9 @@ fun TodoList(
                         }
                     }
 
-                    itemsIndexed(todoItems) { index, item ->
+                    itemsIndexed(todoItems) { _, doc ->
+                        val item = doc.item
+                        var localTitle by remember(doc.id) { mutableStateOf(item.title) }
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier
@@ -678,11 +1004,9 @@ fun TodoList(
                                 .height(50.dp)
                         ) {
                             OutlinedTextField(
-                                value = item.title,
-                                onValueChange = {
-                                    val newList = todoItems.toMutableList()
-                                    newList[index] = newList[index].copy(title = it)
-                                    onItemsChange(newList)
+                                value = localTitle,
+                                onValueChange = { newTitle ->
+                                    localTitle = newTitle
                                 },
                                 singleLine = true,
                                 placeholder = { Text("Task...") },
@@ -695,17 +1019,26 @@ fun TodoList(
                                     focusedIndicatorColor = DarkGreen,
                                     focusedLabelColor = DarkGreen
                                 ),
-                                modifier = Modifier.weight(1f)
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .onFocusChanged { focusState ->
+                                    if (!focusState.isFocused && localTitle != item.title) {
+                                        onEditTitle(doc.id, localTitle)
+                                    }
+                                }
                             )
                             IconButton(onClick = {
-                                val newList = todoItems.toMutableList()
-                                newList.removeAt(index)
-                                onItemsChange(newList)
+                                onToggleCheck(doc.id, item)
                             }) {
                                 Icon(
                                     imageVector = if (item.isChecked) Icons.Default.CheckBox else Icons.Default.CheckBoxOutlineBlank,
                                     contentDescription = null
                                 )
+                            }
+                            IconButton(onClick = {
+                                onDelete(doc.id)
+                            }) {
+                                Icon(Icons.Default.Delete, contentDescription = "Delete")
                             }
                         }
                     }
@@ -714,4 +1047,6 @@ fun TodoList(
         }
     }
 }
-*/
+
+
+

@@ -56,6 +56,11 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+    implementation(files("D:\\Downloads\\spotify-app-remote-release-0.8.0.aar"))
+    implementation(files("D:\\Downloads\\spotify-app-remote-release-0.8.0.aar"))
+    implementation(libs.androidx.appcompat)
+    implementation(files("D:\\Downloads\\spotify-app-remote-release-0.8.0.aar"))
+    implementation(libs.androidx.constraintlayout)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -70,6 +75,7 @@ dependencies {
     implementation("androidx.compose.material3:material3-window-size-class:1.3.2")
     implementation("androidx.compose.material3:material3-adaptive-navigation-suite:1.4.0-alpha15")
     implementation ("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.2")
+    implementation (libs.androidx.constraintlayout.compose)
     implementation(libs.vico.compose)
     implementation (libs.compose.charts)
 
@@ -77,4 +83,11 @@ dependencies {
     implementation(platform("com.google.firebase:firebase-bom:33.16.0"))
     implementation("com.google.firebase:firebase-auth")
     implementation("com.google.firebase:firebase-firestore")
+
+    implementation(libs.coil.compose)
+
+    // Import Spotify API
+    implementation ("com.spotify.android:auth:1.2.5")
+
+
 }
