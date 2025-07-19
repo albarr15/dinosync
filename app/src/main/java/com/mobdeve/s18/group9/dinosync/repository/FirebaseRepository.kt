@@ -15,10 +15,19 @@ class FirebaseRepository {
     private val db = FirebaseFirestore.getInstance()
 
     // COMPANION ✔️
+    // only fetches hatched companions
     suspend fun getCompanionsByUserId(userId: String): List<Companion> {
         val snapshot = db.collection("companion")
             .whereEqualTo("userId", userId)
             .whereNotEqualTo("dateAwarded", null)
+            .get().await()
+        return snapshot.toObjects(Companion::class.java)
+    }
+
+    // also fetches non-hatched companions
+    suspend fun getAllCompanionsByUserId(userId: String): List<Companion> {
+        val snapshot = db.collection("companion")
+            .whereEqualTo("userId", userId)
             .get().await()
         return snapshot.toObjects(Companion::class.java)
     }
