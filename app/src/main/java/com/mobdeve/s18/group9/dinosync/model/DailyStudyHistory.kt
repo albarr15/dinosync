@@ -5,8 +5,8 @@ data class DailyStudyHistory(
     val date: Timestamp? = null,
     val hasStudied: Boolean = false,
     val moodEntryId: String = "",
-    val totalGroupStudyHours: Int = 0,
-    val totalIndividualHours: Int = 0,
+    val totalGroupStudyMinutes: Long = 0,
+    val totalIndividualMinutes: Long = 0,
     val userId: String = ""
 )
 

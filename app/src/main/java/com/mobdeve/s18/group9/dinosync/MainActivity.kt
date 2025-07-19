@@ -514,7 +514,8 @@ fun MainScreen(
                                         userId = userId,
                                         date = sessionDate,
                                         moodId = moodId,
-                                        hours = hourInt + (minuteInt / 60f)
+                                        //Argument type mismatch: actual type is 'kotlin.Float', but 'kotlin.Long' was expected.
+                                        additionalMinutes = (hourInt * 60 + minuteInt).toLong()
                                     )
 
                                     Toast.makeText(

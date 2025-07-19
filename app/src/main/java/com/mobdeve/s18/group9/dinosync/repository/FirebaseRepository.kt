@@ -33,7 +33,6 @@ class FirebaseRepository {
     }
 
 
-
     // DAILY STUDY HISTORY ✔️
     suspend fun getDailyStudyHistory(userId: String): List<DailyStudyHistory> {
         val snapshot = db.collection("dailystudyhistory")

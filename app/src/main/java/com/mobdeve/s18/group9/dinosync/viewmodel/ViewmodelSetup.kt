@@ -64,7 +64,12 @@ class DailyStudyHistoryViewModel : ViewModel() {
         }
     }
 
-    fun updateDailyHistory(userId: String, date: String, moodId: String, hours: Float) {
+    fun updateDailyHistory(
+        userId: String,
+        date: String,
+        moodId: String,
+        additionalMinutes: Long
+    ) {
         viewModelScope.launch {
             val existing = repository.getDailyStudyHistoryByDate(userId, date)
 
@@ -72,22 +77,25 @@ class DailyStudyHistoryViewModel : ViewModel() {
             val parsedDate = dateFormat.parse(date)
             val timestamp = parsedDate?.let { Timestamp(it) }
 
+            val currentMinutes = existing?.totalIndividualMinutes ?: 0
+            val cappedMinutes = (currentMinutes + additionalMinutes).coerceAtMost(1440) // 24 hours * 60 minutes
+
             val updated = existing?.copy(
                 hasStudied = true,
                 moodEntryId = moodId,
-                totalIndividualHours = (existing.totalIndividualHours + hours).toInt()
+                totalIndividualMinutes = cappedMinutes
+            ) ?: DailyStudyHistory(
+                userId = userId,
+                date = timestamp,
+                hasStudied = true,
+                moodEntryId = moodId,
+                totalIndividualMinutes = additionalMinutes
             )
-                ?: DailyStudyHistory(
-                    userId = userId,
-                    date = timestamp,
-                    hasStudied = true,
-                    moodEntryId = moodId,
-                    totalIndividualHours = hours.toInt()
-                )
-
             repository.setDailyStudyHistory(updated)
         }
     }
+
+
 }
 
 class DinoCatalogViewModel : ViewModel() {
