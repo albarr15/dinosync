@@ -68,7 +68,7 @@ fun NewEggCard(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor",
+                    text = "",
                     style = MaterialTheme.typography.bodySmall,
                     color = Color.Gray,
                     textAlign = TextAlign.Center

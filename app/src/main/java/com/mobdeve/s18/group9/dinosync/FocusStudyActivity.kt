@@ -56,6 +56,7 @@ import com.spotify.android.appremote.api.error.UserNotAuthorizedException
 import com.spotify.sdk.android.auth.AuthorizationClient
 import com.spotify.sdk.android.auth.AuthorizationResponse
 import androidx.constraintlayout.compose.ConstraintLayout
+import com.mobdeve.s18.group9.dinosync.viewmodel.CompanionViewModel
 import com.mobdeve.s18.group9.dinosync.viewmodel.DailyStudyHistoryViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -275,6 +276,15 @@ fun FocusStudyScreen(
     val studySessionVM: StudySessionViewModel = viewModel()
     var playbackMode by remember { mutableStateOf(PlaybackMode.IN_APP) }
 
+    val companionVM: CompanionViewModel = viewModel()
+    // Load companions for the user
+    LaunchedEffect(userId) {
+        companionVM.loadCompanions(userId)
+    }
+    val companions by companionVM.companions.collectAsState()
+    // Get the most recent companion (if any)
+    val currentCompanion = companions.maxByOrNull { it.dateCreated?.seconds ?: 0L }
+
     var currentSessionId by remember { mutableStateOf(studySessionId) }
     val dailyStudyHistoryVM: DailyStudyHistoryViewModel = viewModel()
     var currentStartedAt by remember { mutableStateOf<Timestamp?>(null) }
@@ -289,6 +299,10 @@ fun FocusStudyScreen(
         else -> YellowGreen
     }
 
+    // FOR COMPANION: HATCH / NEW EGG CARD
+    var showHatchCard by remember { mutableStateOf(false) }
+    var showNewEggCard by remember { mutableStateOf(false) }
+    
     fun showToast(context: Context, message: String) {
         Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
     }
@@ -320,6 +334,13 @@ fun FocusStudyScreen(
                     moodId = moodId,
                     additionalMinutes = (elapsedMinutes / 60).toFloat()
                 )
+
+                // add condition here to check if current companion's hatch time is finished
+                showHatchCard = true
+                // update current companion
+                delay(5000L) //  seconds
+                showNewEggCard = true
+                // create new
             }
 
         }
@@ -531,7 +552,7 @@ fun FocusStudyScreen(
                                         totalTime = totalTime,
                                         timeLeft = timeLeft
                                     )
-//                                  //elapsedTimeInSeconds%3600)/60
+                                  //elapsedTimeInSeconds%3600)/60
                                     val minutesPart = (elapsedMinutes % 3600) / 60
                                     val secondsPart = elapsedMinutes % 60
                                     Toast.makeText(context, "Elapsed: ${minutesPart}m ${secondsPart}s", Toast.LENGTH_SHORT).show()
@@ -753,6 +774,27 @@ fun FocusStudyScreen(
                 }
 
             }
+        }
+    }
+    if (showHatchCard && currentCompanion != null) {
+        Box(
+            modifier = Modifier.fillMaxSize().size(500.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            HatchCard(companion = currentCompanion)
+        }
+    }
+    if (showNewEggCard) {
+        Box(
+            modifier = Modifier.fillMaxSize().size(500.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            NewEggCard(
+                onContinueClick = {
+                    showHatchCard = false
+                    showNewEggCard = false
+                }
+            )
         }
     }
 }

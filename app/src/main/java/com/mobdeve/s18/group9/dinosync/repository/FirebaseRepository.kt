@@ -27,6 +27,28 @@ class FirebaseRepository {
     }
 
 
+    suspend fun updateCurrentCompanion(userId: String, endTimestamp: com.google.firebase.Timestamp): Companion? {
+        val snapshot = db.collection("companion")
+            .whereEqualTo("userId", userId)
+            .whereEqualTo("isCurrent", true)
+            .get().await()
+        val doc = snapshot.documents.firstOrNull() ?: return null
+        val companion = doc.toObject(Companion::class.java) ?: return null
+
+        if (companion.remainingHatchTime == 0) {
+            companion.isCurrent = false
+            companion.dateAwarded = endTimestamp
+        }
+
+        db.collection("companion").document(doc.id).set(companion).await()
+        return companion
+    }
+
+    suspend fun createNewCompanion(companion: Companion) {
+        db.collection("companion").add(companion).await()
+    }
+
+
     // COURSES ✔️
     suspend fun getAllCourses(): List<Course> {
         val snapshot = db.collection("course").get().await()
