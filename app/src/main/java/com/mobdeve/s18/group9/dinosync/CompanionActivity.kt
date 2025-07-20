@@ -96,7 +96,6 @@ fun CompanionActivityScreen(userId:Int) {
         },
         containerColor = Color.White
     ) { padding ->
-
         Column(
             modifier = Modifier
                 .padding(padding)
@@ -104,8 +103,6 @@ fun CompanionActivityScreen(userId:Int) {
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-
-            // Top action bar
             TopActionBar(
                 onProfileClick = {
                     val intent = Intent(context, ProfileActivity::class.java)
@@ -118,10 +115,7 @@ fun CompanionActivityScreen(userId:Int) {
                     context.startActivity(intent)
                 }
             )
-
             Spacer(modifier = Modifier.height(12.dp))
-
-
             Text(
                 text = "Your Companions",
                 style = MaterialTheme.typography.headlineMedium,
@@ -129,8 +123,6 @@ fun CompanionActivityScreen(userId:Int) {
                 color = Color.Black,
                 modifier = Modifier.align(Alignment.Start)
             )
-
-            // Egg image display
             Box(
                 modifier = Modifier
                     .width(400.dp)
@@ -143,7 +135,6 @@ fun CompanionActivityScreen(userId:Int) {
                     modifier = Modifier.size(400.dp)
                 )
             }
-
             Text(
                 text = buildAnnotatedString {
                     append("Time left to hatch: ")
@@ -175,9 +166,7 @@ fun CompanionActivityScreen(userId:Int) {
                     color = Color.White
                 )
             }
-
             Spacer(modifier = Modifier.height(30.dp))
-
             Text(
                 text = "Collection",
                 fontWeight = FontWeight.Medium,
@@ -186,19 +175,15 @@ fun CompanionActivityScreen(userId:Int) {
                     .padding(start = 16.dp)
                     .align(Alignment.Start)
             )
-
             Spacer(modifier = Modifier.height(5.dp))
-
             LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 contentPadding = PaddingValues(horizontal = 16.dp)
             ) {
                 val userAchievements = achievements.filter { it.userId == userId }
                 val displayCount = maxOf(4, userAchievements.size)
-
                 items(displayCount) { index ->
                     val achievement = userAchievements.getOrNull(index)
-
                     Box(
                         modifier = Modifier
                             .size(80.dp)
@@ -216,7 +201,6 @@ fun CompanionActivityScreen(userId:Int) {
                     }
                 }
             }
-
         }
     }
 }

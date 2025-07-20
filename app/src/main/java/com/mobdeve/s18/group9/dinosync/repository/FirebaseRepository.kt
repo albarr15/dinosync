@@ -1,28 +1,30 @@
 package com.mobdeve.s18.group9.dinosync.repository
 
-import android.util.Log
+import com.google.firebase.firestore.FieldPath
 import com.google.firebase.firestore.FirebaseFirestore
 import com.mobdeve.s18.group9.dinosync.model.*
 import kotlinx.coroutines.tasks.await
 import com.google.firebase.firestore.ListenerRegistration
 import kotlinx.coroutines.Dispatchers
+import com.google.firebase.firestore.toObjects
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.withContext
 import java.sql.Timestamp
+import java.util.Calendar
 
 class FirebaseRepository {
     private val db = FirebaseFirestore.getInstance()
 
-    // ACHIEVEMENTS ✔️
-    suspend fun getAchievementsByUserId(userId: String): List<Achievement> {
-        val snapshot = db.collection("achievement")
+    // COMPANION ✔️
+    suspend fun getCompanionsByUserId(userId: String): List<Companion> {
+        val snapshot = db.collection("companion")
             .whereEqualTo("userId", userId)
+            .whereNotEqualTo("dateAwarded", null)
             .get().await()
-        return snapshot.toObjects(Achievement::class.java)
+        return snapshot.toObjects(Companion::class.java)
     }
-
 
 
     // COURSES ✔️
@@ -81,32 +83,6 @@ class FirebaseRepository {
 
 
 
-
-    // DINO CATALOG✔️
-    suspend fun getAllDino(): List<DinoCatalog> {
-        val snapshot = db.collection("dino_catalog").get().await()
-        return snapshot.toObjects(DinoCatalog::class.java)
-    }
-
-    suspend fun getDinoById(dinoId: String): DinoCatalog? {
-        val snapshot = db.collection("dino_catalog").document(dinoId).get().await()
-        return snapshot.toObject(DinoCatalog::class.java)
-    }
-    fun listenToDinoCatalog(): Flow<List<DinoCatalog>> = callbackFlow {
-        val listener = db.collection("dino_catalog")
-            .addSnapshotListener { snapshot, error ->
-                if (error != null) {
-                    close(error)
-                    return@addSnapshotListener
-                }
-                val dinos = snapshot?.toObjects(DinoCatalog::class.java) ?: emptyList()
-                trySend(dinos)
-            }
-
-        awaitClose { listener.remove() }
-    }
-
-
     // GROUP MEMBERS ✔️
     suspend fun getGroupMembers(groupId: String): List<GroupMember> {
         val snapshot = db.collection("groupmember")
@@ -152,7 +128,60 @@ class FirebaseRepository {
         return snapshot.toObjects(User::class.java)
     }
 
+    suspend fun getUserGroups(userId: String): List<StudyGroup> {
+        val memberSnapshot = db.collection("groupmember")
+            .whereEqualTo("userId", userId)
+            .get().await()
 
+        // extract all group ids
+        val groupIds = memberSnapshot.documents.mapNotNull {
+            it.getString("groupId")
+        }
+
+        if (groupIds.isEmpty()) return emptyList()
+
+        // Batch read all groups, firebase currently limited to 10 'in' queries
+        val groups = mutableListOf<StudyGroup>()
+
+        groupIds.chunked(10).forEach { chunk ->
+            val groupSnapshot = db.collection("studygroup")
+                .whereIn(FieldPath.documentId(), chunk)
+                .get().await()
+
+            groups.addAll(groupSnapshot.toObjects<StudyGroup>())
+        }
+
+        return groups
+    }
+
+    suspend fun getUserMoodHistory(userId: String) : List<Mood> {
+        val currentMonth = Calendar.getInstance().get(Calendar.MONTH)
+        val currentYear = Calendar.getInstance().get(Calendar.YEAR)
+
+        val dailyStudyHistorySnapshot = db.collection("dailystudyhistory")
+            .whereEqualTo("userId", userId)
+            .orderBy("date")
+            .get().await()
+
+        val moodEntryIds = dailyStudyHistorySnapshot.documents.mapNotNull {
+            it.getString("moodEntryId")
+        }
+
+        if (moodEntryIds.isEmpty()) return emptyList()
+
+        // Batch read all mood entries
+
+        val moods = mutableListOf<Mood>()
+        moodEntryIds.chunked(10).forEach { chunk ->
+            val moodSnapshot = db.collection("mood")
+                .whereIn(FieldPath.documentId(), chunk)
+                .get().await()
+
+            moods.addAll(moodSnapshot.toObjects<Mood>())
+        }
+
+        return moods
+    }
 
     // STUDY SESSIONS ✔️
     suspend fun getStudySessionsByUserId(userId: String): List<StudySession> {

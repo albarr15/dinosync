@@ -57,10 +57,11 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
     implementation(files("D:\\Downloads\\spotify-app-remote-release-0.8.0.aar"))
-    implementation(files("D:\\Downloads\\spotify-app-remote-release-0.8.0.aar"))
+    implementation("androidx.appcompat:appcompat:1.7.1")
     implementation(libs.androidx.appcompat)
-    implementation(files("D:\\Downloads\\spotify-app-remote-release-0.8.0.aar"))
     implementation(libs.androidx.constraintlayout)
+    // implementation(files("/Users/clarissaalbarr/Downloads/dinosync-assets/spotify-app-remote-release-0.8.0.aar"))
+    // implementation(files("/Users/clarissaalbarr/Downloads/dinosync-assets/spotify-auth-release-2.1.0.aar"))
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -84,7 +85,8 @@ dependencies {
     implementation("com.google.firebase:firebase-auth")
     implementation("com.google.firebase:firebase-firestore")
 
-    implementation(libs.coil.compose)
+    implementation("io.coil-kt.coil3:coil-compose:3.2.0")
+    implementation("io.coil-kt.coil3:coil-network-okhttp:3.2.0")
 
     // Import Spotify API
     implementation ("com.spotify.android:auth:1.2.5")

@@ -7,16 +7,19 @@ import com.mobdeve.s18.group9.dinosync.model.*
 import com.mobdeve.s18.group9.dinosync.repository.FirebaseRepository
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import com.google.firebase.Timestamp
+import java.text.SimpleDateFormat
+import java.util.*
 
-class AchievementViewModel : ViewModel() {
+class CompanionViewModel : ViewModel() {
     private val repository = FirebaseRepository()
 
-    private val _achievements = MutableStateFlow<List<Achievement>>(emptyList())
-    val achievements: StateFlow<List<Achievement>> = _achievements
+    private val _companions = MutableStateFlow<List<Companion>>(emptyList())
+    val companions: StateFlow<List<Companion>> = _companions
 
-    fun loadAchievements(userId: String) {
+    fun loadCompanions(userId: String) {
         viewModelScope.launch {
-            _achievements.value = repository.getAchievementsByUserId(userId)
+            _companions.value = repository.getCompanionsByUserId(userId)
         }
     }
 }
@@ -129,22 +132,6 @@ class DailyStudyHistoryViewModel : ViewModel() {
     */
 
 }
-
-class DinoCatalogViewModel : ViewModel() {
-    private val repository = FirebaseRepository()
-
-    private val _dinos = MutableStateFlow<List<DinoCatalog>>(emptyList())
-    val dinos: StateFlow<List<DinoCatalog>> = _dinos
-
-    fun loadDinos() {
-        viewModelScope.launch {
-            _dinos.value = repository.getAllDino()
-        }
-    }
-    val dinoCatalogFlow: StateFlow<List<DinoCatalog>> = repository.listenToDinoCatalog()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-}
-
 
 class GroupMemberViewModel : ViewModel() {
     private val repository = FirebaseRepository()
@@ -320,6 +307,31 @@ class UserViewModel : ViewModel() {
     fun loadAllUsers() {
         viewModelScope.launch {
             _allUsers.value = repository.getAllUsers()
+        }
+    }
+}
+
+class ProfileViewModel : ViewModel() {
+    private val repository = FirebaseRepository()
+
+    private val _user = MutableStateFlow<User?>(null)
+    val user: StateFlow<User?> = _user
+
+    private val _companions = MutableStateFlow<List<Companion>>(emptyList())
+    val companions: StateFlow<List<Companion>> = _companions
+
+    private val _groups = MutableStateFlow<List<StudyGroup>>(emptyList())
+    val groups: StateFlow<List<StudyGroup>> = _groups
+
+    private val _moodHistory = MutableStateFlow<List<Mood>>(emptyList())
+    val moodHistory: StateFlow<List<Mood>> = _moodHistory
+
+    fun loadUserProfile(userId: String) {
+        viewModelScope.launch {
+            _user.value = repository.getUserById(userId)
+            _companions.value = repository.getCompanionsByUserId(userId)
+            _groups.value = repository.getUserGroups(userId)
+            _moodHistory.value = repository.getUserMoodHistory(userId)
         }
     }
 }
