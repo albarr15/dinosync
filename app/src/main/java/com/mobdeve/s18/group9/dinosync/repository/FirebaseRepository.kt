@@ -217,12 +217,6 @@ class FirebaseRepository {
         db.collection("studysession").document(sessionId).update(updates).await()
     }
 
-    // STUDY GROUPS ✔️
-    suspend fun getAllStudyGroups(): List<StudyGroup> {
-        val snapshot = db.collection("studygroup").get().await()
-        return snapshot.toObjects(StudyGroup::class.java)
-    }
-
     // Real-time listener for group sessions
     fun listenToGroupSessions(groupId: String): Flow<List<GroupSession>> = callbackFlow {
         val listenerRegistration: ListenerRegistration = db.collection("groupsession")
@@ -239,6 +233,12 @@ class FirebaseRepository {
 
         awaitClose { listenerRegistration.remove() }
     }
+    // STUDY GROUPS ✔️
+    suspend fun getAllStudyGroups(): List<StudyGroup> {
+        val snapshot = db.collection("studygroup").get().await()
+        return snapshot.toObjects(StudyGroup::class.java)
+    }
+
     suspend fun createStudyGroup(group: StudyGroup) {
         val ref = db.collection("studygroup").document()
         val newGroup = group.copy(groupId = ref.id)
@@ -246,8 +246,20 @@ class FirebaseRepository {
     }
 
     suspend fun deleteStudyGroup(groupId: String) {
+        // Delete the study group document
         db.collection("studygroup").document(groupId).delete().await()
+
+        // Query and delete all group members with the same groupId
+        val membersSnapshot = db.collection("groupmember")
+            .whereEqualTo("groupId", groupId)
+            .get()
+            .await()
+
+        for (doc in membersSnapshot.documents) {
+            doc.reference.delete().await()
+        }
     }
+
 
     // TODO_ITEMS ️ ✔️
     suspend fun getTodosByUserId(userId: String): List<TodoDocument> {

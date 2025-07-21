@@ -126,16 +126,6 @@ class DailyStudyHistoryViewModel : ViewModel() {
             }
         }
     }
-
-
-    /*
-    fun recordHistory(userId: String, date: String, moodId: String, minutes: Float) {
-        viewModelScope.launch {
-            updateDailyHistory(userId, date, moodId, minutes)
-        }
-    }
-    */
-
 }
 
 class GroupMemberViewModel : ViewModel() {
