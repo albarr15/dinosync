@@ -84,11 +84,13 @@ class FirebaseRepository {
 
 
     // GROUP MEMBERS ✔️
-    suspend fun getGroupMembers(groupId: String): List<GroupMember> {
-        val snapshot = db.collection("groupmember")
-            .whereEqualTo("groupId", groupId)
-            .get().await()
-        return snapshot.toObjects(GroupMember::class.java)
+    suspend fun getAllGroupMembers(): List<GroupMember> {
+        return try {
+            val snapshot = db.collection("groupmember").get().await()
+            snapshot.documents.mapNotNull { it.toObject(GroupMember::class.java) }
+        } catch (e: Exception) {
+            emptyList()
+        }
     }
 
 
@@ -100,16 +102,6 @@ class FirebaseRepository {
             .get().await()
         return snapshot.toObjects(GroupSession::class.java)
     }
-
-    suspend fun getAllGroupMembers(): List<GroupMember> {
-        return try {
-            val snapshot = db.collection("groupmember").get().await()
-            snapshot.documents.mapNotNull { it.toObject(GroupMember::class.java) }
-        } catch (e: Exception) {
-            emptyList()
-        }
-    }
-
 
 
     // MOODS ✔️

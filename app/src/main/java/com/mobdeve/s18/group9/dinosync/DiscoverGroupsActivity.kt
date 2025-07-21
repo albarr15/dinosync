@@ -2,6 +2,7 @@
 package com.mobdeve.s18.group9.dinosync
 
 import android.content.Intent
+import android.util.Log
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -40,6 +41,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.clickable
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.runtime.*
 import com.mobdeve.s18.group9.dinosync.model.StudyGroup
 import com.mobdeve.s18.group9.dinosync.viewmodel.GroupMemberViewModel
@@ -49,7 +51,8 @@ class DiscoverGroupsActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val userId = intent.getIntExtra("userId", -1)
+        val userId = intent.getStringExtra("userId") ?: "-1"
+        Log.d("CurrentUser", "Logged in userId in DiscoverGroupsActivity = $userId")
 
         setContent {
             DinoSyncTheme {
@@ -70,7 +73,7 @@ class DiscoverGroupsActivity : ComponentActivity() {
 
 @Composable
 
-fun DiscoverGroupsScreen(userId: Int) {
+fun DiscoverGroupsScreen(userId: String) {
     val context = LocalContext.current
 
     val studyGroupViewModel = remember { StudyGroupViewModel() }
@@ -92,7 +95,6 @@ fun DiscoverGroupsScreen(userId: Int) {
             else studyGroups.filter { it.name.contains(searchQuery, ignoreCase = true) }
         }
     }
-
 
     Scaffold(
         bottomBar = {
@@ -152,31 +154,56 @@ fun DiscoverGroupsScreen(userId: Int) {
             Spacer(modifier = Modifier.height(8.dp))
 
 
-            val userGroups = remember(studyGroups, groupMembers) {
-                studyGroups.filter { group ->
-                    groupMembers.any { it.groupId == group.groupId && it.userId == userId.toString() }
-                }
+            val userGroupIds = remember(groupMembers) {
+                groupMembers
+                    .filter { it.userId.trim() == userId.toString().trim() }
+                    .map { it.groupId }
+                    .toSet()
             }
 
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                items(userGroups.take(5)) { group ->
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                items(studyGroups.take(5)) { group ->
                     val imageResId = remember(group.image) {
                         context.resources.getIdentifier(group.image, "drawable", context.packageName)
                     }
+                    val isMember = userGroupIds.contains(group.groupId)
+
+                    LaunchedEffect(group.groupId, userGroupIds) {
+                        Log.d(
+                            "DiscoverGroups",
+                            "GroupId=${group.groupId}, GroupName=${group.name}, isMember=$isMember, userGroupIds=$userGroupIds"
+                        )
+                    }
+
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Box(
                             modifier = Modifier
                                 .size(70.dp)
                                 .clip(RoundedCornerShape(12.dp))
-                                .background(Color(0xFFE0E0E0)),
-                            contentAlignment = Alignment.Center
+                                .background(Color(0xFFE0E0E0))
                         ) {
                             Image(
                                 painter = painterResource(id = imageResId),
                                 contentDescription = null,
-                                modifier = Modifier.size(50.dp)
+                                modifier = Modifier
+                                    .size(30.dp)
+                                    .align(Alignment.Center)
                             )
+
+                            if (isMember) {
+                                Icon(
+                                    imageVector = Icons.Default.CheckCircle,
+                                    contentDescription = "Joined",
+                                    tint = Color(0xFF4CAF50),
+                                    modifier = Modifier
+                                        .size(18.dp)
+                                        .align(Alignment.TopEnd)
+                                        .padding(4.dp)
+                                )
+                            }
+
                         }
+
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(group.name, fontSize = 12.sp, maxLines = 1)
                     }
@@ -232,6 +259,13 @@ fun DiscoverGroupsScreen(userId: Int) {
                     })
                 }
             }
+            LaunchedEffect(groupMembers) {
+                groupMembers.forEach {
+                    Log.d("CheckGroupMembers", "UserId=${it.userId}, GroupId=${it.groupId}")
+                }
+            }
+            Log.d("CurrentUser", "Logged in userId in DiscoverGroupsScreen= $userId")
+
         }
     }
 }
