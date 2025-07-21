@@ -192,12 +192,11 @@ fun DiscoverGroupsScreen(userId: String) {
             }
 
             LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                items(studyGroups.take(5)) { group ->
+                items(studyGroups.filter { it.groupId in userGroupIds }.take(5)) { group ->
                     val imageResId = remember(group.image) {
                         context.resources.getIdentifier(group.image, "drawable", context.packageName)
                     }
                     val isMember = userGroupIds.contains(group.groupId)
-
                     /*
                     LaunchedEffect(group.groupId, userGroupIds) {
                         Log.d(
@@ -206,8 +205,6 @@ fun DiscoverGroupsScreen(userId: String) {
                         )
                     }
                     */
-
-
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Box(
                             modifier = Modifier
@@ -440,6 +437,8 @@ fun CreateStudyGroupDialog(
     val icon = if (expanded) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown
     val universityViewModel  = remember { UniversityViewModel() }
     val universityOptions by universityViewModel.universityList
+
+
 
     AlertDialog(
         onDismissRequest = onDismiss,
