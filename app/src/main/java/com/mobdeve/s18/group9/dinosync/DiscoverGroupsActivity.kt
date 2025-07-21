@@ -43,13 +43,21 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.runtime.*
+import androidx.compose.ui.platform.LocalDensity
 import com.mobdeve.s18.group9.dinosync.model.StudyGroup
 import com.mobdeve.s18.group9.dinosync.ui.theme.DarkGreen
 import com.mobdeve.s18.group9.dinosync.viewmodel.GroupMemberViewModel
 import com.mobdeve.s18.group9.dinosync.viewmodel.StudyGroupViewModel
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.toSize
 
 class DiscoverGroupsActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -128,9 +136,10 @@ fun DiscoverGroupsScreen(userId: String) {
 
         if (showDialog) {
             CreateStudyGroupDialog(
+                hostId = userId,
                 onDismiss = { showDialog = false },
-                onCreate = { groupName, bio ->
-                    studyGroupViewModel.createGroup(groupName, bio)
+                onCreate = { hostId, groupName, bio, university ->
+                    studyGroupViewModel.createGroup(hostId, groupName, bio, university)
                     showDialog = false
                 }
             )
@@ -270,7 +279,7 @@ fun DiscoverGroupsScreen(userId: String) {
                 items(filteredGroups) { group ->
                     val members = groupMembers.count { it.groupId == group.groupId }
                     val isMember = groupMembers.any { it.groupId == group.groupId && it.userId == userId }
-
+                    val isHost = group.hostId == userId
                     DiscoverGroupItem(
                         group = group,
                         members = members,
@@ -280,7 +289,12 @@ fun DiscoverGroupsScreen(userId: String) {
                             intent.putExtra("groupId", group.groupId)
                             intent.putExtra("userId", userId)
                             context.startActivity(intent)
-                        }
+                        },
+                        onDeleteClick = if (isHost) {
+                            {
+                                studyGroupViewModel.deleteGroup(group.groupId)
+                            }
+                        } else null
                     )
                 }
                 }
@@ -315,7 +329,8 @@ fun DiscoverGroupItem(
             modifier = Modifier
                 .padding(12.dp)
                 .fillMaxSize(),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Box(
                 modifier = Modifier
@@ -357,46 +372,48 @@ fun DiscoverGroupItem(
             }
 
             // JOIN / JOINED badge
-            Box(
-                modifier = Modifier
-                    .align(Alignment.Top)
-                    .padding(end = if (onDeleteClick != null) 4.dp else 0.dp)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(
-                    text = if (isMember) "JOINED" else "JOIN",
-                    color = if (isMember) DarkGreen else Color.White,
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier
-                        .background(
-                            color = if (isMember) Color.Transparent else DarkGreen,
-                            shape = RoundedCornerShape(50)
-                        )
-                        .border(
-                            width = if (!isMember) 1.dp else 0.dp,
-                            color = DarkGreen,
-                            shape = RoundedCornerShape(50)
-                        )
-                        .padding(horizontal = 10.dp, vertical = 4.dp)
-                )
-            }
-
-            // Delete icon
-            onDeleteClick?.let {
-                IconButton(
-                    onClick = it,
+                Box(
                     modifier = Modifier
                         .align(Alignment.Top)
-                        .padding(start = 8.dp)
+                        .padding(end = if (onDeleteClick != null) 4.dp else 0.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Delete,
-                        contentDescription = "Delete Group",
-                        tint = Color.Gray
+                    Text(
+                        text = if (isMember) "JOINED" else "JOIN",
+                        color = if (isMember) DarkGreen else Color.White,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier
+                            .background(
+                                color = if (isMember) Color.Transparent else DarkGreen,
+                                shape = RoundedCornerShape(50)
+                            )
+                            .border(
+                                width = if (!isMember) 1.dp else 0.dp,
+                                color = DarkGreen,
+                                shape = RoundedCornerShape(50)
+                            )
+                            .padding(horizontal = 10.dp, vertical = 4.dp)
                     )
                 }
-            }
 
+                // Delete icon
+                onDeleteClick?.let {
+                    IconButton(
+                        onClick = it,
+                        modifier = Modifier
+                            .align(Alignment.Top)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = "Delete Group",
+                            tint = Color.Gray
+                        )
+                    }
+                }
+            }
 
         }
     }
@@ -405,11 +422,24 @@ fun DiscoverGroupItem(
 
 @Composable
 fun CreateStudyGroupDialog(
+    hostId: String,
     onDismiss: () -> Unit,
-    onCreate: (String, String) -> Unit
+    onCreate: (hostId: String, name: String, bio: String, university: String) -> Unit
 ) {
     var groupName by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
+    var university by remember { mutableStateOf("") }
+    var expanded by remember { mutableStateOf(false) }
+    var textFieldSize by remember { mutableStateOf(Size.Zero) }
+
+    val icon = if (expanded) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown
+
+    val universityOptions = listOf(
+        "University of the Philippines",
+        "Ateneo de Manila University",
+        "De La Salle University",
+        "University of Santo Tomas"
+    )
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -419,20 +449,60 @@ fun CreateStudyGroupDialog(
                 OutlinedTextField(
                     value = groupName,
                     onValueChange = { groupName = it },
-                    label = { Text("Group Name") }
+                    label = { Text("Group Name") },
+                    modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 OutlinedTextField(
                     value = description,
                     onValueChange = { description = it },
-                    label = { Text("Bio") }
+                    label = { Text("Bio") },
+                    modifier = Modifier.fillMaxWidth()
                 )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .wrapContentSize(Alignment.TopStart)
+                ) {
+                    OutlinedTextField(
+                        value = university,
+                        onValueChange = { university = it },
+                        label = { Text("University") },
+                        trailingIcon = {
+                            Icon(icon, contentDescription = null,
+                                Modifier.clickable { expanded = !expanded })
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .onGloballyPositioned { coordinates ->
+                                textFieldSize = coordinates.size.toSize()
+                            }
+                    )
+
+                    DropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false },
+                        modifier = Modifier.width(with(LocalDensity.current) { textFieldSize.width.toDp() })
+                    ) {
+                        universityOptions.forEach { option ->
+                            DropdownMenuItem(
+                                onClick = {
+                                    university = option
+                                    expanded = false
+                                },
+                                text = { Text(option) }
+                            )
+                        }
+                    }
+                }
             }
         },
         confirmButton = {
             TextButton(
                 onClick = {
-                    onCreate(groupName.trim(), description.trim())
+                    onCreate(hostId, groupName.trim(), description.trim(), university.trim())
                 }
             ) {
                 Text("Create")

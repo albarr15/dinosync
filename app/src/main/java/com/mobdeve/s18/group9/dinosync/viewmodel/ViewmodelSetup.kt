@@ -221,15 +221,16 @@ class StudyGroupViewModel : ViewModel() {
         _showCreateDialog.value = false
     }
 
-    fun createGroup(name: String, bio: String) {
+    fun createGroup(hostId: String, name: String, bio: String, university: String) {
         viewModelScope.launch {
             val group = StudyGroup(
+                hostId = hostId,
                 groupId = "",
                 name = name,
                 bio = bio,
                 image = "groupimage",
                 rank = 0L,
-                university = ""
+                university = university
             )
             repository.createStudyGroup(group)
             loadStudyGroups()
