@@ -101,6 +101,15 @@ class FirebaseRepository {
         return snapshot.toObjects(GroupSession::class.java)
     }
 
+    suspend fun getAllGroupMembers(): List<GroupMember> {
+        return try {
+            val snapshot = db.collection("groupmember").get().await()
+            snapshot.documents.mapNotNull { it.toObject(GroupMember::class.java) }
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
 
 
     // MOODS ✔️
@@ -227,6 +236,8 @@ class FirebaseRepository {
         val snapshot = db.collection("studygroup").get().await()
         return snapshot.toObjects(StudyGroup::class.java)
     }
+
+
     // Real-time listener for group sessions
     fun listenToGroupSessions(groupId: String): Flow<List<GroupSession>> = callbackFlow {
         val listenerRegistration: ListenerRegistration = db.collection("groupsession")

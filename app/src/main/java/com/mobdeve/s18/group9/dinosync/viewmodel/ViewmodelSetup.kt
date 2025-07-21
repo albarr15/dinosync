@@ -139,11 +139,12 @@ class GroupMemberViewModel : ViewModel() {
     private val _members = MutableStateFlow<List<GroupMember>>(emptyList())
     val members: StateFlow<List<GroupMember>> = _members
 
-    fun loadGroupMembers(groupId: String) {
+    fun loadAllMembers() {
         viewModelScope.launch {
-            _members.value = repository.getGroupMembers(groupId)
+            _members.value = repository.getAllGroupMembers()
         }
     }
+
 }
 
 class GroupSessionViewModel : ViewModel() {
@@ -204,6 +205,7 @@ class StudyGroupViewModel : ViewModel() {
     val studyGroups: StateFlow<List<StudyGroup>> = _studyGroups
 
     fun loadStudyGroups() {
+        Log.d("StudyGroupVM", "Calling loadStudyGroups...")
         viewModelScope.launch {
             _studyGroups.value = repository.getAllStudyGroups()
         }

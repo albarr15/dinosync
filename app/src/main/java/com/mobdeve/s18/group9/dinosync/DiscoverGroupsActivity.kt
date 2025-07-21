@@ -42,6 +42,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.clickable
 import androidx.compose.runtime.*
 import com.mobdeve.s18.group9.dinosync.model.StudyGroup
+import com.mobdeve.s18.group9.dinosync.viewmodel.GroupMemberViewModel
+import com.mobdeve.s18.group9.dinosync.viewmodel.StudyGroupViewModel
 
 class DiscoverGroupsActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -51,11 +53,7 @@ class DiscoverGroupsActivity : ComponentActivity() {
 
         setContent {
             DinoSyncTheme {
-                //DiscoverGroupsScreen(userId)
-                // TEMPORARY CHECKER FOR SCREEN ACTIVITY
-                androidx.compose.material3.Surface {
-                    androidx.compose.material3.Text(text = "Discover Groups Screen")
-                }
+                DiscoverGroupsScreen(userId)
             }
         }
     }
@@ -69,20 +67,29 @@ class DiscoverGroupsActivity : ComponentActivity() {
     override fun onDestroy() { super.onDestroy(); println("DiscoverGroupsActivity onDestroy()") }
 }
 
-/*
+
 @Composable
 
 fun DiscoverGroupsScreen(userId: Int) {
     val context = LocalContext.current
 
-    val studyGroups = remember { initializeStudyGroups() }
-    val groupMembers = remember { initializeGroupMembers() }
+    val studyGroupViewModel = remember { StudyGroupViewModel() }
+    val memberViewModel = remember { GroupMemberViewModel() }
+
+    val studyGroups by studyGroupViewModel.studyGroups.collectAsState()
+    val groupMembers by memberViewModel.members.collectAsState()
+
     var searchQuery by remember { mutableStateOf("") }
+
+    LaunchedEffect(Unit) {
+        studyGroupViewModel.loadStudyGroups()
+        memberViewModel.loadAllMembers()
+    }
 
     val filteredGroups by remember {
         derivedStateOf {
             if (searchQuery.isBlank()) studyGroups
-            else studyGroups.filter { it.name.contains(searchQuery, true) }
+            else studyGroups.filter { it.name.contains(searchQuery, ignoreCase = true) }
         }
     }
 
@@ -144,8 +151,18 @@ fun DiscoverGroupsScreen(userId: Int) {
 
             Spacer(modifier = Modifier.height(8.dp))
 
+
+            val userGroups = remember(studyGroups, groupMembers) {
+                studyGroups.filter { group ->
+                    groupMembers.any { it.groupId == group.groupId && it.userId == userId.toString() }
+                }
+            }
+
             LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                items(studyGroups.take(5)) { group ->
+                items(userGroups.take(5)) { group ->
+                    val imageResId = remember(group.image) {
+                        context.resources.getIdentifier(group.image, "drawable", context.packageName)
+                    }
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Box(
                             modifier = Modifier
@@ -155,7 +172,7 @@ fun DiscoverGroupsScreen(userId: Int) {
                             contentAlignment = Alignment.Center
                         ) {
                             Image(
-                                painter = painterResource(id = group.image),
+                                painter = painterResource(id = imageResId),
                                 contentDescription = null,
                                 modifier = Modifier.size(50.dp)
                             )
@@ -165,6 +182,7 @@ fun DiscoverGroupsScreen(userId: Int) {
                     }
                 }
             }
+
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -234,6 +252,7 @@ fun DiscoverGroupItem(group: StudyGroup, members: Int, onGroupClick: () -> Unit)
                 .fillMaxSize(),
             verticalAlignment = Alignment.CenterVertically
         ) {
+
             Box(
                 modifier = Modifier
                     .size(50.dp)
@@ -241,8 +260,12 @@ fun DiscoverGroupItem(group: StudyGroup, members: Int, onGroupClick: () -> Unit)
                     .background(Color(0xFFE0E0E0)),
                 contentAlignment = Alignment.Center
             ) {
+                val context = LocalContext.current
+                val imageResId = remember(group.image) {
+                    context.resources.getIdentifier(group.image, "drawable", context.packageName)
+                }
                 Image(
-                    painter = painterResource(id = group.image),
+                    painter = painterResource(id = imageResId),
                     contentDescription = null,
                     modifier = Modifier.size(40.dp)
                 )
@@ -271,5 +294,3 @@ fun DiscoverGroupItem(group: StudyGroup, members: Int, onGroupClick: () -> Unit)
         }
     }
 }
-*/
-
