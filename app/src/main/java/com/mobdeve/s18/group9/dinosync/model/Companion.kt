@@ -1,6 +1,7 @@
 package com.mobdeve.s18.group9.dinosync.model
 import com.google.firebase.Timestamp
 import com.mobdeve.s18.group9.dinosync.R
+import com.google.firebase.firestore.PropertyName
 
 // originally Achievements + DinoCatalog
 // represents egg + hatched dinos
@@ -11,7 +12,7 @@ data class Companion(
     var name: String = "", // will be set according to type
     var dateAwarded: Timestamp? = null,
     var userId: String = "",
-    var isCurrent: Boolean = true, // set as current on egg creation
+    var current: Boolean = false, // set as current on egg creation
     var dateCreated: Timestamp? = null
 ) {
     val type: DinoType

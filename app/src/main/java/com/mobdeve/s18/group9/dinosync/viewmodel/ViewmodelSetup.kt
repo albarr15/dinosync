@@ -8,6 +8,7 @@ import com.mobdeve.s18.group9.dinosync.repository.FirebaseRepository
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import com.google.firebase.Timestamp
+import kotlinx.coroutines.tasks.await
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -19,7 +20,58 @@ class CompanionViewModel : ViewModel() {
 
     fun loadCompanions(userId: String) {
         viewModelScope.launch {
-            _companions.value = repository.getCompanionsByUserId(userId)
+            _companions.value = repository.getAllCompanionsByUserId(userId)
+        }
+    }
+
+    fun updateCurrentCompanion(
+        userId: String,
+        current: Boolean,
+        dateAwarded: Timestamp?,
+        remainingHatchTime: Int
+    ) {
+        Log.d(
+            "CompanionVM",
+            "updateCurrentCompanion called → userId: $userId, current: $current, " +
+                    "dateAwarded: $dateAwarded, remainingHatchTime: $remainingHatchTime"
+        )
+
+        viewModelScope.launch {
+            val currentCompanion = repository.getCurrentCompanionByUserId(userId)
+
+            val cappedHatchTime = remainingHatchTime.coerceAtLeast(0)
+
+            if (cappedHatchTime > 0) {
+                Log.d("CompanionVM", "Updating existing Companion")
+                val updatedEntry = currentCompanion.copy(
+                    current = true,
+                    dateAwarded = null,
+                    remainingHatchTime = cappedHatchTime
+                )
+                repository.updateCompanion(userId, updatedEntry)
+                loadCompanions(userId)
+            } else {
+                Log.d("CompanionVM", "Hatching companion and creating new egg")
+                val now = Timestamp.now()
+                // 1. Set previous companion as not current and set dateAwarded
+                val hatchedCompanion = currentCompanion.copy(
+                    current = false,
+                    dateAwarded = now,
+                    remainingHatchTime = 0
+                )
+                repository.updateCompanion(userId, hatchedCompanion)
+                loadCompanions(userId)
+                // 2. Create new egg
+                val newEgg = Companion(
+                    userId = userId,
+                    requiredHatchTime = 5, // TODO: adjust as needed
+                    remainingHatchTime = 5,
+                    current = true,
+                    dateCreated = now
+                )
+                repository.insertCompanion(newEgg)
+                loadCompanions(userId)
+            }
         }
     }
 }

@@ -17,12 +17,11 @@ import com.mobdeve.s18.group9.dinosync.model.Companion
 
 @Composable
 fun HatchCard(
-    modifier: Modifier = Modifier,
-    onContinueClick: () -> Unit = {},
-    companion: Companion
+    companionName: String,
+    imageRes: Int
 ) {
     Card(
-        modifier = modifier
+        modifier = Modifier
             .width(300.dp)
             .height(500.dp),
         shape = RoundedCornerShape(16.dp),
@@ -46,7 +45,7 @@ fun HatchCard(
                 )
                 // change this to Companion's getdrawableres
                 Image(
-                    painter = painterResource(companion.getDrawableRes()),
+                    painter = painterResource(imageRes),
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.height(170.dp)
@@ -72,7 +71,7 @@ fun HatchCard(
 
                 // to replace with companion name
                 Text(
-                    text = "You hatched a " + companion.name + "!",
+                    text = "You hatched a $companionName!",
                     style = MaterialTheme.typography.bodySmall,
                     color = Color.Gray,
                     textAlign = TextAlign.Center

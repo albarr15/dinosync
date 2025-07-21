@@ -283,7 +283,22 @@ fun FocusStudyScreen(
     }
     val companions by companionVM.companions.collectAsState()
     // Get the most recent companion (if any)
-    val currentCompanion = companions.maxByOrNull { it.dateCreated?.seconds ?: 0L }
+    val currentCompanion = companions
+        .filter { it.current }
+        .maxByOrNull { it.dateCreated?.seconds ?: 0L }
+    Log.d("CompanionDebug", "Companions: $companions")
+    Log.d("CompanionDebug", "CurrentCompanion: $currentCompanion")
+
+    var showHatchCard by remember { mutableStateOf(false) }
+
+    // Watch for hatching
+    LaunchedEffect(currentCompanion?.remainingHatchTime) {
+        Log.d("CompanionDebug", "LaunchedEffect: remainingHatchTime = ${currentCompanion?.remainingHatchTime}")
+        if (currentCompanion != null && currentCompanion.remainingHatchTime == 0) {
+            showHatchCard = true
+            Log.d("CompanionDebug", "Setting showHatchCard = true (hatch time reached)")
+        }
+    }
 
     var currentSessionId by remember { mutableStateOf(studySessionId) }
     val dailyStudyHistoryVM: DailyStudyHistoryViewModel = viewModel()
@@ -300,15 +315,17 @@ fun FocusStudyScreen(
     }
 
     // FOR COMPANION: HATCH / NEW EGG CARD
-    var showHatchCard by remember { mutableStateOf(false) }
     var showNewEggCard by remember { mutableStateOf(false) }
+
+    var currentCompanionName = currentCompanion?.name
+    var currentCompanionDrawableRes = currentCompanion?.getDrawableRes()
     
     fun showToast(context: Context, message: String) {
         Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
     }
 
     // ✅ Timer countdown logic
-    LaunchedEffect(currentSessionId) {
+    LaunchedEffect(currentSessionId, currentCompanion) {
         if (isRunning) {
             while (timeLeft > 0) {
                 delay(1000L)
@@ -335,14 +352,31 @@ fun FocusStudyScreen(
                     additionalMinutes = (elapsedMinutes / 60).toFloat()
                 )
 
-                // add condition here to check if current companion's hatch time is finished
-                showHatchCard = true
-                // update current companion
-                delay(5000L) //  seconds
-                showNewEggCard = true
-                // create new
-            }
+                Log.d("CompanionDebug", "Companions: $companions")
+                Log.d("CompanionDebug", "CurrentCompanion: $currentCompanion")
 
+
+                if (currentCompanion != null) {
+                    val sessionDuration = totalTime - timeLeft // in seconds
+                    val newHatchTime = (currentCompanion.remainingHatchTime - sessionDuration).coerceAtLeast(0)
+
+                    companionVM.updateCurrentCompanion(
+                        userId,
+                        currentCompanion.current,
+                        dateAwarded = endTimestamp,
+                        remainingHatchTime = newHatchTime
+                    )
+                    delay(3000L) // 3 seconds to apply update
+
+                    if (currentCompanion.dateAwarded != null) {
+                        showHatchCard = true
+                        delay(5000L) // 5 seconds
+                        showNewEggCard = true
+                    }
+                } else {
+                    Log.d("CompanionVM ", "ERROR: no currentCompanion found.")
+                }
+            }
         }
     }
 
@@ -776,13 +810,23 @@ fun FocusStudyScreen(
             }
         }
     }
-    if (showHatchCard && currentCompanion != null) {
+    if (showHatchCard) {
         Box(
             modifier = Modifier.fillMaxSize().size(500.dp),
             contentAlignment = Alignment.Center
         ) {
-            HatchCard(companion = currentCompanion)
+            if (currentCompanionName != null) {
+                if (currentCompanionDrawableRes != null) {
+                    HatchCard(currentCompanionName, currentCompanionDrawableRes)
+                } else {
+                    Log.d("Hatch Card UI:", "current companion drawable is null.")
+                }
+            } else {
+                Log.d("Hatch Card UI:", "current companion name is null.")
+            }
         }
+    } else {
+        Log.d("HatchCard", "showHatchCard = false")
     }
     if (showNewEggCard) {
         Box(
@@ -796,6 +840,8 @@ fun FocusStudyScreen(
                 }
             )
         }
+    } else {
+        Log.d("HatchCard", "showNewEggCard = false")
     }
 }
 

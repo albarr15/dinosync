@@ -5,6 +5,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.mobdeve.s18.group9.dinosync.model.*
 import kotlinx.coroutines.tasks.await
 import com.google.firebase.firestore.ListenerRegistration
+import com.google.firebase.firestore.Query
 import kotlinx.coroutines.Dispatchers
 import com.google.firebase.firestore.toObjects
 import kotlinx.coroutines.channels.awaitClose
@@ -25,29 +26,51 @@ class FirebaseRepository {
             .get().await()
         return snapshot.toObjects(Companion::class.java)
     }
-
-
-    suspend fun updateCurrentCompanion(userId: String, endTimestamp: com.google.firebase.Timestamp): Companion? {
+    suspend fun getAllCompanionsByUserId(userId: String): List<Companion> {
         val snapshot = db.collection("companion")
             .whereEqualTo("userId", userId)
-            .whereEqualTo("isCurrent", true)
             .get().await()
-        val doc = snapshot.documents.firstOrNull() ?: return null
-        val companion = doc.toObject(Companion::class.java) ?: return null
+        return snapshot.toObjects(Companion::class.java)
+    }
 
-        if (companion.remainingHatchTime == 0) {
-            companion.isCurrent = false
-            companion.dateAwarded = endTimestamp
+    suspend fun getCurrentCompanionByUserId(userId: String): Companion {
+        val snapshot = db.collection("companion")
+            .whereEqualTo("userId", userId)
+            .whereEqualTo("current", true)
+            .orderBy("dateCreated", Query.Direction.DESCENDING)
+            .limit(1)
+            .get().await()
+
+        return snapshot.toObjects(Companion::class.java).firstOrNull()
+            ?: throw NoSuchElementException("No current companion found for user: $userId")
+    }
+
+    suspend fun updateCompanion(userId: String, editedCompanion: Companion) {
+        val db = FirebaseFirestore.getInstance()
+
+        // fetches current companion
+        val querySnapshot = db.collection("companion")
+            .whereEqualTo("userId", userId)
+            .whereEqualTo("current", true)
+            .orderBy("dateCreated", Query.Direction.DESCENDING)
+            .limit(1)
+            .get().await()
+
+        val doc = querySnapshot.documents.firstOrNull()
+        if (doc != null) {
+            db.collection("companion")
+                .document(doc.id)
+                .set(editedCompanion)
+                .await()
         }
-
-        db.collection("companion").document(doc.id).set(companion).await()
-        return companion
     }
 
-    suspend fun createNewCompanion(companion: Companion) {
-        db.collection("companion").add(companion).await()
+    suspend fun insertCompanion(egg: Companion) {
+        val db = FirebaseFirestore.getInstance()
+        val docRef = db.collection("companion")
+            .add(egg)
+            .await()
     }
-
 
     // COURSES ✔️
     suspend fun getAllCourses(): List<Course> {
@@ -299,6 +322,8 @@ class FirebaseRepository {
     suspend fun deleteTodoItem(id: String) {
         db.collection("todoitem").document(id).delete().await()
     }
+
+
 
 
 }
