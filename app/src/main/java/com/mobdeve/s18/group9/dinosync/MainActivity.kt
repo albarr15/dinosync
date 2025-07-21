@@ -362,6 +362,7 @@ fun MainScreen(
             BottomNavigationBar(
                 selectedItem = "Home",
                 onGroupsClick = {
+                    //Log.d("CurrentUser", "Logged in userId in onGroupsClick = $userId")
                     val intent = Intent(context, DiscoverGroupsActivity::class.java)
                     intent.putExtra("userId", userId)
                     context.startActivity(intent)
@@ -495,13 +496,6 @@ fun MainScreen(
             )
 
             if (showMoodDialog) {
-                /*
-                *Now, on MainActivity. Need to check if there is a current DailyStudyHistory document with the same
-Date with the fetchCurDate(). If no, then create a new DailyStudyHistory like the
-current implementation otherwise update the DailyStudyHistory document's totalIndividualMinutes
-with same date with the hourSet and MinuteSet in minutes unit.
-
-                * */
                 AlertDialog(
                     onDismissRequest = { showMoodDialog = false },
                     confirmButton = {

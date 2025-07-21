@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "202734024701",
+    "project_id": "dinosync",
+    "storage_bucket": "dinosync.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:202734024701:android:e93c208f7bae13ae19cb94",
+        "android_client_info": {
+          "package_name": "com.mobdeve.s18.group9.dinosync"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAFtdCCq2yIDvpdhes7sbHYmcI-bbbxKxA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
