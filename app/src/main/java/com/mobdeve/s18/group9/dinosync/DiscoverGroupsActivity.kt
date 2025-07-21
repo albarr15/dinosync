@@ -66,7 +66,7 @@ class DiscoverGroupsActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         val userId = intent.getStringExtra("userId") ?: "-1"
-        //Log.d("CurrentUser", "Logged in userId in DiscoverGroupsActivity = $userId")
+        Log.d("CurrentUser", "Logged in userId in DiscoverGroupsActivity = $userId")
 
         setContent {
             DinoSyncTheme {
@@ -133,7 +133,6 @@ fun DiscoverGroupsScreen(userId: String) {
         Box(modifier = Modifier
             .fillMaxSize()
             .padding(padding)) {
-
 
             FloatingActionButton(
                 onClick = { showDialog = true },
@@ -209,14 +208,14 @@ fun DiscoverGroupsScreen(userId: String) {
                         context.resources.getIdentifier(group.image, "drawable", context.packageName)
                     }
                     val isMember = userGroupIds.contains(group.groupId)
-                    /*
+
                     LaunchedEffect(group.groupId, userGroupIds) {
                         Log.d(
                             "DiscoverGroups",
                             "GroupId=${group.groupId}, GroupName=${group.name}, isMember=$isMember, userGroupIds=$userGroupIds"
                         )
                     }
-                    */
+
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Box(
                             modifier = Modifier
@@ -312,16 +311,17 @@ fun DiscoverGroupsScreen(userId: String) {
                 }
                 }
             }
-        /*
+
             LaunchedEffect(groupMembers) {
                 groupMembers.forEach {
                     Log.d("CheckGroupMembers", "UserId=${it.userId}, GroupId=${it.groupId}")
                 }
             }
             Log.d("CurrentUser", "Logged in userId in DiscoverGroupsScreen= $userId")
-        */
+
         }
     }
+
 
 @Composable
 fun DiscoverGroupItem(

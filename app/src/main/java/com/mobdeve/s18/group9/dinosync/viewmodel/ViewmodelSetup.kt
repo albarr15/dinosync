@@ -150,7 +150,6 @@ class GroupMemberViewModel : ViewModel() {
         }
     }
 
-
 }
 
 class GroupSessionViewModel : ViewModel() {
@@ -219,13 +218,6 @@ class StudyGroupViewModel : ViewModel() {
         }
     }
 
-    fun openCreateDialog() {
-        _showCreateDialog.value = true
-    }
-    fun closeCreateDialog() {
-        _showCreateDialog.value = false
-    }
-
     fun createGroup(hostId: String, name: String, bio: String, university: String) {
         viewModelScope.launch {
             val group = StudyGroup(
@@ -260,17 +252,6 @@ class StudySessionViewModel : ViewModel() {
     fun loadStudySessions(userId: String) {
         viewModelScope.launch {
             _studySessions.value = repository.getStudySessionsByUserId(userId)
-        }
-    }
-
-    fun studySessionsFlow(userId: String): StateFlow<List<StudySession>> {
-        return repository.listenToStudySessions(userId)
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-    }
-
-    fun createStudySession(session: StudySession) {
-        viewModelScope.launch {
-            repository.addStudySession(session)
         }
     }
 
