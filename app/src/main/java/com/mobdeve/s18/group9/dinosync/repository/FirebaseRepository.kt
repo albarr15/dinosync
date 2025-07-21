@@ -246,6 +246,15 @@ class FirebaseRepository {
 
         awaitClose { listenerRegistration.remove() }
     }
+    suspend fun createStudyGroup(group: StudyGroup) {
+        val ref = db.collection("studygroup").document()
+        val newGroup = group.copy(groupId = ref.id)
+        ref.set(newGroup).await()
+    }
+
+    suspend fun deleteStudyGroup(groupId: String) {
+        db.collection("studygroup").document(groupId).delete().await()
+    }
 
 
     // TODO_ITEMS ️ ✔️

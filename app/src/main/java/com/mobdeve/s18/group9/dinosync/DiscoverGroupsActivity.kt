@@ -22,6 +22,7 @@ import com.mobdeve.s18.group9.dinosync.components.BottomNavigationBar
 import com.mobdeve.s18.group9.dinosync.ui.theme.DinoSyncTheme
 import com.mobdeve.s18.group9.dinosync.components.TopActionBar
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -41,9 +42,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.clickable
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.runtime.*
 import com.mobdeve.s18.group9.dinosync.model.StudyGroup
+import com.mobdeve.s18.group9.dinosync.ui.theme.DarkGreen
 import com.mobdeve.s18.group9.dinosync.viewmodel.GroupMemberViewModel
 import com.mobdeve.s18.group9.dinosync.viewmodel.StudyGroupViewModel
 
@@ -83,6 +87,7 @@ fun DiscoverGroupsScreen(userId: String) {
     val groupMembers by memberViewModel.members.collectAsState()
 
     var searchQuery by remember { mutableStateOf("") }
+    var showDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         studyGroupViewModel.loadStudyGroups()
@@ -97,6 +102,11 @@ fun DiscoverGroupsScreen(userId: String) {
     }
 
     Scaffold(
+        floatingActionButton = {
+            FloatingActionButton(onClick = { showDialog = true }) {
+                Icon(Icons.Default.Add, contentDescription = "Add Group")
+            }
+        },
         bottomBar = {
             BottomNavigationBar(
                 selectedItem = "Groups",
@@ -115,6 +125,16 @@ fun DiscoverGroupsScreen(userId: String) {
         },
         containerColor = Color.White
     ) { padding ->
+
+        if (showDialog) {
+            CreateStudyGroupDialog(
+                onDismiss = { showDialog = false },
+                onCreate = { groupName, bio ->
+                    studyGroupViewModel.createGroup(groupName, bio)
+                    showDialog = false
+                }
+            )
+        }
 
         Column(
             modifier = Modifier
@@ -194,16 +214,15 @@ fun DiscoverGroupsScreen(userId: String) {
                                 Icon(
                                     imageVector = Icons.Default.CheckCircle,
                                     contentDescription = "Joined",
-                                    tint = Color(0xFF4CAF50),
+                                    tint = DarkGreen,
                                     modifier = Modifier
                                         .size(18.dp)
                                         .align(Alignment.TopEnd)
-                                        .padding(4.dp)
+                                        .padding(15.dp)
                                 )
                             }
 
                         }
-
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(group.name, fontSize = 12.sp, maxLines = 1)
                     }
@@ -250,13 +269,20 @@ fun DiscoverGroupsScreen(userId: String) {
             ) {
                 items(filteredGroups) { group ->
                     val members = groupMembers.count { it.groupId == group.groupId }
-                    DiscoverGroupItem(group = group, members = members,
+                    val isMember = groupMembers.any { it.groupId == group.groupId && it.userId == userId }
+
+                    DiscoverGroupItem(
+                        group = group,
+                        members = members,
+                        isMember = isMember,
                         onGroupClick = {
                             val intent = Intent(context, GroupActivity::class.java)
                             intent.putExtra("groupId", group.groupId)
                             intent.putExtra("userId", userId)
                             context.startActivity(intent)
-                    })
+                        }
+                    )
+                }
                 }
             }
             LaunchedEffect(groupMembers) {
@@ -268,10 +294,15 @@ fun DiscoverGroupsScreen(userId: String) {
 
         }
     }
-}
 
 @Composable
-fun DiscoverGroupItem(group: StudyGroup, members: Int, onGroupClick: () -> Unit) {
+fun DiscoverGroupItem(
+    group: StudyGroup,
+    members: Int,
+    isMember: Boolean,
+    onGroupClick: () -> Unit,
+    onDeleteClick: (() -> Unit)? = null
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -286,7 +317,6 @@ fun DiscoverGroupItem(group: StudyGroup, members: Int, onGroupClick: () -> Unit)
                 .fillMaxSize(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-
             Box(
                 modifier = Modifier
                     .size(50.dp)
@@ -325,6 +355,93 @@ fun DiscoverGroupItem(group: StudyGroup, members: Int, onGroupClick: () -> Unit)
                     Text("$members Members", fontSize = 12.sp)
                 }
             }
+
+            // JOIN / JOINED badge
+            Box(
+                modifier = Modifier
+                    .align(Alignment.Top)
+                    .padding(end = if (onDeleteClick != null) 4.dp else 0.dp)
+            ) {
+                Text(
+                    text = if (isMember) "JOINED" else "JOIN",
+                    color = if (isMember) DarkGreen else Color.White,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier
+                        .background(
+                            color = if (isMember) Color.Transparent else DarkGreen,
+                            shape = RoundedCornerShape(50)
+                        )
+                        .border(
+                            width = if (!isMember) 1.dp else 0.dp,
+                            color = DarkGreen,
+                            shape = RoundedCornerShape(50)
+                        )
+                        .padding(horizontal = 10.dp, vertical = 4.dp)
+                )
+            }
+
+            // Delete icon
+            onDeleteClick?.let {
+                IconButton(
+                    onClick = it,
+                    modifier = Modifier
+                        .align(Alignment.Top)
+                        .padding(start = 8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Delete Group",
+                        tint = Color.Gray
+                    )
+                }
+            }
+
+
         }
     }
+}
+
+
+@Composable
+fun CreateStudyGroupDialog(
+    onDismiss: () -> Unit,
+    onCreate: (String, String) -> Unit
+) {
+    var groupName by remember { mutableStateOf("") }
+    var description by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Create Study Group") },
+        text = {
+            Column {
+                OutlinedTextField(
+                    value = groupName,
+                    onValueChange = { groupName = it },
+                    label = { Text("Group Name") }
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = description,
+                    onValueChange = { description = it },
+                    label = { Text("Bio") }
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    onCreate(groupName.trim(), description.trim())
+                }
+            ) {
+                Text("Create")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
 }

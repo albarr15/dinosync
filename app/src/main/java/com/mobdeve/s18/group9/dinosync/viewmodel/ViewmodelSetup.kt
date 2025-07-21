@@ -145,6 +145,7 @@ class GroupMemberViewModel : ViewModel() {
         }
     }
 
+
 }
 
 class GroupSessionViewModel : ViewModel() {
@@ -204,10 +205,42 @@ class StudyGroupViewModel : ViewModel() {
     private val _studyGroups = MutableStateFlow<List<StudyGroup>>(emptyList())
     val studyGroups: StateFlow<List<StudyGroup>> = _studyGroups
 
+    private val _showCreateDialog = MutableStateFlow(false)
+    val showCreateDialog: StateFlow<Boolean> = _showCreateDialog
+
     fun loadStudyGroups() {
-        Log.d("StudyGroupVM", "Calling loadStudyGroups...")
         viewModelScope.launch {
             _studyGroups.value = repository.getAllStudyGroups()
+        }
+    }
+
+    fun openCreateDialog() {
+        _showCreateDialog.value = true
+    }
+    fun closeCreateDialog() {
+        _showCreateDialog.value = false
+    }
+
+    fun createGroup(name: String, bio: String) {
+        viewModelScope.launch {
+            val group = StudyGroup(
+                groupId = "",
+                name = name,
+                bio = bio,
+                image = "groupimage",
+                rank = 0L,
+                university = ""
+            )
+            repository.createStudyGroup(group)
+            loadStudyGroups()
+            _showCreateDialog.value = false
+        }
+    }
+
+    fun deleteGroup(groupId: String) {
+        viewModelScope.launch {
+            repository.deleteStudyGroup(groupId)
+            loadStudyGroups()
         }
     }
 }
