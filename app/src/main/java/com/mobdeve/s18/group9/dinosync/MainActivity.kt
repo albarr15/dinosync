@@ -362,7 +362,7 @@ fun MainScreen(
             BottomNavigationBar(
                 selectedItem = "Home",
                 onGroupsClick = {
-                    Log.d("CurrentUser", "Logged in userId in onGroupsClick = $userId")
+                    //Log.d("CurrentUser", "Logged in userId in onGroupsClick = $userId")
                     val intent = Intent(context, DiscoverGroupsActivity::class.java)
                     intent.putExtra("userId", userId)
                     context.startActivity(intent)

@@ -1,6 +1,7 @@
 package com.mobdeve.s18.group9.dinosync.viewmodel
 
 import android.util.Log
+import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mobdeve.s18.group9.dinosync.model.*
@@ -8,8 +9,12 @@ import com.mobdeve.s18.group9.dinosync.repository.FirebaseRepository
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import com.google.firebase.Timestamp
+import com.mobdeve.s18.group9.dinosync.network.RetrofitClient
 import java.text.SimpleDateFormat
 import java.util.*
+import androidx.compose.runtime.*
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.launch
 
 class CompanionViewModel : ViewModel() {
     private val repository = FirebaseRepository()
@@ -368,6 +373,20 @@ class ProfileViewModel : ViewModel() {
             _companions.value = repository.getCompanionsByUserId(userId)
             _groups.value = repository.getUserGroups(userId)
             _moodHistory.value = repository.getUserMoodHistory(userId)
+        }
+    }
+}
+
+class UniversityViewModel : ViewModel() {
+    private val _universityList = mutableStateOf<List<String>>(emptyList())
+    val universityList: State<List<String>> = _universityList
+
+    init {
+        viewModelScope.launch {
+            val universities = RetrofitClient.universityApi
+                .getUniversities("Philippines")
+                .map { it.name }
+            _universityList.value = universities
         }
     }
 }

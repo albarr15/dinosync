@@ -58,13 +58,14 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.toSize
+import com.mobdeve.s18.group9.dinosync.viewmodel.UniversityViewModel
 
 class DiscoverGroupsActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         val userId = intent.getStringExtra("userId") ?: "-1"
-        Log.d("CurrentUser", "Logged in userId in DiscoverGroupsActivity = $userId")
+        //Log.d("CurrentUser", "Logged in userId in DiscoverGroupsActivity = $userId")
 
         setContent {
             DinoSyncTheme {
@@ -197,12 +198,15 @@ fun DiscoverGroupsScreen(userId: String) {
                     }
                     val isMember = userGroupIds.contains(group.groupId)
 
+                    /*
                     LaunchedEffect(group.groupId, userGroupIds) {
                         Log.d(
                             "DiscoverGroups",
                             "GroupId=${group.groupId}, GroupName=${group.name}, isMember=$isMember, userGroupIds=$userGroupIds"
                         )
                     }
+                    */
+
 
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Box(
@@ -299,13 +303,14 @@ fun DiscoverGroupsScreen(userId: String) {
                 }
                 }
             }
+        /*
             LaunchedEffect(groupMembers) {
                 groupMembers.forEach {
                     Log.d("CheckGroupMembers", "UserId=${it.userId}, GroupId=${it.groupId}")
                 }
             }
             Log.d("CurrentUser", "Logged in userId in DiscoverGroupsScreen= $userId")
-
+        */
         }
     }
 
@@ -433,13 +438,8 @@ fun CreateStudyGroupDialog(
     var textFieldSize by remember { mutableStateOf(Size.Zero) }
 
     val icon = if (expanded) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown
-
-    val universityOptions = listOf(
-        "University of the Philippines",
-        "Ateneo de Manila University",
-        "De La Salle University",
-        "University of Santo Tomas"
-    )
+    val universityViewModel  = remember { UniversityViewModel() }
+    val universityOptions by universityViewModel.universityList
 
     AlertDialog(
         onDismissRequest = onDismiss,
