@@ -58,6 +58,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.toSize
+import com.mobdeve.s18.group9.dinosync.ui.theme.YellowGreen
 import com.mobdeve.s18.group9.dinosync.viewmodel.UniversityViewModel
 
 class DiscoverGroupsActivity : ComponentActivity() {
@@ -85,7 +86,6 @@ class DiscoverGroupsActivity : ComponentActivity() {
 
 
 @Composable
-
 fun DiscoverGroupsScreen(userId: String) {
     val context = LocalContext.current
 
@@ -111,11 +111,6 @@ fun DiscoverGroupsScreen(userId: String) {
     }
 
     Scaffold(
-        floatingActionButton = {
-            FloatingActionButton(onClick = { showDialog = true }) {
-                Icon(Icons.Default.Add, contentDescription = "Add Group")
-            }
-        },
         bottomBar = {
             BottomNavigationBar(
                 selectedItem = "Groups",
@@ -134,6 +129,23 @@ fun DiscoverGroupsScreen(userId: String) {
         },
         containerColor = Color.White
     ) { padding ->
+
+        Box(modifier = Modifier
+            .fillMaxSize()
+            .padding(padding)) {
+
+
+            FloatingActionButton(
+                onClick = { showDialog = true },
+                containerColor = YellowGreen,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(30.dp, 40.dp)
+
+            ) {
+                Icon(Icons.Default.Add, contentDescription = "Add Group")
+            }
+        }
 
         if (showDialog) {
             CreateStudyGroupDialog(
