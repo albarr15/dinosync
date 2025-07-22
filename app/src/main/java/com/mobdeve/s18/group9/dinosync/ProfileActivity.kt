@@ -247,7 +247,7 @@ fun ProfileActivityScreen(userId: String) {
                         Box(
                             modifier = Modifier
                                 .size(80.dp)
-                                .background(Color.LightGray, RoundedCornerShape(10.dp))
+                                .background(companion.getBGColor(), RoundedCornerShape(10.dp))
                                 .clickable {
                                     // Navigate to Companion screen with user ID
                                     val intent = Intent(context, CompanionActivity::class.java)
@@ -259,7 +259,28 @@ fun ProfileActivityScreen(userId: String) {
                             Image(
                                 painter = painterResource(companion.getDrawableRes()),
                                 contentDescription = null,
-                                modifier = Modifier.size(60.dp)
+                                modifier = Modifier.size(70.dp)
+                            )
+                        }
+                    }
+                    // Add 'View All' box as the last item
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .size(80.dp)
+                                .background(Color(0xFFE0E0E0), RoundedCornerShape(10.dp))
+                                .clickable {
+                                    val intent = Intent(context, CompanionActivity::class.java)
+                                    intent.putExtra("userId", userId)
+                                    context.startActivity(intent)
+                                },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "View All",
+                                fontWeight = FontWeight.Bold,
+                                color = Color.DarkGray,
+                                fontSize = 14.sp
                             )
                         }
                     }
@@ -307,6 +328,27 @@ fun ProfileActivityScreen(userId: String) {
                             }
                         }
 
+                    }
+                    // Add 'View All' box as the last item
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .size(80.dp)
+                                .background(Color(0xFFE0E0E0), RoundedCornerShape(10.dp))
+                                .clickable {
+                                    val intent = Intent(context, DiscoverGroupsActivity::class.java)
+                                    intent.putExtra("userId", userId)
+                                    context.startActivity(intent)
+                                },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "View All",
+                                fontWeight = FontWeight.Bold,
+                                color = Color.DarkGray,
+                                fontSize = 14.sp
+                            )
+                        }
                     }
                 }
             }
