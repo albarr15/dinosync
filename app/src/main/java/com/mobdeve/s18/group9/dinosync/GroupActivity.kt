@@ -5,6 +5,7 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -31,6 +32,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -51,13 +54,8 @@ import androidx.compose.ui.text.googlefonts.GoogleFont
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
-//import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeDailyStudyHistory
-//import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeGroupMembers
-//import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeStudyGroups
-//import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeStudySessions
-//import com.mobdeve.s18.group9.dinosync.DataHelper.Companion.initializeUsers
+import coil3.compose.rememberAsyncImagePainter
 import com.mobdeve.s18.group9.dinosync.components.BottomNavigationBar
-//import com.mobdeve.s18.group9.dinosync.components.GroupSessionsLineChart
 import com.mobdeve.s18.group9.dinosync.components.TopActionBar
 import com.mobdeve.s18.group9.dinosync.model.DailyStudyHistory
 import com.mobdeve.s18.group9.dinosync.model.GroupMember
@@ -68,102 +66,156 @@ import com.mobdeve.s18.group9.dinosync.ui.theme.DarkGreen
 import com.mobdeve.s18.group9.dinosync.ui.theme.DinoSyncTheme
 import com.mobdeve.s18.group9.dinosync.ui.theme.LightGray
 import com.mobdeve.s18.group9.dinosync.ui.theme.YellowGreen
+import com.mobdeve.s18.group9.dinosync.viewmodel.DailyStudyHistoryViewModel
+import com.mobdeve.s18.group9.dinosync.viewmodel.GroupMemberViewModel
+import com.mobdeve.s18.group9.dinosync.viewmodel.StudyGroupViewModel
+import com.mobdeve.s18.group9.dinosync.viewmodel.StudySessionViewModel
+import com.mobdeve.s18.group9.dinosync.viewmodel.UserViewModel
+import kotlin.getValue
 
-
+/*
 class GroupActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        /*
-        val userId = intent.getIntExtra("userId", -1)
-        val groupId = intent.getIntExtra("groupId", -1)
 
-        val userList = initializeUsers()
-        val groupList = initializeStudyGroups()
-        val groupMemberList = initializeGroupMembers()
-        val studySessionList = initializeStudySessions()
-        val dailyStudyHistoryList = initializeDailyStudyHistory()
+        val userId = intent.getStringExtra("userId") ?: ""
+        val groupId = intent.getStringExtra("groupId") ?: ""
 
-        // Find selected group
-        val selectedGroup = groupList.find { it.groupId == groupId }
-
-        if (selectedGroup == null) {
-            // If groupId is invalid, exit gracefully
-            finish()
-            return
-        }
-
-        // Get members of this group
-        val groupMembers = groupMemberList.filter { it.groupId == selectedGroup.groupId }
-
-        // Filter study history for group members
-        val dailyStudyHistory = dailyStudyHistoryList.filter { session ->
-            groupMembers.any { it.userId == session.userId }
-        }
-        */
+        Log.d("GroupActivityGroupActivity", "userId: $userId")
+        Log.d("GroupActivityGroupActivity", "groupId: $groupId")
 
         setContent {
             DinoSyncTheme {
-                /*
+                val userViewModel: UserViewModel = viewModel()
+                val groupViewModel: StudyGroupViewModel = viewModel()
+                val groupMemberViewModel: GroupMemberViewModel = viewModel()
+                val historyViewModel: DailyStudyHistoryViewModel = viewModel()
+
+                LaunchedEffect(Unit) {
+                    userViewModel.loadAllUsers()
+                    groupViewModel.loadStudyGroups()
+                    groupMemberViewModel.loadAllMembers()
+                    historyViewModel.loadDailyHistory(userId)
+                }
+
+                val allUsers by userViewModel.allUsers.collectAsState(initial = emptyList())
+                val allGroups by groupViewModel.studyGroups .collectAsState(initial = emptyList())
+                val allGroupMembers by groupMemberViewModel.members.collectAsState(initial = emptyList())
+                val allHistory by historyViewModel.dailyHistory.collectAsState(initial = emptyList())
+
+                // Logging the size of each dataset
+                Log.d("GroupActivityGroupActivity", "All Users: ${allUsers.size}")
+                Log.d("GroupActivityGroupActivity", "All Groups: ${allGroups.size}")
+                Log.d("GroupActivityGroupActivity", "All GroupMembers: ${allGroupMembers.size}")
+                Log.d("GroupActivityGroupActivity", "All History Records: ${allHistory.size}")
+
+                val selectedGroup = allGroups.find { it.groupId == groupId }
+
+                if (selectedGroup == null) {
+                    Log.w("GroupActivityGroupActivity", "Selected group is null. groupId=$groupId")
+                    finish()
+                    return@DinoSyncTheme
+                }
+                Log.d("GroupActivityGroupActivity", "Selected Group: ${selectedGroup.name} (${selectedGroup.groupId})")
+                val groupMembers = allGroupMembers.filter { it.groupId == selectedGroup.groupId }
+                Log.d("GroupActivityGroupActivity", "Group Members found: ${groupMembers.size}")
+                val dailyStudyHistory = allHistory.filter { session ->
+                    groupMembers.any { it.userId == session.userId }
+                }
+                Log.d("GroupActivityGroupActivity", "Filtered history entries: ${dailyStudyHistory.size}")
                 GroupActivityScreen(
                     userId = userId,
                     group = selectedGroup,
                     groupMembers = groupMembers,
-                    allUsers = userList,
+                    allUsers = allUsers,
                     dailyStudyHistory = dailyStudyHistory
-                )*/
-
-                // TEMPORARY CHECKER FOR SCREEN ACTIVITY
-                androidx.compose.material3.Surface {
-                    androidx.compose.material3.Text(text = "Group Activity Screen")
-                }
+                )
             }
         }
     }
 
     /******** ACTIVITY LIFE CYCLE ******** */
-    override fun onStart() {
-        super.onStart()
-        println("GroupActivity onStart()")
+    override fun onStart() { super.onStart(); println("GroupActivity onStart()") }
+    override fun onResume() { super.onResume(); println("GroupActivity onResume()") }
+    override fun onPause() { super.onPause(); println("GroupActivity onPause()") }
+    override fun onStop() { super.onStop(); println("GroupActivity onStop()") }
+    override fun onRestart() { super.onRestart(); println("GroupActivity onRestart()") }
+    override fun onDestroy() { super.onDestroy(); println("GroupActivity onDestroy()") }
+}
+*/
+
+class GroupActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        val userId = intent.getStringExtra("userId") ?: ""
+        val groupId = intent.getStringExtra("groupId") ?: ""
+
+        val userVM: UserViewModel by viewModels()
+        val groupVM: StudyGroupViewModel by viewModels()
+        val memberVM: GroupMemberViewModel by viewModels()
+        val historyVM: DailyStudyHistoryViewModel by viewModels()
+        val studySessionVM: StudySessionViewModel by viewModels()
+
+
+        setContent {
+            val allUsers by userVM.allUsers.collectAsState()
+            val allGroups by groupVM.studyGroups.collectAsState()
+            val allMembers by memberVM.members.collectAsState()
+            val allHistory by historyVM.dailyHistory.collectAsState()
+            val studySessionList = studySessionVM.studySessions.collectAsState()
+
+            LaunchedEffect(Unit) {
+                userVM.loadAllUsers()
+                groupVM.loadStudyGroups()
+                memberVM.loadAllMembers()
+                historyVM.loadDailyHistory(userId)
+                studySessionVM.loadStudySessions(userId)
+            }
+
+            val selectedGroup = allGroups.find { it.groupId == groupId }
+            val groupMembers = allMembers.filter { it.groupId == groupId }
+            val groupHistory = allHistory.filter { member ->
+                groupMembers.any { it.userId == member.userId }
+            }
+
+            DinoSyncTheme {
+                GroupActivityScreen(
+                    userId = userId,
+                    group = selectedGroup,
+                    groupMembers = groupMembers,
+                    allUsers = allUsers,
+                    dailyStudyHistory = groupHistory,
+                    studySessions = studySessionList.value
+                )
+            }
+        }
     }
 
-    override fun onResume() {
-        super.onResume()
-        println("GroupActivity onResume()")
-    }
-
-    override fun onPause() {
-        super.onPause()
-        println("GroupActivity onPause()")
-    }
-
-    override fun onStop() {
-        super.onStop()
-        println("GroupActivity onStop()")
-    }
-
-    override fun onRestart() {
-        super.onRestart()
-        println("GroupActivity onRestart()")
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        println("GroupActivity onDestroy()")
-    }
+    override fun onStart() { super.onStart(); println("GroupActivity onStart()") }
+    override fun onResume() { super.onResume(); println("GroupActivity onResume()") }
+    override fun onPause() { super.onPause(); println("GroupActivity onPause()") }
+    override fun onStop() { super.onStop(); println("GroupActivity onStop()") }
+    override fun onRestart() {  super.onRestart(); println("GroupActivity onRestart()") }
+    override fun onDestroy() { super.onDestroy(); println("GroupActivity onDestroy()")  }
 }
 
-/*
+
+
+
+
 @Composable
 fun GroupActivityScreen(
-    userId: Int,
-    group: StudyGroup,
+    userId: String,
+    group: StudyGroup?,
     groupMembers: List<GroupMember>,
     allUsers: List<User>,
-    dailyStudyHistory: List<DailyStudyHistory>) {
+    dailyStudyHistory: List<DailyStudyHistory>,
+    studySessions: List<StudySession>
+) {
 
     val context = LocalContext.current
     var selectedTab by remember { mutableStateOf("Group Activity") }
-    val studySessionList = initializeStudySessions()
 
     val memberUsers = groupMembers.mapNotNull { gm ->
         val user = allUsers.find { it.userId == gm.userId }
@@ -171,6 +223,7 @@ fun GroupActivityScreen(
     }
 
     val topMembers = memberUsers.sortedByDescending { it.second.currentGroupStudyMinutes }.map { it.first }.take(3)
+
 
     val provider = GoogleFont.Provider(
         providerAuthority = "com.google.android.gms.fonts",
@@ -266,7 +319,7 @@ fun GroupActivityScreen(
                     }
                     Box(modifier = Modifier.fillMaxWidth()) {
                         Text(
-                            text = group.name,
+                            text = group?.name ?: "Sample group name",
                             modifier = Modifier.align(Alignment.Center),
                             color = Color.White,
                             fontSize = 20.sp,
@@ -276,7 +329,7 @@ fun GroupActivityScreen(
                     }
                     Spacer(modifier = Modifier.height(5.dp))
                     Text(
-                        text = group.bio,
+                        text = group?.bio ?: "Sample bio",
                         color = Color.White,
                         fontSize = 14.sp,
                         fontFamily = fontFamily
@@ -288,7 +341,7 @@ fun GroupActivityScreen(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text(
-                            text = "Rank ${group.rank} out of 5",
+                            text = "Rank ${group?.rank} out of 5",
                             color = Color.White,
                             fontStyle = FontStyle.Italic,
                             fontFamily = fontFamily,
@@ -307,7 +360,7 @@ fun GroupActivityScreen(
                                         .background(Color.White)
                                 ) {
                                     Image(
-                                        painter = painterResource(user.userProfileImage),
+                                        painter = rememberAsyncImagePainter(user.userProfileImage),
                                         contentDescription = null,
                                         modifier = Modifier.fillMaxSize()
                                     )
@@ -356,9 +409,9 @@ fun GroupActivityScreen(
                     "Group Activity" -> OnClickGroupActivityBtn(memberUsers)
                     "Stats" -> OnClickGroupStatsActivityBtn(
                         topMembers = ArrayList(topMembers),
-                        group.groupId,
+                        group?.groupId.toString(),
                         dailyStudyHistory,
-                        studySessionList)
+                        studySessions)
                 }
             }
         }
@@ -395,7 +448,6 @@ fun OnClickGroupActivityBtn(memberUsers: List<Pair<User, GroupMember>>) {
         }
     }
 }
-
 
 @Composable
 fun UserCard(user: User, groupMember: GroupMember) {
@@ -438,7 +490,7 @@ fun UserCard(user: User, groupMember: GroupMember) {
 @Composable
 fun OnClickGroupStatsActivityBtn(
     topMembers: ArrayList<User>,
-    selectedGroup: Int,
+    selectedGroup: String,
     dailyStudyHistory: List<DailyStudyHistory>,
     studySessions: List<StudySession>
 ) {
@@ -477,7 +529,7 @@ fun OnClickGroupStatsActivityBtn(
                             .background(Color.LightGray)
                     ) {
                         Image(
-                            painter = painterResource(user.userProfileImage),
+                            painter = rememberAsyncImagePainter(user.userProfileImage),
                             contentDescription = user.userName,
                             modifier = Modifier
                                 .fillMaxSize()
@@ -497,7 +549,7 @@ fun OnClickGroupStatsActivityBtn(
             fontSize = 20.sp,
             modifier = Modifier.padding(bottom = 8.dp)
         )
-        GroupSessionsLineChart(selectedGroup, dailyStudyHistory, studySessions)
+        //GroupSessionsLineChart(selectedGroup, dailyStudyHistory, studySessions)
     }
 }
-*/
+
