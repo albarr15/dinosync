@@ -1,4 +1,5 @@
 package com.mobdeve.s18.group9.dinosync.model
+import android.health.connect.datatypes.ExerciseCompletionGoal.StepsGoal
 import androidx.compose.ui.graphics.Color
 import com.google.firebase.Timestamp
 import com.mobdeve.s18.group9.dinosync.R
@@ -53,19 +54,17 @@ data class Companion(
             DinoType.PTERO -> R.drawable.dino4
             DinoType.BRONTO -> R.drawable.dino5
             DinoType.TRICERA -> R.drawable.dino6
-            else -> R.drawable.logoblack
         }
     }
 
     fun getBGColor(): Color {
-        return when (imageKey) {
-            "dino1" -> Color(0xFFC2F4ED)
-            "dino2" -> Color(0xFFFFD3E7)
-            "dino3" -> Color(0xFFE9A1A4)
-            "dino4" -> Color(0xFFD7B593)
-            "dino5" -> Color(0xFFD3E6A8)
-            "dino6" -> Color(0xFFB4ECBB)
-            else -> Color.LightGray
+        return when (type) {
+            DinoType.STEGO -> Color(0xFFC2F4ED)
+            DinoType.PLESIO -> Color(0xFFFFD3E7)
+            DinoType.RAPTOR -> Color(0xFFE9A1A4)
+            DinoType.PTERO -> Color(0xFFD7B593)
+            DinoType.BRONTO -> Color(0xFFD3E6A8)
+            DinoType.TRICERA -> Color(0xFFB4ECBB)
         }
     }
 }
