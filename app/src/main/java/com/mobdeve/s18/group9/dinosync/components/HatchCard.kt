@@ -13,14 +13,15 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.mobdeve.s18.group9.dinosync.model.Companion
 
 @Composable
 fun HatchCard(
-    modifier: Modifier = Modifier,
-    onContinueClick: () -> Unit = {}
+    companionName: String,
+    imageRes: Int
 ) {
     Card(
-        modifier = modifier
+        modifier = Modifier
             .width(300.dp)
             .height(500.dp),
         shape = RoundedCornerShape(16.dp),
@@ -42,6 +43,13 @@ fun HatchCard(
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()
                 )
+                // change this to Companion's getdrawableres
+                Image(
+                    painter = painterResource(imageRes),
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.height(170.dp)
+                )
             }
 
             // Bottom part with white background and texts
@@ -61,8 +69,9 @@ fun HatchCard(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
+                // to replace with companion name
                 Text(
-                    text = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor",
+                    text = "You hatched a $companionName!",
                     style = MaterialTheme.typography.bodySmall,
                     color = Color.Gray,
                     textAlign = TextAlign.Center

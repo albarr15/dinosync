@@ -48,7 +48,8 @@ fun AudioPlayerCard(
     onPrevious: () -> Unit = {},
     onPlayPause: () -> Unit = {},
     onNext: () -> Unit = {},
-    onRepeat: () -> Unit = {}
+    onRepeat: () -> Unit = {},
+    isRepeatEnabled: Boolean
 ) {
 
     Column(
@@ -74,7 +75,7 @@ fun AudioPlayerCard(
                 modifier = Modifier
                     .fillMaxHeight()
                     .weight(1f)
-                    .padding(horizontal = 15.dp, vertical = 30.dp),
+                    .padding(horizontal = 15.dp, vertical = 20.dp),
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
                 Column {
@@ -127,8 +128,14 @@ fun AudioPlayerCard(
                         Icon(Icons.Default.SkipNext, contentDescription = "Next", modifier = Modifier.size(20.dp))
                     }
                     IconButton(onClick = onRepeat) {
-                        Icon(Icons.Default.Repeat, contentDescription = "Repeat", modifier = Modifier.size(30.dp))
+                        Icon(
+                            imageVector = Icons.Default.Repeat,
+                            contentDescription = "Repeat",
+                            modifier = Modifier.size(30.dp),
+                            tint = if (isRepeatEnabled) Color.Green else Color.Gray
+                        )
                     }
+
                 }
             }
         }

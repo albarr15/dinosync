@@ -127,12 +127,24 @@ import com.spotify.sdk.android.auth.AuthorizationResponse
 import androidx.compose.runtime.State
 import com.mobdeve.s18.group9.dinosync.repository.local.LocalPlaybackManager
 import com.mobdeve.s18.group9.dinosync.spotify.SpotifyPlaybackManager
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
+import java.util.TimeZone
 
 
 enum class PlaybackMode {
     IN_APP,
     SPOTIFY
 }
+
+
+fun fetchCurDate(): String {
+    val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+    sdf.timeZone = TimeZone.getTimeZone("Asia/Manila")
+    return sdf.format(Date())
+}
+
 
 class MainActivity : ComponentActivity() {
     private var spotifyAppRemote: SpotifyAppRemote? = null
@@ -167,15 +179,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             DinoSyncTheme {
                 MainScreen(
-                    userId = userId,
-                    spotifyAppRemote = spotifyAppRemote,
-                    spotifyPlaybackManager = spotifyPlaybackManager,
-                    spotifyTitle = spotifyTitleState,
-                    spotifyArtist = spotifyArtistState,
-                    spotifyAlbumArtBitmap  = spotifyAlbumArtBitmap,
-                    spotifyIsPlaying = spotifyIsPlayingState,
-                    spotifyProgress = spotifyProgressState
-                )
+                    userId = userId)
             }
         }
     }
@@ -313,14 +317,7 @@ class MainActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
-    userId: String,
-    spotifyAppRemote: SpotifyAppRemote?,
-    spotifyPlaybackManager: SpotifyPlaybackManager,
-    spotifyTitle: State<String>,
-    spotifyArtist: State<String>,
-    spotifyAlbumArtBitmap: State<Bitmap?>,
-    spotifyIsPlaying: State<Boolean>,
-    spotifyProgress: State<Float>
+    userId: String
 ) {
     val context = LocalContext.current
 
@@ -333,11 +330,7 @@ fun MainScreen(
     val musicVM: MusicViewModel = viewModel()
 
     val musicList by musicVM.musicList.collectAsState()
-    val musicSessions by musicVM.observeMusicSessions(userId).collectAsState(initial = emptyList())
     var currentMusic by remember { mutableStateOf<Music?>(null) }
-
-    var playbackMode by remember { mutableStateOf(PlaybackMode.IN_APP) }
-
 
     val todoVM: TodoViewModel = viewModel()
     val todoDocs by todoVM.todos.collectAsState()
@@ -348,7 +341,6 @@ fun MainScreen(
         }
     }
 
-
     LaunchedEffect(Unit) {
         moodVM.loadMoods()
         studySessionVM.loadStudySessions(userId)
@@ -358,16 +350,12 @@ fun MainScreen(
         musicVM.loadMusic()
     }
 
-    val currentUser by userVM.user.collectAsState()
     val moods by moodVM.moods.collectAsState()
-    val courseList by courseVM.courses.collectAsState()
-
-
     var hoursSet by remember { mutableStateOf("") }
     var minutesSet by remember { mutableStateOf("") }
     var showMoodDialog by remember { mutableStateOf(false) }
     var selectedMood by remember { mutableStateOf<Mood?>(null) }
-
+    val courseList by courseVM.courses.collectAsState()
 
     Scaffold(
         bottomBar = {
@@ -418,23 +406,33 @@ fun MainScreen(
                 modifier = Modifier.align(Alignment.Start)
             )
 
-            /******** Course Box *********/
+            /******** Editable Course Dropdown ********/
             val courseNames = courseList.map { it.name }
             var expanded by remember { mutableStateOf(false) }
             var selectedCourse by remember { mutableStateOf("") }
+
+            val filteredCourses = if (selectedCourse.isBlank()) {
+                courseNames
+            } else {
+                courseNames.filter {
+                    it.contains(selectedCourse, ignoreCase = true)
+                }
+            }
 
             ExposedDropdownMenuBox(
                 expanded = expanded,
                 onExpandedChange = { expanded = !expanded },
                 modifier = Modifier
-                    .width(250.dp)
+                    .width(350.dp)
                     .padding(horizontal = 16.dp, vertical = 8.dp)
             ) {
                 OutlinedTextField(
                     value = selectedCourse,
-                    onValueChange = {},
-                    readOnly = true,
-                    label = { Text("Select Subject") },
+                    onValueChange = {
+                        selectedCourse = it
+                        expanded = true
+                    },
+                    label = { Text("Select or Type Subject") },
                     trailingIcon = {
                         ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
                     },
@@ -451,12 +449,11 @@ fun MainScreen(
                         .fillMaxWidth()
                 )
 
-
                 ExposedDropdownMenu(
-                    expanded = expanded,
+                    expanded = expanded && filteredCourses.isNotEmpty(),
                     onDismissRequest = { expanded = false }
                 ) {
-                    courseNames.forEach { courseName ->
+                    filteredCourses.forEach { courseName ->
                         DropdownMenuItem(
                             text = { Text(courseName) },
                             onClick = {
@@ -467,6 +464,20 @@ fun MainScreen(
                     }
                 }
             }
+            if (selectedCourse.isNotBlank() && !courseNames.contains(selectedCourse)) {
+                Button(
+                    onClick = {
+                        courseVM.addCourseIfNew(selectedCourse.trim())
+                        selectedCourse = ""
+                    },
+                    modifier = Modifier
+                        .padding(top = 8.dp)
+                        .align(Alignment.CenterHorizontally)
+                ) {
+                    Text("Add \"$selectedCourse\" as New Course")
+                }
+            }
+
 
             Spacer(modifier = Modifier.height(10.dp))
 
@@ -484,6 +495,13 @@ fun MainScreen(
             )
 
             if (showMoodDialog) {
+                /*
+                *Now, on MainActivity. Need to check if there is a current DailyStudyHistory document with the same
+Date with the fetchCurDate(). If no, then create a new DailyStudyHistory like the
+current implementation otherwise update the DailyStudyHistory document's totalIndividualMinutes
+with same date with the hourSet and MinuteSet in minutes unit.
+
+                * */
                 AlertDialog(
                     onDismissRequest = { showMoodDialog = false },
                     confirmButton = {
@@ -504,25 +522,22 @@ fun MainScreen(
                                     hourSet = hourInt,
                                     minuteSet = minuteInt,
                                     moodId = moodId,
-                                    sessionDate = sessionDate,
+                                    sessionDate = fetchCurDate(),
                                     startedAt = getCurrentTimestamp(),
                                     endedAt = null,
                                     status = "active" // active,pause, reset, completed
                                 )
-
                                 studySessionVM.createStudySessionAndGetId(session) { sessionId ->
+                                    val totalMinutes = hourInt * 60 + minuteInt
+
                                     dailyHistoryVM.updateDailyHistory(
                                         userId = userId,
-                                        date = sessionDate,
+                                        date = fetchCurDate(),
                                         moodId = moodId,
-                                        hours = hourInt + (minuteInt / 60f)
+                                        additionalMinutes = totalMinutes.toFloat()
                                     )
 
-                                    Toast.makeText(
-                                        context,
-                                        "Session logged successfully!",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
+                                    Toast.makeText(context, "Session logged successfully!", Toast.LENGTH_SHORT).show()
 
                                     // Reset fields
                                     hoursSet = ""
@@ -568,7 +583,7 @@ fun MainScreen(
                                 hourSet = hourInt,
                                 minuteSet = minuteInt,
                                 moodId = "",
-                                sessionDate = sessionDate,
+                                sessionDate = fetchCurDate(),
                                 startedAt = startedAt,
                                 endedAt = null,
                                 status = "active"
@@ -607,8 +622,9 @@ fun MainScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(5.dp))
+            Spacer(modifier = Modifier.height(30.dp))
             HorizontalDivider(modifier = Modifier, thickness = 1.dp, color = Color.Gray)
+            Spacer(modifier = Modifier.height(20.dp))
 
             /******** TodoList *********/
             TodoList(
@@ -635,104 +651,7 @@ fun MainScreen(
             )
 
             Spacer(modifier = Modifier.height(5.dp))
-            Row(horizontalArrangement = Arrangement.Center) {
-                Button(onClick = {
-                    playbackMode = PlaybackMode.IN_APP
-                },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = DarkGreen,
-                        contentColor = Color.White
-                    )) {
-                    Text("In-App")
-                }
-                Spacer(modifier = Modifier.width(10.dp))
-                Button(onClick = {
-                    playbackMode = PlaybackMode.SPOTIFY
-                },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = DarkGreen,
-                        contentColor = Color.White
-                    )) {
-                    Text("Spotify")
-                }
-            }
 
-            Spacer(modifier = Modifier.height(10.dp))
-            /******** Music Activity *********/
-            var isPlaying by remember { mutableStateOf(false) }
-            when (playbackMode) {
-                PlaybackMode.IN_APP -> {
-                    currentMusic?.let { safeMusic ->
-                        AudioPlayerCard(
-                            currentMusic = safeMusic,
-                            progress = 0.5f,
-                            onShuffle = {
-                                val shuffled = musicList.shuffled().firstOrNull()
-                                currentMusic = shuffled
-                            },
-                            onPrevious = {
-                                val index = musicList.indexOf(safeMusic)
-                                if (index > 0) currentMusic = musicList[index - 1]
-                            },
-                            onPlayPause = {
-                                isPlaying = !isPlaying
-                                if (isPlaying) {
-                                    musicVM.createMusicSession(
-                                        MusicSession(
-                                            userId = userId,
-                                            studySessionId = "",
-                                            artist = safeMusic.artist,
-                                            musicPlatform = "In-App",
-                                            musicTitle = safeMusic.title,
-                                            musicUri = safeMusic.albumArtUri,
-                                            startTime = getCurrentTimestamp(),
-                                            endTime = null
-                                        )
-                                    )
-                                }
-                            },
-                            onNext = {
-                                val index = musicList.indexOf(safeMusic)
-                                if (index < musicList.lastIndex) currentMusic = musicList[index + 1]
-                            },
-                            onRepeat = {},
-                            isPlaying = isPlaying
-                        )
-                    }
-                }
-
-                PlaybackMode.SPOTIFY -> {
-                    AudioPlayerCardSpotify(
-                        trackTitle = spotifyTitle.value,
-                        trackArtist = spotifyArtist.value,
-                        albumArtBitmap = spotifyAlbumArtBitmap.value,
-                        isPlaying = spotifyIsPlaying.value,
-                        progress = spotifyProgress.value,
-                        onPlayPause = {
-                            //Unresolved reference 'spotifyPlaybackManager'.
-                            spotifyPlaybackManager.getCurrentPlayerState { state ->
-                                if (state?.isPaused == true) {
-                                    spotifyPlaybackManager.resume()
-                                } else {
-                                    spotifyPlaybackManager.pause()
-                                }
-                            }
-                        },
-                        onNext = {
-                            spotifyPlaybackManager.skipToNext()
-                        },
-                        onPrevious = {
-                            spotifyPlaybackManager.skipToPrevious()
-                        },
-                        onShuffle = {
-                            Log.w("SpotifyUI", "Shuffle not supported via App Remote.")
-                        },
-                        onRepeat = {
-                            Log.w("SpotifyUI", "Repeat not supported via App Remote.")
-                        }
-                    )
-                }
-            }
         }
     }
 }
@@ -1128,6 +1047,5 @@ fun TodoList(
         }
     }
 }
-
 
 

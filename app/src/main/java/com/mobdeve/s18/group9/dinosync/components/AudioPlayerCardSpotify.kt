@@ -65,8 +65,8 @@ fun AudioPlayerCardSpotify(
                 modifier = Modifier
                     .fillMaxHeight()
                     .weight(1f)
-                    .padding(horizontal = 15.dp, vertical = 30.dp),
-                verticalArrangement = Arrangement.SpaceBetween
+                    .padding(horizontal = 15.dp, vertical =20.dp),
+                verticalArrangement = Arrangement.Top
             ) {
                 Column(verticalArrangement = Arrangement.Center) {
                     Text(
