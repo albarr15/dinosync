@@ -1,6 +1,7 @@
 package com.mobdeve.s18.group9.dinosync.viewmodel
 
 import android.util.Log
+import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mobdeve.s18.group9.dinosync.model.*
@@ -9,8 +10,12 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import com.google.firebase.Timestamp
 import kotlinx.coroutines.tasks.await
+import com.mobdeve.s18.group9.dinosync.network.RetrofitClient
 import java.text.SimpleDateFormat
 import java.util.*
+import androidx.compose.runtime.*
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.launch
 
 class CompanionViewModel : ViewModel() {
     private val repository = FirebaseRepository()
@@ -186,16 +191,6 @@ class DailyStudyHistoryViewModel : ViewModel() {
             }
         }
     }
-
-
-    /*
-    fun recordHistory(userId: String, date: String, moodId: String, minutes: Float) {
-        viewModelScope.launch {
-            updateDailyHistory(userId, date, moodId, minutes)
-        }
-    }
-    */
-
 }
 
 class GroupMemberViewModel : ViewModel() {
@@ -204,11 +199,12 @@ class GroupMemberViewModel : ViewModel() {
     private val _members = MutableStateFlow<List<GroupMember>>(emptyList())
     val members: StateFlow<List<GroupMember>> = _members
 
-    fun loadGroupMembers(groupId: String) {
+    fun loadAllMembers() {
         viewModelScope.launch {
-            _members.value = repository.getGroupMembers(groupId)
+            _members.value = repository.getAllGroupMembers()
         }
     }
+
 }
 
 class GroupSessionViewModel : ViewModel() {
@@ -268,9 +264,36 @@ class StudyGroupViewModel : ViewModel() {
     private val _studyGroups = MutableStateFlow<List<StudyGroup>>(emptyList())
     val studyGroups: StateFlow<List<StudyGroup>> = _studyGroups
 
+    private val _showCreateDialog = MutableStateFlow(false)
+    val showCreateDialog: StateFlow<Boolean> = _showCreateDialog
+
     fun loadStudyGroups() {
         viewModelScope.launch {
             _studyGroups.value = repository.getAllStudyGroups()
+        }
+    }
+
+    fun createGroup(hostId: String, name: String, bio: String, university: String) {
+        viewModelScope.launch {
+            val group = StudyGroup(
+                hostId = hostId,
+                groupId = "",
+                name = name,
+                bio = bio,
+                image = "groupimage",
+                rank = 0L,
+                university = university
+            )
+            repository.createStudyGroup(group)
+            loadStudyGroups()
+            _showCreateDialog.value = false
+        }
+    }
+
+    fun deleteGroup(groupId: String) {
+        viewModelScope.launch {
+            repository.deleteStudyGroup(groupId)
+            loadStudyGroups()
         }
     }
 }
@@ -284,17 +307,6 @@ class StudySessionViewModel : ViewModel() {
     fun loadStudySessions(userId: String) {
         viewModelScope.launch {
             _studySessions.value = repository.getStudySessionsByUserId(userId)
-        }
-    }
-
-    fun studySessionsFlow(userId: String): StateFlow<List<StudySession>> {
-        return repository.listenToStudySessions(userId)
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-    }
-
-    fun createStudySession(session: StudySession) {
-        viewModelScope.launch {
-            repository.addStudySession(session)
         }
     }
 
@@ -397,6 +409,20 @@ class ProfileViewModel : ViewModel() {
             _companions.value = repository.getCompanionsByUserId(userId)
             _groups.value = repository.getUserGroups(userId)
             _moodHistory.value = repository.getUserMoodHistory(userId)
+        }
+    }
+}
+
+class UniversityViewModel : ViewModel() {
+    private val _universityList = mutableStateOf<List<String>>(emptyList())
+    val universityList: State<List<String>> = _universityList
+
+    init {
+        viewModelScope.launch {
+            val universities = RetrofitClient.universityApi
+                .getUniversities("Philippines")
+                .map { it.name }
+            _universityList.value = universities
         }
     }
 }

@@ -91,5 +91,9 @@ dependencies {
     // Import Spotify API
     implementation ("com.spotify.android:auth:1.2.5")
 
+    implementation (libs.retrofit)
+    implementation (libs.converter.gson)
+    implementation (libs.kotlinx.coroutines.android)
+
 
 }
