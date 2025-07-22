@@ -185,23 +185,6 @@ class FirebaseRepository {
             .get().await()
         return snapshot.toObjects(StudySession::class.java)
     }
-
-    // Real-time listener for individual StudySession
-    fun listenToStudySessions(userId: String): Flow<List<StudySession>> = callbackFlow {
-        val listener = db.collection("studysession")
-            .whereEqualTo("userId", userId)
-            .addSnapshotListener { snapshot, error ->
-                if (error != null) {
-                    close(error)
-                    return@addSnapshotListener
-                }
-                val sessions = snapshot?.toObjects(StudySession::class.java) ?: emptyList()
-                trySend(sessions)
-            }
-
-        awaitClose { listener.remove() }
-    }
-
     suspend fun addStudySession(session: StudySession) {
         val db = FirebaseFirestore.getInstance()
         val studySessionsRef = db.collection("studysession")
@@ -217,22 +200,6 @@ class FirebaseRepository {
         db.collection("studysession").document(sessionId).update(updates).await()
     }
 
-    // Real-time listener for group sessions
-    fun listenToGroupSessions(groupId: String): Flow<List<GroupSession>> = callbackFlow {
-        val listenerRegistration: ListenerRegistration = db.collection("groupsession")
-            .whereEqualTo("groupId", groupId)
-            .addSnapshotListener { snapshot, error ->
-                if (error != null) {
-                    close(error)
-                    return@addSnapshotListener
-                }
-
-                val sessions = snapshot?.toObjects(GroupSession::class.java) ?: emptyList()
-                trySend(sessions)
-            }
-
-        awaitClose { listenerRegistration.remove() }
-    }
     // STUDY GROUPS ✔️
     suspend fun getAllStudyGroups(): List<StudyGroup> {
         val snapshot = db.collection("studygroup").get().await()

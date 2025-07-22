@@ -297,6 +297,7 @@ fun DiscoverGroupsScreen(userId: String) {
                         members = members,
                         isMember = isMember,
                         onGroupClick = {
+                            Log.d("GroupListScreen", "Navigating to GroupActivity with groupId: ${group.groupId}, userId: $userId")
                             val intent = Intent(context, GroupActivity::class.java)
                             intent.putExtra("groupId", group.groupId)
                             intent.putExtra("userId", userId)
