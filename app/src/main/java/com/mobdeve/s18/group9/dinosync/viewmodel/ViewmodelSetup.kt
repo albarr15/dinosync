@@ -76,6 +76,19 @@ class CompanionViewModel : ViewModel() {
     }
 }
 
+class CompanionActViewModel : ViewModel() {
+    private val repository = FirebaseRepository()
+
+    private val _companions = MutableStateFlow<List<Companion>>(emptyList())
+    val companions: StateFlow<List<Companion>> = _companions
+
+    fun loadCompanions(userId: String) {
+        viewModelScope.launch {
+            _companions.value = repository.getAllCompanionsByUserId(userId)
+        }
+    }
+}
+
 class CourseViewModel : ViewModel() {
     private val repository = FirebaseRepository()
     private val _courses = MutableStateFlow<List<Course>>(emptyList())

@@ -1,4 +1,3 @@
-
 package com.mobdeve.s18.group9.dinosync
 
 import android.content.Intent
@@ -13,11 +12,16 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -25,6 +29,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -41,24 +47,20 @@ import com.mobdeve.s18.group9.dinosync.components.BottomNavigationBar
 import com.mobdeve.s18.group9.dinosync.components.TopActionBar
 import com.mobdeve.s18.group9.dinosync.ui.theme.DarkGreen
 import com.mobdeve.s18.group9.dinosync.ui.theme.DinoSyncTheme
+import com.mobdeve.s18.group9.dinosync.viewmodel.CompanionActViewModel
+import com.google.firebase.auth.FirebaseAuth
 
 class CompanionActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        val userId = intent.getIntExtra("userId", -1)
+        val userId = FirebaseAuth.getInstance().currentUser?.uid
+            ?: throw IllegalStateException("No authenticated user!")
         setContent {
             DinoSyncTheme {
-                //CompanionActivityScreen(userId = userId)
-
-                // TEMPORARY CHECKER FOR SCREEN ACTIVITY
-                androidx.compose.material3.Surface {
-                    androidx.compose.material3.Text(text = "Companion Activity Screen")
-                }
+                CompanionActivityScreen(userId = userId)
             }
         }
     }
-
     /******** ACTIVITY LIFE CYCLE ******** */
     override fun onStart() { super.onStart(); println("CompanionActivity onStart()") }
     override fun onResume() { super.onResume(); println("CompanionActivity onResume()") }
@@ -67,11 +69,17 @@ class CompanionActivity : ComponentActivity() {
     override fun onRestart() { super.onRestart(); println("CompanionActivity  onRestart()") }
     override fun onDestroy() { super.onDestroy(); println("CompanionActivity onDestroy()") }
 }
-/*
+
 @Composable
-fun CompanionActivityScreen(userId:Int) {
+fun CompanionActivityScreen(userId: String) {
     val context = LocalContext.current
-    val achievements = initializeAchievements()
+    val companionVM: CompanionActViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+    val companions by companionVM.companions.collectAsState()
+
+    // Load companions on first composition
+    androidx.compose.runtime.LaunchedEffect(userId) {
+        companionVM.loadCompanions(userId)
+    }
 
     Scaffold(
         bottomBar = {
@@ -99,8 +107,7 @@ fun CompanionActivityScreen(userId:Int) {
         Column(
             modifier = Modifier
                 .padding(padding)
-                .fillMaxSize()
-                .padding(16.dp),
+                .fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             TopActionBar(
@@ -121,31 +128,59 @@ fun CompanionActivityScreen(userId:Int) {
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
                 color = Color.Black,
-                modifier = Modifier.align(Alignment.Start)
+                modifier = Modifier.align(Alignment.Start).padding(horizontal = 20.dp)
             )
             Box(
                 modifier = Modifier
-                    .width(400.dp)
-                    .height(400.dp),
+                    .width(320.dp)
+                    .height(320.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Image(
                     painter = painterResource(id = R.drawable.eggcompanion),
                     contentDescription = "Egg Image",
-                    modifier = Modifier.size(400.dp)
+                    modifier = Modifier.size(320.dp)
                 )
             }
-            Text(
-                text = buildAnnotatedString {
-                    append("Time left to hatch: ")
-                    withStyle(style = SpanStyle(fontWeight = FontWeight.ExtraBold)) {
-                        append("2 days and 5 hrs")
+            // Show the most recently created unhatched egg first; if none, show most recently hatched
+            val mostRecentUnhatched = companions.filter { !it.isHatched() }.lastOrNull()
+            val mostRecentHatched = companions.filter { it.isHatched() }
+                .maxByOrNull { it.dateAwarded?.seconds ?: 0L }
+            val displayCompanion = mostRecentUnhatched ?: mostRecentHatched
+            if (displayCompanion != null) {
+                val hatchText = if (displayCompanion.isHatched()) {
+                    "Hatched!"
+                } else {
+                    val timeLeft = displayCompanion.remainingHatchTime
+                    val formattedTime = when {
+                        timeLeft >= 3600 -> {
+                            val hours = timeLeft / 3600
+                            val minutes = (timeLeft % 3600) / 60
+                            val seconds = timeLeft % 60
+
+                            if (hours == 1) {
+                                "${hours} hr, ${minutes} mins, ${seconds} secs"
+
+                            } else {
+                                "${hours} hrs, ${minutes} mins, ${seconds} secs"
+                            }
+                        }
+                        timeLeft >= 60 -> {
+                            val minutes = timeLeft / 60
+                            val seconds = timeLeft % 60
+                            "${minutes} mins, ${seconds} secs"
+                        }
+                        else -> "${timeLeft} secs"
                     }
-                },
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Medium
-            )
-            Spacer(modifier = Modifier.height(20.dp))
+                    "Time left to hatch: $formattedTime"
+                }
+                Text(
+                    text = hatchText,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+            Spacer(modifier = Modifier.height(10.dp))
             Button(
                 onClick = {
                     val intent = Intent(context, MainActivity::class.java)
@@ -176,24 +211,31 @@ fun CompanionActivityScreen(userId:Int) {
                     .align(Alignment.Start)
             )
             Spacer(modifier = Modifier.height(5.dp))
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                contentPadding = PaddingValues(horizontal = 16.dp)
-            ) {
-                val userAchievements = achievements.filter { it.userId == userId }
-                val displayCount = maxOf(4, userAchievements.size)
-                items(displayCount) { index ->
-                    val achievement = userAchievements.getOrNull(index)
-                    Box(
-                        modifier = Modifier
-                            .size(80.dp)
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(Color.LightGray),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        achievement?.let {
+            val userCompanions = companions
+                .filter { it.userId == userId && it.isHatched() }
+                .sortedByDescending { it.dateAwarded?.seconds ?: 0L }
+            if (userCompanions.isEmpty()) {
+                Text("No companions yet.", color = Color.Gray)
+            } else {
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(4),
+                    modifier = Modifier
+                        .heightIn(max = 240.dp)
+                        .fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                ) {
+                    items(userCompanions) { companion ->
+                        Box(
+                            modifier = Modifier
+                                .size(80.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(companion.getBGColor()),
+                            contentAlignment = Alignment.Center
+                        ) {
                             Image(
-                                painter = painterResource(id = it.image),
+                                painter = painterResource(id = companion.getDrawableRes()),
                                 contentDescription = null,
                                 modifier = Modifier.size(60.dp)
                             )
@@ -204,4 +246,3 @@ fun CompanionActivityScreen(userId:Int) {
         }
     }
 }
-*/

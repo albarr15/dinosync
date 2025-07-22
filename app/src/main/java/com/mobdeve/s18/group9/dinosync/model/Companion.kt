@@ -1,4 +1,5 @@
 package com.mobdeve.s18.group9.dinosync.model
+import androidx.compose.ui.graphics.Color
 import com.google.firebase.Timestamp
 import com.mobdeve.s18.group9.dinosync.R
 import com.google.firebase.firestore.PropertyName
@@ -6,7 +7,7 @@ import com.google.firebase.firestore.PropertyName
 // originally Achievements + DinoCatalog
 // represents egg + hatched dinos
 data class Companion(
-    var requiredHatchTime: Int = 1, // how many seconds need to hatch
+    var requiredHatchTime: Int = 3600, // how many seconds need to hatch; default to 1 hr
     var remainingHatchTime: Int = -1, // sentinel value; will be set to requiredHatchTime if not provided
     var typeString: String = DinoType.entries.random().name, // store as string in Firestore
     var name: String = "", // will be set according to type
@@ -53,6 +54,18 @@ data class Companion(
             DinoType.BRONTO -> R.drawable.dino5
             DinoType.TRICERA -> R.drawable.dino6
             else -> R.drawable.logoblack
+        }
+    }
+
+    fun getBGColor(): Color {
+        return when (imageKey) {
+            "dino1" -> Color(0xFFC2F4ED)
+            "dino2" -> Color(0xFFFFD3E7)
+            "dino3" -> Color(0xFFE9A1A4)
+            "dino4" -> Color(0xFFD7B593)
+            "dino5" -> Color(0xFFD3E6A8)
+            "dino6" -> Color(0xFFB4ECBB)
+            else -> Color.LightGray
         }
     }
 }
