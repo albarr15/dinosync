@@ -34,8 +34,15 @@ class FirebaseRepository {
     }
 
     suspend fun addCourse(course: Course) {
-        db.collection("course").add(course).await()
+        val docRef = db.collection("course").add(course).await()
+        val courseId = docRef.id
+
+        // Update the document to include courseId field
+        db.collection("course").document(courseId)
+            .update("courseId", courseId)
+            .await()
     }
+
 
 
     // DAILY STUDY HISTORY ✔️

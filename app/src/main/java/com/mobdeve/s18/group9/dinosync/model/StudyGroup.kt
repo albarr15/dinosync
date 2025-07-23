@@ -7,5 +7,6 @@ data class StudyGroup(
     val name: String = "",
     val rank: Long = 0L,
     val university: String = "",
-    val hostId : String = ""
+    val hostId : String = "",
+    val courseId : String = ""
 )
