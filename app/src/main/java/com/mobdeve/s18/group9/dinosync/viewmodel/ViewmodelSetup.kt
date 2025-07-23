@@ -25,7 +25,21 @@ class CompanionViewModel : ViewModel() {
 
     fun loadCompanions(userId: String) {
         viewModelScope.launch {
-            _companions.value = repository.getAllCompanionsByUserId(userId)
+            val fetchedCompanions = repository.getAllCompanionsByUserId(userId)
+
+            if (fetchedCompanions.isEmpty()) {
+                val newCompanion = Companion(
+                    userId = userId,
+                    dateCreated = Timestamp.now(),
+                    current = true
+                )
+                repository.insertCompanion(newCompanion)
+
+                // Re-fetch companions after adding
+                _companions.value = repository.getAllCompanionsByUserId(userId)
+            } else {
+                _companions.value = fetchedCompanions
+            }
         }
     }
 
@@ -98,6 +112,10 @@ class CourseViewModel : ViewModel() {
     private val repository = FirebaseRepository()
     private val _courses = MutableStateFlow<List<Course>>(emptyList())
     val courses: StateFlow<List<Course>> = _courses
+
+    init {
+        loadCourses()
+    }
 
     fun loadCourses() {
         viewModelScope.launch {
@@ -268,7 +286,7 @@ class StudyGroupViewModel : ViewModel() {
         Log.d("GroupActivityGroupActivity", "loadStudyGroups called")
     }
 
-    fun createGroup(hostId: String, name: String, bio: String, university: String) {
+    fun createGroup(hostId: String, name: String, bio: String, university: String, courseId: String) {
         viewModelScope.launch {
             val group = StudyGroup(
                 hostId = hostId,
@@ -277,7 +295,8 @@ class StudyGroupViewModel : ViewModel() {
                 bio = bio,
                 image = "groupimage",
                 rank = 0L,
-                university = university
+                university = university,
+                courseId = courseId
             )
             repository.createStudyGroup(group)
             loadStudyGroups()
@@ -405,6 +424,7 @@ class ProfileViewModel : ViewModel() {
             _companions.value = repository.getCompanionsByUserId(userId)
             _groups.value = repository.getUserGroups(userId)
             _moodHistory.value = repository.getUserMoodHistory(userId)
+            Log.d("Profile", "Mood History: ${_moodHistory.value}")
         }
     }
 }

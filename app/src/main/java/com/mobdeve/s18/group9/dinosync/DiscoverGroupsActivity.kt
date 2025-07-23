@@ -58,7 +58,10 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.toSize
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.mobdeve.s18.group9.dinosync.model.Course
 import com.mobdeve.s18.group9.dinosync.ui.theme.YellowGreen
+import com.mobdeve.s18.group9.dinosync.viewmodel.CourseViewModel
 import com.mobdeve.s18.group9.dinosync.viewmodel.UniversityViewModel
 
 class DiscoverGroupsActivity : ComponentActivity() {
@@ -91,16 +94,17 @@ fun DiscoverGroupsScreen(userId: String) {
 
     val studyGroupViewModel = remember { StudyGroupViewModel() }
     val memberViewModel = remember { GroupMemberViewModel() }
-
+    val courseViewModel = remember { CourseViewModel() }
     val studyGroups by studyGroupViewModel.studyGroups.collectAsState()
     val groupMembers by memberViewModel.members.collectAsState()
-
+    val courses by courseViewModel.courses.collectAsState()
     var searchQuery by remember { mutableStateOf("") }
     var showDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         studyGroupViewModel.loadStudyGroups()
         memberViewModel.loadAllMembers()
+        courseViewModel.loadCourses()
     }
 
     val filteredGroups by remember {
@@ -145,13 +149,13 @@ fun DiscoverGroupsScreen(userId: String) {
                 Icon(Icons.Default.Add, contentDescription = "Add Group")
             }
         }
-
+        // Add courses??
         if (showDialog) {
             CreateStudyGroupDialog(
                 hostId = userId,
                 onDismiss = { showDialog = false },
-                onCreate = { hostId, groupName, bio, university ->
-                    studyGroupViewModel.createGroup(hostId, groupName, bio, university)
+                onCreate = { hostId, groupName, bio, university, courseId  ->
+                    studyGroupViewModel.createGroup(hostId, groupName, bio, university, courseId)
                     showDialog = false
                 }
             )
@@ -292,10 +296,13 @@ fun DiscoverGroupsScreen(userId: String) {
                     val members = groupMembers.count { it.groupId == group.groupId }
                     val isMember = groupMembers.any { it.groupId == group.groupId && it.userId == userId }
                     val isHost = group.hostId == userId
+                    val courseName = courses.find { it.courseId == group.courseId }?.name ?: "No Subject yet"
+
                     DiscoverGroupItem(
                         group = group,
                         members = members,
                         isMember = isMember,
+                        courseName = courseName,
                         onGroupClick = {
                             Log.d("GroupListScreen", "Navigating to GroupActivity with groupId: ${group.groupId}, userId: $userId")
                             val intent = Intent(context, GroupActivity::class.java)
@@ -329,6 +336,7 @@ fun DiscoverGroupItem(
     group: StudyGroup,
     members: Int,
     isMember: Boolean,
+    courseName: String,
     onGroupClick: () -> Unit,
     onDeleteClick: (() -> Unit)? = null
 ) {
@@ -368,9 +376,9 @@ fun DiscoverGroupItem(
             Spacer(modifier = Modifier.width(12.dp))
 
             Column(modifier = Modifier.weight(1f)) {
-                Text(group.name, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                Text(group.bio, fontSize = 12.sp, maxLines = 1)
-                Spacer(modifier = Modifier.height(4.dp))
+                Text(group.name, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                //Text(group.bio, fontSize = 8.sp, maxLines = 1)
+                Text(courseName, fontSize = 10.sp, color = Color.Gray, maxLines = 1)
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     repeat(members) {
                         Box(
@@ -439,7 +447,7 @@ fun DiscoverGroupItem(
 fun CreateStudyGroupDialog(
     hostId: String,
     onDismiss: () -> Unit,
-    onCreate: (hostId: String, name: String, bio: String, university: String) -> Unit
+    onCreate: (hostId: String, name: String, bio: String, university: String, courseId: String) -> Unit
 ) {
     var groupName by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
@@ -451,7 +459,16 @@ fun CreateStudyGroupDialog(
     val universityViewModel  = remember { UniversityViewModel() }
     val universityOptions by universityViewModel.universityList
 
+    var selectedCourseName by remember { mutableStateOf("") }
+    var selectedCourseId by remember { mutableStateOf("") }
+    var courseExpanded by remember { mutableStateOf(false) }
+    val courseViewModel: CourseViewModel = viewModel()
+    val courseOptions by courseViewModel.courses.collectAsState()
+    var courseFieldSize by remember { mutableStateOf(Size.Zero) }
 
+    LaunchedEffect(courseOptions) {
+        Log.d("CreateStudyGroupDialog", "Courses: $courseOptions")
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -509,12 +526,49 @@ fun CreateStudyGroupDialog(
                         }
                     }
                 }
+                Spacer(modifier = Modifier.height(8.dp))
+                // Course dropdown
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    OutlinedTextField(
+                        value = selectedCourseName,
+                        onValueChange = {},
+                        label = { Text("Course") },
+                        trailingIcon = {
+                            Icon(
+                                imageVector = if (courseExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                                contentDescription = null,
+                                modifier = Modifier.clickable { courseExpanded = !courseExpanded }
+                            )
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .onGloballyPositioned { coordinates -> courseFieldSize = coordinates.size.toSize() },
+                        readOnly = true
+                    )
+
+                    DropdownMenu(
+                        expanded = courseExpanded,
+                        onDismissRequest = { courseExpanded = false },
+                        modifier = Modifier.width(with(LocalDensity.current) { courseFieldSize.width.toDp() })
+                    ) {
+                        courseOptions.forEach { course ->
+                            DropdownMenuItem(
+                                onClick = {
+                                    selectedCourseName = course.name
+                                    selectedCourseId = course.courseId
+                                    courseExpanded = false
+                                },
+                                text = { Text(course.name) }
+                            )
+                        }
+                    }
+                }
             }
         },
         confirmButton = {
             TextButton(
                 onClick = {
-                    onCreate(hostId, groupName.trim(), description.trim(), university.trim())
+                    onCreate(hostId, groupName.trim(), description.trim(), university.trim(), selectedCourseId)
                 }
             ) {
                 Text("Create")

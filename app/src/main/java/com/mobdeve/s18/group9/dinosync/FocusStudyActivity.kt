@@ -365,10 +365,11 @@ fun FocusStudyScreen(
                     val sessionDuration = totalTime - timeLeft // in seconds
                     val newHatchTime = (currentCompanion.remainingHatchTime - sessionDuration).coerceAtLeast(0)
 
-                    showHatchCard = true
-                    delay(5000L)
-
-                    showNewEggCard = true
+                    if (newHatchTime == 0 ) {
+                        showHatchCard = true
+                        delay(5000L)
+                        showNewEggCard = true
+                    }
 
                     companionVM.updateCurrentCompanion(
                         userId,
