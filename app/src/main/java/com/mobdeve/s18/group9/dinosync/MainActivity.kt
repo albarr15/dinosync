@@ -658,8 +658,10 @@ fun getCurrentDate(): String {
 
 fun getCurrentDateTime(): String {
     val sdf = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", java.util.Locale.getDefault())
+    sdf.timeZone = java.util.TimeZone.getTimeZone("Asia/Manila")
     return sdf.format(java.util.Date())
 }
+
 fun getCurrentTimestamp(): Timestamp {
     return Timestamp(Date())
 }

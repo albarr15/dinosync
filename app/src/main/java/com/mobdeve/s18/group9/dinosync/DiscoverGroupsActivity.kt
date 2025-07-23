@@ -206,7 +206,6 @@ fun DiscoverGroupsScreen(userId: String) {
 
             LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 items(studyGroups.filter { group ->
-                    // Include group if user has ever been a member (active or not)
                     groupMembers.any { it.groupId == group.groupId && it.userId == userId }
                 }) { group ->
                     val imageResId = remember(group.image) {

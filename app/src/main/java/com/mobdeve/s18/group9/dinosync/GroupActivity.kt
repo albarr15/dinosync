@@ -211,12 +211,17 @@ fun GroupActivityScreen(
     val groupMemberVM: GroupMemberViewModel = viewModel()
 
     val groupMembersState = remember { mutableStateListOf<GroupMember>().apply { addAll(groupMembers) } }
-    val memberUsers = groupMembersState
-        .filter { it.groupId == group?.groupId && (it.endedAt == null || it.endedAt == "") }
-        .mapNotNull { gm ->
-            val user = allUsers.find { it.userId == gm.userId }
-            user?.let { user -> user to gm }
+    val memberUsers by remember(groupMembersState, allUsers, group) {
+        derivedStateOf {
+            groupMembersState
+                .filter { it.groupId == group?.groupId && it.endedAt.isNullOrEmpty() }
+                .mapNotNull { gm ->
+                    val user = allUsers.find { it.userId == gm.userId }
+                    user?.let { user -> user to gm }
+                }
         }
+    }
+
 
     val topMembers =
         memberUsers.sortedByDescending { it.second.currentGroupStudyMinutes }.map { it.first }
@@ -235,11 +240,14 @@ fun GroupActivityScreen(
             weight = FontWeight.Medium
         )
     )
-    val isMemberJoined by remember(groupMembersState.toList(), userId) {
+    val isMemberJoined by remember(allGroupMembers, userId) {
         derivedStateOf {
-            groupMembersState.any { it.userId == userId && it.endedAt.isNullOrEmpty() }
+            allGroupMembers.any { it.userId == userId && it.endedAt.isNullOrEmpty() }
         }
     }
+
+
+
 
     var showJoinDialog by remember { mutableStateOf(false) }
     var targetStudyPeriodMinutes by remember { mutableStateOf("") }
