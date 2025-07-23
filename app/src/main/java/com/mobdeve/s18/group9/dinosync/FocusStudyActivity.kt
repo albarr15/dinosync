@@ -56,6 +56,7 @@ import com.spotify.android.appremote.api.error.UserNotAuthorizedException
 import com.spotify.sdk.android.auth.AuthorizationClient
 import com.spotify.sdk.android.auth.AuthorizationResponse
 import androidx.constraintlayout.compose.ConstraintLayout
+import com.mobdeve.s18.group9.dinosync.viewmodel.CompanionViewModel
 import com.mobdeve.s18.group9.dinosync.viewmodel.DailyStudyHistoryViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -275,6 +276,35 @@ fun FocusStudyScreen(
     val studySessionVM: StudySessionViewModel = viewModel()
     var playbackMode by remember { mutableStateOf(PlaybackMode.IN_APP) }
 
+    val companionVM: CompanionViewModel = viewModel()
+    // Load companions for the user
+    LaunchedEffect(userId) {
+        companionVM.loadCompanions(userId)
+    }
+    val companions by companionVM.companions.collectAsState()
+    // Get the most recent companion (if any)
+    val currentCompanion = companions
+        .filter { it.current }
+        .maxByOrNull { it.dateCreated?.seconds ?: 0L }
+    // Log.d("CompanionDebug", "Companions: $companions")
+    // Log.d("CompanionDebug", "CurrentCompanion: $currentCompanion")
+
+    var showHatchCard by remember { mutableStateOf(false) }
+
+    // Watch for hatching
+    /*
+    LaunchedEffect(currentCompanion?.remainingHatchTime) {
+        Log.d("CompanionDebug", "LaunchedEffect: remainingHatchTime = ${currentCompanion?.remainingHatchTime}")
+        // Only show hatch card if companion was just awarded (not during active timer)
+        if (currentCompanion != null &&
+            currentCompanion.remainingHatchTime == 0 &&
+            currentCompanion.dateAwarded != null) {
+            showHatchCard = true
+            Log.d("CompanionDebug", "Setting showHatchCard = true (hatch time reached)")
+        }
+    }
+     */
+
     var currentSessionId by remember { mutableStateOf(studySessionId) }
     val dailyStudyHistoryVM: DailyStudyHistoryViewModel = viewModel()
     var currentStartedAt by remember { mutableStateOf<Timestamp?>(null) }
@@ -289,12 +319,19 @@ fun FocusStudyScreen(
         else -> YellowGreen
     }
 
+    // FOR COMPANION: HATCH / NEW EGG CARD
+    var showNewEggCard by remember { mutableStateOf(false) }
+
+
+    var currentCompanionName = currentCompanion?.name
+    var currentCompanionDrawableRes = currentCompanion?.getDrawableRes()
+
     fun showToast(context: Context, message: String) {
         Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
     }
 
     // ✅ Timer countdown logic
-    LaunchedEffect(currentSessionId) {
+    LaunchedEffect(currentSessionId, currentCompanion) {
         if (isRunning) {
             while (timeLeft > 0) {
                 delay(1000L)
@@ -320,8 +357,30 @@ fun FocusStudyScreen(
                     moodId = moodId,
                     additionalMinutes = (elapsedMinutes / 60).toFloat()
                 )
-            }
 
+                //Log.d("CompanionDebug", "Companions: $companions")
+                //Log.d("CompanionDebug", "CurrentCompanion: $currentCompanion")
+
+                if (currentCompanion != null) {
+                    val sessionDuration = totalTime - timeLeft // in seconds
+                    val newHatchTime = (currentCompanion.remainingHatchTime - sessionDuration).coerceAtLeast(0)
+
+                    if (newHatchTime == 0 ) {
+                        showHatchCard = true
+                        delay(5000L)
+                        showNewEggCard = true
+                    }
+
+                    companionVM.updateCurrentCompanion(
+                        userId,
+                        currentCompanion.current,
+                        dateAwarded = endTimestamp,
+                        remainingHatchTime = newHatchTime
+                    )
+                } else {
+                    Log.d("CompanionVM ", "ERROR: no currentCompanion found.")
+                }
+            }
         }
     }
 
@@ -531,7 +590,7 @@ fun FocusStudyScreen(
                                         totalTime = totalTime,
                                         timeLeft = timeLeft
                                     )
-//                                  //elapsedTimeInSeconds%3600)/60
+                                  //elapsedTimeInSeconds%3600)/60
                                     val minutesPart = (elapsedMinutes % 3600) / 60
                                     val secondsPart = elapsedMinutes % 60
                                     Toast.makeText(context, "Elapsed: ${minutesPart}m ${secondsPart}s", Toast.LENGTH_SHORT).show()
@@ -754,6 +813,42 @@ fun FocusStudyScreen(
 
             }
         }
+    }
+
+
+    if (showHatchCard){
+            Box(
+                modifier = Modifier.fillMaxSize().size(500.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                if (currentCompanionName != null) {
+                    if (currentCompanionDrawableRes != null) {
+                        HatchCard(currentCompanionName, currentCompanionDrawableRes)
+                    } else {
+                        Log.d("Hatch Card UI:", "current companion drawable is null.")
+                    }
+                } else {
+                    Log.d("Hatch Card UI:", "current companion name is null.")
+                }
+            }
+        }
+     else {
+        Log.d("HatchCard", "showHatchCard = false")
+    }
+    if (showNewEggCard) {
+        Box(
+            modifier = Modifier.fillMaxSize().size(500.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            NewEggCard(
+                onContinueClick = {
+                    showHatchCard = false
+                    showNewEggCard = false
+                }
+            )
+        }
+    } else {
+        Log.d("HatchCard", "showNewEggCard = false")
     }
 }
 
