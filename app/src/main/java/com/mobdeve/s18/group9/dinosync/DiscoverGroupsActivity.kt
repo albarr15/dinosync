@@ -380,18 +380,18 @@ fun DiscoverGroupItem(
                 //Text(group.bio, fontSize = 8.sp, maxLines = 1)
                 Text(courseName, fontSize = 10.sp, color = Color.Gray, maxLines = 1)
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    repeat(members) {
-                        Box(
-                            modifier = Modifier
-                                .size(12.dp)
-                                .clip(CircleShape)
-                                .background(Color(0xFF9CCC65))
-                                .padding(2.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                    }
-                    Text("$members Members", fontSize = 12.sp)
+                    Box(
+                        modifier = Modifier
+                            .size(12.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFF9CCC65))
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(text = "$members " + if (members == 1) "Member" else "Members", fontSize = 12.sp)
+
+
                 }
+
             }
 
             // JOIN / JOINED badge

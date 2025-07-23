@@ -73,6 +73,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil3.compose.rememberAsyncImagePainter
 import com.mobdeve.s18.group9.dinosync.components.BottomNavigationBar
 import com.mobdeve.s18.group9.dinosync.components.TopActionBar
+import com.mobdeve.s18.group9.dinosync.model.Course
 import com.mobdeve.s18.group9.dinosync.model.DailyStudyHistory
 import com.mobdeve.s18.group9.dinosync.model.GroupMember
 import com.mobdeve.s18.group9.dinosync.model.Mood
@@ -83,6 +84,7 @@ import com.mobdeve.s18.group9.dinosync.ui.theme.DarkGreen
 import com.mobdeve.s18.group9.dinosync.ui.theme.DinoSyncTheme
 import com.mobdeve.s18.group9.dinosync.ui.theme.LightGray
 import com.mobdeve.s18.group9.dinosync.ui.theme.YellowGreen
+import com.mobdeve.s18.group9.dinosync.viewmodel.CourseViewModel
 import com.mobdeve.s18.group9.dinosync.viewmodel.DailyStudyHistoryViewModel
 import com.mobdeve.s18.group9.dinosync.viewmodel.GroupMemberViewModel
 import com.mobdeve.s18.group9.dinosync.viewmodel.MoodViewModel
@@ -110,6 +112,7 @@ class GroupActivity : ComponentActivity() {
         val historyVM: DailyStudyHistoryViewModel by viewModels()
         val studySessionVM: StudySessionViewModel by viewModels()
         val moodVM: MoodViewModel by viewModels()
+        val courseVM: CourseViewModel by viewModels()
 
         val selectedMoodState = mutableStateOf<Mood?>(null)
 
@@ -120,6 +123,8 @@ class GroupActivity : ComponentActivity() {
             val allHistory by historyVM.dailyHistory.collectAsState()
             val studySessionList = studySessionVM.studySessions.collectAsState()
             val moods by moodVM.moods.collectAsState()
+            val allCourses by courseVM.courses.collectAsState()
+
 
             LaunchedEffect(Unit) {
                 userVM.loadAllUsers()
@@ -128,10 +133,11 @@ class GroupActivity : ComponentActivity() {
                 historyVM.loadDailyHistory(userId)
                 studySessionVM.loadStudySessions(userId)
                 moodVM.loadMoods()
+                courseVM.loadCourses()
             }
 
-
             val selectedGroup = allGroups.find { it.groupId == groupId }
+            val course = allCourses.find { it.courseId == selectedGroup?.courseId }
             val groupMembers = allMembers.filter { it.groupId == groupId }
             val groupHistory = allHistory.filter { member ->
                 groupMembers.any { it.userId == member.userId }
@@ -140,7 +146,9 @@ class GroupActivity : ComponentActivity() {
             DinoSyncTheme {
                 GroupActivityScreen(
                     userId = userId,
+                    course = course,
                     group = selectedGroup,
+                    allGroupMembers = allMembers,
                     groupMembers = groupMembers,
                     allUsers = allUsers,
                     dailyStudyHistory = groupHistory,
@@ -185,7 +193,9 @@ class GroupActivity : ComponentActivity() {
 @Composable
 fun GroupActivityScreen(
     userId: String,
+    course: Course?,
     group: StudyGroup?,
+    allGroupMembers : List<GroupMember>,
     groupMembers: List<GroupMember>,
     allUsers: List<User>,
     dailyStudyHistory: List<DailyStudyHistory>,
@@ -230,8 +240,6 @@ fun GroupActivityScreen(
             groupMembersState.any { it.userId == userId && it.endedAt.isNullOrEmpty() }
         }
     }
-
-
 
     var showJoinDialog by remember { mutableStateOf(false) }
     var targetStudyPeriodMinutes by remember { mutableStateOf("") }
@@ -374,7 +382,8 @@ fun GroupActivityScreen(
                                 TextButton(onClick = { showJoinDialog = false }) {
                                     Text("Cancel")
                                 }
-                            }
+                            },
+                            containerColor = Color.White
                         )
                     }
 
@@ -427,7 +436,8 @@ fun GroupActivityScreen(
                                 TextButton(onClick = { showTargetDialog = false }) {
                                     Text("Cancel")
                                 }
-                            }
+                            },
+                            containerColor = Color.White
                         )
                     }
 
@@ -441,21 +451,33 @@ fun GroupActivityScreen(
                             fontFamily = fontFamily
                         )
                     }
-                    Spacer(modifier = Modifier.height(5.dp))
                     Text(
                         text = group?.bio ?: "Sample bio",
                         color = Color.White,
                         fontSize = 14.sp,
                         fontFamily = fontFamily
                     )
-                    Spacer(modifier = Modifier.height(5.dp))
+                    Text(
+                        text = "Course: ${course?.name ?: "Unknown Course"}",
+                        color = Color.White,
+                        fontSize = 14.sp,
+                        fontFamily = fontFamily
+                    )
+                    Text(
+                        text = group?.university ?: "Unknown University",
+                        color = Color.White,
+                        fontSize = 14.sp,
+                        fontFamily = fontFamily
+                    )
+                    val (rank, totalGroups) = calculateGroupRanking(group?.groupId ?: "", allGroupMembers)
+
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween,
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text(
-                            text = "Rank ${group?.rank} out of 5",
+                            text = "Rank $rank out of $totalGroups",
                             color = Color.White,
                             fontStyle = FontStyle.Italic,
                             fontFamily = fontFamily,
@@ -625,6 +647,31 @@ fun UserCard(user: User, groupMember: GroupMember) {
         Text(studyText, fontSize = 12.sp)
     }
 }
+
+fun calculateGroupRanking(
+    targetGroupId: String,
+    groupMembers: List<GroupMember>
+): Pair<Int, Int> {
+    // Sum study minutes per group
+    val totalMinutesPerGroup: Map<String, Float> = groupMembers
+        .groupBy { it.groupId }
+        .mapValues { entry ->
+            entry.value.sumOf { it.currentGroupStudyMinutes.toDouble() }.toFloat()
+        }
+
+    // Sort groups by descending study time
+    val rankedGroups: List<Pair<String, Float>> = totalMinutesPerGroup
+        .toList()
+        .sortedByDescending { it.second }
+
+    // Find the rank
+    val rank = rankedGroups.indexOfFirst { it.first == targetGroupId } + 1
+    val totalGroups = rankedGroups.size
+
+    return rank to totalGroups
+}
+
+
 
 @Composable
 fun OnClickGroupStatsActivityBtn(
