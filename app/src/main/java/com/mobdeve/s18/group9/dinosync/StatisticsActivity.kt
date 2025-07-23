@@ -21,6 +21,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -43,6 +44,7 @@ import com.mobdeve.s18.group9.dinosync.ui.theme.DinoSyncTheme
 import com.mobdeve.s18.group9.dinosync.ui.theme.DirtyGreen
 import com.mobdeve.s18.group9.dinosync.viewmodel.CourseViewModel
 import com.mobdeve.s18.group9.dinosync.viewmodel.DailyStudyHistoryViewModel
+import com.mobdeve.s18.group9.dinosync.viewmodel.StatsViewModel
 import com.mobdeve.s18.group9.dinosync.viewmodel.StudySessionViewModel
 import ir.ehsannarmani.compose_charts.models.Pie
 
@@ -107,20 +109,28 @@ fun StatsActivityScreen(userId : String){
     val courseVM: CourseViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
     val courseList by courseVM.courses.collectAsState()
 
+    val statsVM: StatsViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+
+    LaunchedEffect(userId) {
+        studySessionVM.loadStudySessions(userId)
+        dailyStudyHistoryVM.loadDailyHistory(userId)
+        courseVM.loadCourses()
+        statsVM.loadPieData(userId)
+    }
+
     val subjects = courseList.map { it.name }
 
-    val totalTime = 2 * 60 * 60; // dummy data, represents total study time across subjects in seconds
+    var totalTime = 0 // represents total study time across subjects in seconds
 
-    var dummy_data by remember {
-        mutableStateOf(
-            listOf(
-                Pie(label = "MOBICOM", data = 63.0, color = DirtyGreen),
-                Pie(label = "STCLOUD", data = 22.0, color = Color(0xFFA7C957)),
-                Pie(label = "CSOPESY", data = 10.0, color = Color.LightGray)
-
-            )
-        )
+    studySessions.forEach() {
+        studySession ->
+        if (studySession.endedAt != null) {
+            totalTime += (studySession.minuteSet * 60) + (studySession.hourSet * 60 * 60)
+        }
     }
+
+
+    val dummy_data by statsVM.pieData.collectAsState()
 
     Scaffold(
         bottomBar = {
@@ -183,7 +193,7 @@ fun StatsActivityScreen(userId : String){
                     modifier = Modifier.padding(vertical = 8.dp)
                 )
 
-                PieStats(dummy_data, totalTime)
+                PieStats(dummy_data.sortedByDescending { it.data }, totalTime)
             }
 
             // Streak Section

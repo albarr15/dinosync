@@ -1,6 +1,7 @@
 package com.mobdeve.s18.group9.dinosync.viewmodel
 
 import android.util.Log
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -14,7 +15,10 @@ import com.mobdeve.s18.group9.dinosync.network.RetrofitClient
 import java.text.SimpleDateFormat
 import java.util.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.viewModelScope
+import com.mobdeve.s18.group9.dinosync.ui.theme.DirtyGreen
+import ir.ehsannarmani.compose_charts.models.Pie
 import kotlinx.coroutines.launch
 
 class CompanionViewModel : ViewModel() {
@@ -441,4 +445,83 @@ class UniversityViewModel : ViewModel() {
             _universityList.value = universities
         }
     }
+}
+
+class StatsViewModel : ViewModel() {
+    private val repository = FirebaseRepository()
+
+    private val _user = MutableStateFlow<User?>(null)
+    val user: StateFlow<User?> = _user
+
+    private val _studySessions = MutableStateFlow<List<StudySession>>(emptyList())
+    val studySessions: MutableStateFlow<List<StudySession>> = _studySessions
+
+    private val _dailyStudyHistory = MutableStateFlow<List<DailyStudyHistory>>(emptyList())
+    val dailyStudyHistory: MutableStateFlow<List<DailyStudyHistory>> = _dailyStudyHistory
+
+    private val _courses = MutableStateFlow<List<Course>>(emptyList())
+    val courses: StateFlow<List<Course>> = _courses
+
+    private val _pieData = MutableStateFlow<List<Pie>>(emptyList())
+    val pieData: MutableStateFlow<List<Pie>> = _pieData
+
+    fun loadUserStats(userId: String) {
+        viewModelScope.launch {
+            _user.value = repository.getUserById(userId)
+            _studySessions.value = repository.getStudySessionsByUserId(userId)
+            _dailyStudyHistory.value = repository.getDailyStudyHistory(userId)
+            _courses.value = repository.getAllUserCourses(userId)
+        }
+    }
+
+    fun computeTotalSecondsPerCourse(sessions: List<StudySession>): Map<String, Double> {
+        return sessions
+            .filter { it.courseId != null && it.startedAt != null && it.endedAt != null }
+            .groupBy {  it.courseId?.takeIf { it.isNotBlank() } ?: "Unassigned" }
+            .mapValues { (_, courseSessions) ->
+                courseSessions.sumOf { session ->
+                    val durationSeconds = (session.hourSet * 3660) + (session.minuteSet * 60)
+                    durationSeconds.toDouble().coerceAtLeast(0.0) // ensure no negative
+                }
+            }
+    }
+
+
+    // TODO: LIMIT TO 5 COURSES
+    fun loadPieData(userId: String) {
+        viewModelScope.launch {
+            val courses = repository.getAllUserCourses(userId)
+            val sessions = repository.getStudySessionsByUserId(userId)
+
+            val secondsPerCourse = computeTotalSecondsPerCourse(sessions)
+            val totalSeconds = secondsPerCourse.values.sum().coerceAtLeast(1.0) // avoid divide-by-zero
+
+            val allCourseIds = (courses.map { it.courseId } + "Unassigned").distinct()
+
+            val pieColors = listOf(
+                Color(0xFF388E3C), // Green
+                Color(0xFFA7C957), // Light green
+                Color(0xFFF9C74F), // Yellow
+                Color(0xFF577590), // Blue-gray
+                Color(0xFFDD6E42)  // Orange
+            )
+
+            _pieData.value = allCourseIds.mapIndexed { i, courseId ->
+                val courseLabel = if (courseId == "Unassigned") "Unassigned"
+                else courses.find { it.courseId == courseId }?.name ?: "Unknown"
+
+                val courseSeconds = secondsPerCourse[courseLabel] ?: 0.0
+                // Log.d("Load Pie Data", "$courseSeconds / $totalSeconds")
+                val percentage = courseSeconds / totalSeconds
+                val roundedPercentage = String.format("%.2f", percentage * 100).toDouble()
+
+                Pie(
+                    label = courseLabel,
+                    data = roundedPercentage,
+                    color = pieColors[i % pieColors.size]
+                )
+            }
+        }
+    }
+
 }

@@ -80,6 +80,28 @@ class FirebaseRepository {
         return snapshot.toObjects(Course::class.java)
     }
 
+    suspend fun getAllUserCourses(userId: String): List<Course> {
+        val studySessionsSnapshot = db.collection("studysession")
+            .whereEqualTo("userId", userId)
+            .get().await()
+
+        val studySessions = studySessionsSnapshot.toObjects(StudySession::class.java)
+
+        // extract courses found in sessions
+        val courseIds = studySessions.mapNotNull { it.courseId }.toSet()
+
+        val userCourses = mutableListOf<Course>()
+        for (courseId in courseIds) {
+            val courseSnapshot = db.collection("course")
+                .whereEqualTo("name", courseId)
+                .get().await()
+
+            userCourses += courseSnapshot.toObjects(Course::class.java)
+        }
+        Log.d("CourseVM", "Found user courses : $userCourses")
+        return userCourses
+    }
+
     suspend fun addCourse(course: Course) {
         val docRef = db.collection("course").add(course).await()
         val courseId = docRef.id
