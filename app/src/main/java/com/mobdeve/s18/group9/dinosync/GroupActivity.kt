@@ -3,6 +3,7 @@ package com.mobdeve.s18.group9.dinosync
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
@@ -148,16 +149,41 @@ fun GroupActivityScreen(
     studySessions: List<StudySession>
 ) {
 
+    Log.d("GroupActivityScreen", "userId: $userId")
+    Log.d("GroupActivityScreen", "group: ${group?.groupId}, name: ${group?.name}")
+
+    Log.d("GroupActivityScreen", "groupMembers size: ${groupMembers.size}")
+    groupMembers.forEachIndexed { index, gm ->
+        Log.d("GroupActivityScreen", "groupMember[$index] -> userId: ${gm.userId}, groupId: ${gm.groupId}, minutes: ${gm.currentGroupStudyMinutes}")
+    }
+
+    Log.d("GroupActivityScreen", "allUsers size: ${allUsers.size}")
+    allUsers.forEachIndexed { index, user ->
+        Log.d("GroupActivityScreen", "user[$index] -> userId: ${user.userId}, name: ${user.userName}")
+    }
+
+
     val context = LocalContext.current
     var selectedTab by remember { mutableStateOf("Group Activity") }
 
-    val memberUsers = groupMembers.mapNotNull { gm ->
-        val user = allUsers.find { it.userId == gm.userId }
-        user?.let { user -> user to gm }
+    val memberUsers = groupMembers
+        .filter { it.groupId == group?.groupId }
+        .mapNotNull { gm ->
+            val user = allUsers.find { it.userId == gm.userId }
+            user?.let { user -> user to gm }
+        }
+
+
+    Log.d("GroupActivityScreen", "memberUsers size: ${memberUsers.size}")
+    memberUsers.forEachIndexed { index, (user, gm) ->
+        Log.d("GroupActivityScreen", "memberUser[$index] -> userId: ${user.userId}, name: ${user.userName}, minutes: ${gm.currentGroupStudyMinutes}")
     }
 
     val topMembers = memberUsers.sortedByDescending { it.second.currentGroupStudyMinutes }.map { it.first }.take(3)
-
+    Log.d("GroupActivityScreen", "topMembers size: ${topMembers.size}")
+    topMembers.forEachIndexed { index, user ->
+        Log.d("GroupActivityScreen", "topMember[$index] -> userId: ${user.userId}, name: ${user.userName}")
+    }
 
     val provider = GoogleFont.Provider(
         providerAuthority = "com.google.android.gms.fonts",
@@ -355,6 +381,13 @@ fun GroupActivityScreen(
 
 @Composable
 fun OnClickGroupActivityBtn(memberUsers: List<Pair<User, GroupMember>>) {
+    // Log for printing values of memberUsers
+    LaunchedEffect(memberUsers) {
+        Log.d("OnClickGroupActivityBtn", "memberUsers size: ${memberUsers.size}")
+        memberUsers.forEachIndexed { index, (user, groupMember) ->
+            Log.d("OnClickGroupActivityBtn", "[$index] user=${user.userId}, groupMember=${groupMember.groupId}")
+        }
+    }
     Column(modifier = Modifier.fillMaxWidth()) {
         Box(modifier = Modifier.fillMaxWidth()) {
             HorizontalDivider(
