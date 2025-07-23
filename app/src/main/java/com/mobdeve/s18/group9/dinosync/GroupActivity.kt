@@ -71,78 +71,12 @@ import com.mobdeve.s18.group9.dinosync.viewmodel.GroupMemberViewModel
 import com.mobdeve.s18.group9.dinosync.viewmodel.StudyGroupViewModel
 import com.mobdeve.s18.group9.dinosync.viewmodel.StudySessionViewModel
 import com.mobdeve.s18.group9.dinosync.viewmodel.UserViewModel
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
 import kotlin.getValue
 
-/*
-class GroupActivity : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-        val userId = intent.getStringExtra("userId") ?: ""
-        val groupId = intent.getStringExtra("groupId") ?: ""
-
-        Log.d("GroupActivityGroupActivity", "userId: $userId")
-        Log.d("GroupActivityGroupActivity", "groupId: $groupId")
-
-        setContent {
-            DinoSyncTheme {
-                val userViewModel: UserViewModel = viewModel()
-                val groupViewModel: StudyGroupViewModel = viewModel()
-                val groupMemberViewModel: GroupMemberViewModel = viewModel()
-                val historyViewModel: DailyStudyHistoryViewModel = viewModel()
-
-                LaunchedEffect(Unit) {
-                    userViewModel.loadAllUsers()
-                    groupViewModel.loadStudyGroups()
-                    groupMemberViewModel.loadAllMembers()
-                    historyViewModel.loadDailyHistory(userId)
-                }
-
-                val allUsers by userViewModel.allUsers.collectAsState(initial = emptyList())
-                val allGroups by groupViewModel.studyGroups .collectAsState(initial = emptyList())
-                val allGroupMembers by groupMemberViewModel.members.collectAsState(initial = emptyList())
-                val allHistory by historyViewModel.dailyHistory.collectAsState(initial = emptyList())
-
-                // Logging the size of each dataset
-                Log.d("GroupActivityGroupActivity", "All Users: ${allUsers.size}")
-                Log.d("GroupActivityGroupActivity", "All Groups: ${allGroups.size}")
-                Log.d("GroupActivityGroupActivity", "All GroupMembers: ${allGroupMembers.size}")
-                Log.d("GroupActivityGroupActivity", "All History Records: ${allHistory.size}")
-
-                val selectedGroup = allGroups.find { it.groupId == groupId }
-
-                if (selectedGroup == null) {
-                    Log.w("GroupActivityGroupActivity", "Selected group is null. groupId=$groupId")
-                    finish()
-                    return@DinoSyncTheme
-                }
-                Log.d("GroupActivityGroupActivity", "Selected Group: ${selectedGroup.name} (${selectedGroup.groupId})")
-                val groupMembers = allGroupMembers.filter { it.groupId == selectedGroup.groupId }
-                Log.d("GroupActivityGroupActivity", "Group Members found: ${groupMembers.size}")
-                val dailyStudyHistory = allHistory.filter { session ->
-                    groupMembers.any { it.userId == session.userId }
-                }
-                Log.d("GroupActivityGroupActivity", "Filtered history entries: ${dailyStudyHistory.size}")
-                GroupActivityScreen(
-                    userId = userId,
-                    group = selectedGroup,
-                    groupMembers = groupMembers,
-                    allUsers = allUsers,
-                    dailyStudyHistory = dailyStudyHistory
-                )
-            }
-        }
-    }
-
-    /******** ACTIVITY LIFE CYCLE ******** */
-    override fun onStart() { super.onStart(); println("GroupActivity onStart()") }
-    override fun onResume() { super.onResume(); println("GroupActivity onResume()") }
-    override fun onPause() { super.onPause(); println("GroupActivity onPause()") }
-    override fun onStop() { super.onStop(); println("GroupActivity onStop()") }
-    override fun onRestart() { super.onRestart(); println("GroupActivity onRestart()") }
-    override fun onDestroy() { super.onDestroy(); println("GroupActivity onDestroy()") }
-}
-*/
 
 class GroupActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
