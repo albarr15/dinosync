@@ -190,36 +190,31 @@ fun DiscoverGroupsScreen(userId: String) {
             Spacer(modifier = Modifier.height(16.dp))
 
             /** Groups **/
+            val userGroupIds = remember(groupMembers) {
+                groupMembers
+                    .filter { it.userId.trim() == userId.toString().trim() } // include all past and present memberships
+                    .map { it.groupId }
+                    .toSet()
+            }
             Text(
-                text = "Your Groups",
+                text = if (userGroupIds.isEmpty()) "Your Groups (None)" else "Your Groups",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold
             )
 
             Spacer(modifier = Modifier.height(8.dp))
 
-
-            val userGroupIds = remember(groupMembers) {
-                groupMembers
-                    .filter { it.userId.trim() == userId.toString().trim() }
-                    .map { it.groupId }
-                    .toSet()
-            }
-
             LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                items(studyGroups.filter { it.groupId in userGroupIds }.take(5)) { group ->
+                items(studyGroups.filter { group ->
+                    // Include group if user has ever been a member (active or not)
+                    groupMembers.any { it.groupId == group.groupId && it.userId == userId }
+                }) { group ->
                     val imageResId = remember(group.image) {
                         context.resources.getIdentifier(group.image, "drawable", context.packageName)
                     }
-                    val isMember = userGroupIds.contains(group.groupId)
-
-                    LaunchedEffect(group.groupId, userGroupIds) {
-                        Log.d(
-                            "DiscoverGroups",
-                            "GroupId=${group.groupId}, GroupName=${group.name}, isMember=$isMember, userGroupIds=$userGroupIds"
-                        )
+                    val isMember = groupMembers.any {
+                        it.groupId == group.groupId && it.userId == userId && it.endedAt.isNullOrEmpty()
                     }
-
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Box(
                             modifier = Modifier
@@ -234,7 +229,6 @@ fun DiscoverGroupsScreen(userId: String) {
                                     .size(30.dp)
                                     .align(Alignment.Center)
                             )
-
                             if (isMember) {
                                 Icon(
                                     imageVector = Icons.Default.CheckCircle,
@@ -246,14 +240,12 @@ fun DiscoverGroupsScreen(userId: String) {
                                         .padding(15.dp)
                                 )
                             }
-
                         }
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(group.name, fontSize = 12.sp, maxLines = 1)
                     }
                 }
             }
-
 
             Spacer(modifier = Modifier.height(24.dp))
 
