@@ -293,8 +293,12 @@ fun DiscoverGroupsScreen(userId: String) {
                 modifier = Modifier.fillMaxHeight()
             ) {
                 items(filteredGroups) { group ->
-                    val members = groupMembers.count { it.groupId == group.groupId }
-                    val isMember = groupMembers.any { it.groupId == group.groupId && it.userId == userId }
+                    val members = groupMembers.count {
+                        it.groupId == group.groupId && (it.endedAt.isNullOrEmpty())
+                    }
+                    val isMember = groupMembers.any {
+                        it.groupId == group.groupId && it.userId == userId && (it.endedAt.isNullOrEmpty())
+                    }
                     val isHost = group.hostId == userId
                     val courseName = courses.find { it.courseId == group.courseId }?.name ?: "No Subject yet"
 
@@ -317,7 +321,8 @@ fun DiscoverGroupsScreen(userId: String) {
                         } else null
                     )
                 }
-                }
+
+            }
             }
 
             LaunchedEffect(groupMembers) {
