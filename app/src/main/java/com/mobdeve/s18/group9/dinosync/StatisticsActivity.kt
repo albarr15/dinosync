@@ -21,6 +21,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -33,12 +34,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.google.firebase.auth.FirebaseAuth
 import com.mobdeve.s18.group9.dinosync.components.BottomNavigationBar
 import com.mobdeve.s18.group9.dinosync.components.PieStats
 import com.mobdeve.s18.group9.dinosync.components.TopActionBar
-//import com.mobdeve.s18.group9.dinosync.components.UserSessionsLineChart
+// import com.mobdeve.s18.group9.dinosync.components.SessionsLineChart
 import com.mobdeve.s18.group9.dinosync.ui.theme.DinoSyncTheme
 import com.mobdeve.s18.group9.dinosync.ui.theme.DirtyGreen
+import com.mobdeve.s18.group9.dinosync.viewmodel.CourseViewModel
+import com.mobdeve.s18.group9.dinosync.viewmodel.DailyStudyHistoryViewModel
+import com.mobdeve.s18.group9.dinosync.viewmodel.StudySessionViewModel
 import ir.ehsannarmani.compose_charts.models.Pie
 
 
@@ -46,15 +51,13 @@ class StatisticsActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val userId = intent.getIntExtra("userId", -1)
+        val userId = FirebaseAuth.getInstance().currentUser?.uid
+            ?: throw IllegalStateException("No authenticated user!")
 
         setContent {
             DinoSyncTheme {
-                //StatsActivityScreen(userId = userId)
-
-                // TEMPORARY CHECKER FOR SCREEN ACTIVITY
-                androidx.compose.material3.Surface {
-                    androidx.compose.material3.Text(text = "Stats Activity Screen")
+                DinoSyncTheme {
+                    StatsActivityScreen(userId = userId)
                 }
             }
         }
@@ -91,17 +94,19 @@ class StatisticsActivity : ComponentActivity() {
     }
 }
 
-/*
 @Composable
-fun StatsActivityScreen(userId : Int){
+fun StatsActivityScreen(userId : String){
     val context = LocalContext.current
-    val userList = initializeUsers()
-    val selectedUser = userList.random()
 
-    val studySessions = initializeStudySessions()
-    val dailyStudyHistory = initializeDailyStudyHistory()
+    val studySessionVM: StudySessionViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+    val studySessions by studySessionVM.studySessions.collectAsState()
 
-    val courseList = initializeCourses()
+    val dailyStudyHistoryVM: DailyStudyHistoryViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+    val dailyStudyHistory by dailyStudyHistoryVM.dailyHistory.collectAsState()
+
+    val courseVM: CourseViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+    val courseList by courseVM.courses.collectAsState()
+
     val subjects = courseList.map { it.name }
 
     val totalTime = 2 * 60 * 60; // dummy data, represents total study time across subjects in seconds
@@ -123,17 +128,17 @@ fun StatsActivityScreen(userId : Int){
                 selectedItem = "Stats",
                 onGroupsClick = {
                     val intent = Intent(context, DiscoverGroupsActivity::class.java)
-                    intent.putExtra("userId", selectedUser.userId)
+                    intent.putExtra("userId", userId)
                     context.startActivity(intent)
                 },
                 onHomeClick = {
                     val intent = Intent(context, MainActivity::class.java)
-                    intent.putExtra("userId", selectedUser.userId)
+                    intent.putExtra("userId", userId)
                     context.startActivity(intent)
                 },
                 onStatsClick = {
                     val intent = Intent(context, StatisticsActivity::class.java)
-                    intent.putExtra("userId", selectedUser.userId)
+                    intent.putExtra("userId", userId)
                     context.startActivity(intent)
                 }
             )
@@ -147,12 +152,12 @@ fun StatsActivityScreen(userId : Int){
             TopActionBar(
                 onProfileClick = {
                     val intent = Intent(context, ProfileActivity::class.java)
-                    intent.putExtra("userId", selectedUser.userId)
+                    intent.putExtra("userId", userId)
                     context.startActivity(intent)
                 },
                 onSettingsClick = {
                     val intent = Intent(context, SettingsActivity::class.java)
-                    intent.putExtra("userId", selectedUser.userId)
+                    intent.putExtra("userId", userId)
                     context.startActivity(intent)
                 }
             )
@@ -219,7 +224,7 @@ fun StatsActivityScreen(userId : Int){
             }
 
             Spacer(modifier = Modifier.height(5.dp))
-            UserSessionsLineChart(userId, dailyStudyHistory, studySessions)
+            // SessionsLineChart(userId, dailyStudyHistory, studySessions)
         }
     }
 }
@@ -294,4 +299,3 @@ fun StreakGrid(
         }
     }
 }
-*/
