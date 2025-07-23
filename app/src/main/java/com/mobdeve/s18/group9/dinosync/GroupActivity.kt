@@ -136,6 +136,7 @@ class GroupActivity : ComponentActivity() {
                 courseVM.loadCourses()
             }
 
+
             val selectedGroup = allGroups.find { it.groupId == groupId }
             val course = allCourses.find { it.courseId == selectedGroup?.courseId }
             val groupMembers = allMembers.filter { it.groupId == groupId }
@@ -245,8 +246,6 @@ fun GroupActivityScreen(
             allGroupMembers.any { it.userId == userId && it.endedAt.isNullOrEmpty() }
         }
     }
-
-
 
 
     var showJoinDialog by remember { mutableStateOf(false) }
@@ -485,7 +484,7 @@ fun GroupActivityScreen(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text(
-                            text = "Rank $rank out of $totalGroups",
+                            text = "Rank ${group?.rank} out of 5",
                             color = Color.White,
                             fontStyle = FontStyle.Italic,
                             fontFamily = fontFamily,
