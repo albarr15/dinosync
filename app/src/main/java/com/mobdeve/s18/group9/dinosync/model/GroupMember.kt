@@ -6,6 +6,6 @@ data class GroupMember(
     var endedAt: String = "",
     val currentGroupStudyMinutes: Float = 0f,
     val groupId:String = "",
-    val isOnBreak: Boolean = false,
+    val onBreak: Boolean = false,
     val userId: String = "",
 )

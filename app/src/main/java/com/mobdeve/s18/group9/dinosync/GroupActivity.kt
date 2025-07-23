@@ -201,8 +201,8 @@ fun GroupActivityScreen(
     val groupMemberVM: GroupMemberViewModel = viewModel()
 
     val groupMembersState = remember { mutableStateListOf<GroupMember>().apply { addAll(groupMembers) } }
-    val memberUsers = groupMembers
-        .filter { it.groupId == group?.groupId }
+    val memberUsers = groupMembersState
+        .filter { it.groupId == group?.groupId && (it.endedAt == null || it.endedAt == "") }
         .mapNotNull { gm ->
             val user = allUsers.find { it.userId == gm.userId }
             user?.let { user -> user to gm }
@@ -225,11 +225,12 @@ fun GroupActivityScreen(
             weight = FontWeight.Medium
         )
     )
-    val isMemberJoined by remember(groupMembersState, userId) {
+    val isMemberJoined by remember(groupMembersState.toList(), userId) {
         derivedStateOf {
             groupMembersState.any { it.userId == userId && it.endedAt.isNullOrEmpty() }
         }
     }
+
 
 
     var showJoinDialog by remember { mutableStateOf(false) }
@@ -237,7 +238,7 @@ fun GroupActivityScreen(
     var showTargetDialog by remember { mutableStateOf(false) }
 
     fun onLeaveGroup(userId: String, groupId: String) {
-        groupMemberVM.leaveGroup(userId, groupId, getCurrentTimestamp().toString())
+        groupMemberVM.leaveGroup(userId, groupId, getCurrentDateTime())
     }
 
     LaunchedEffect(groupMembers) {
@@ -317,10 +318,12 @@ fun GroupActivityScreen(
                                 onClick = {
                                     if (isMemberJoined) {
                                         onLeaveGroup(userId, group?.groupId ?:"")
-                                        groupMembersState.find {
+                                        val index = groupMembersState.indexOfFirst {
                                             it.userId == userId && it.groupId == group?.groupId
-                                        }?.let {
-                                            it.endedAt = getCurrentTimestamp().toString()
+                                        }
+                                        if (index != -1) {
+                                            val updatedMember = groupMembersState[index].copy(endedAt = getCurrentTimestamp().toString())
+                                            groupMembersState[index] = updatedMember
                                         }
                                     } else {
                                         showJoinDialog = true
@@ -396,11 +399,11 @@ fun GroupActivityScreen(
                                     if (group != null && selectedMoodState.value != null) {
                                         val now = fetchCurDate()
                                         val newMember = GroupMember(
-                                            startedAt = now,
+                                            startedAt = getCurrentDateTime(),
                                             endedAt = "",
                                             currentGroupStudyMinutes = minutes,
                                             groupId = group.groupId,
-                                            isOnBreak = false,
+                                            onBreak = false,
                                             userId = userId
                                         )
                                         val historyEntry = DailyStudyHistory(
@@ -590,7 +593,7 @@ fun UserCard(user: User, groupMember: GroupMember) {
             contentAlignment = Alignment.Center
         ) {
             val imageRes = when {
-                groupMember.isOnBreak -> R.drawable.inactive
+                groupMember.onBreak -> R.drawable.inactive
                 groupMember.currentGroupStudyMinutes >= 240 -> R.drawable.greaterthanequal4hr
                 groupMember.currentGroupStudyMinutes >= 60 -> R.drawable.greaterthanequal1hr
                 else -> R.drawable.lessthan1hr
@@ -606,7 +609,7 @@ fun UserCard(user: User, groupMember: GroupMember) {
         }
         Text(user.userName, fontSize = 12.sp)
 
-        val studyText = if (groupMember.isOnBreak) {
+        val studyText = if (groupMember.onBreak) {
             "On Break"
         } else {
             val hours = (groupMember.currentGroupStudyMinutes / 60).toInt()
