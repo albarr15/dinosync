@@ -113,6 +113,10 @@ class CourseViewModel : ViewModel() {
     private val _courses = MutableStateFlow<List<Course>>(emptyList())
     val courses: StateFlow<List<Course>> = _courses
 
+    init {
+        loadCourses()
+    }
+
     fun loadCourses() {
         viewModelScope.launch {
             try {
@@ -282,7 +286,7 @@ class StudyGroupViewModel : ViewModel() {
         Log.d("GroupActivityGroupActivity", "loadStudyGroups called")
     }
 
-    fun createGroup(hostId: String, name: String, bio: String, university: String) {
+    fun createGroup(hostId: String, name: String, bio: String, university: String, courseId: String) {
         viewModelScope.launch {
             val group = StudyGroup(
                 hostId = hostId,
@@ -291,7 +295,8 @@ class StudyGroupViewModel : ViewModel() {
                 bio = bio,
                 image = "groupimage",
                 rank = 0L,
-                university = university
+                university = university,
+                courseId = courseId
             )
             repository.createStudyGroup(group)
             loadStudyGroups()
