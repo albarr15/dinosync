@@ -528,7 +528,8 @@ fun MainScreen(
                                         userId = userId,
                                         date = fetchCurDate(),
                                         moodId = moodId,
-                                        additionalMinutes = totalMinutes.toFloat()
+                                        additionalMinutes = totalMinutes.toFloat(),
+                                        studyMode = "Individual"
                                     )
 
                                     Toast.makeText(context, "Session logged successfully!", Toast.LENGTH_SHORT).show()

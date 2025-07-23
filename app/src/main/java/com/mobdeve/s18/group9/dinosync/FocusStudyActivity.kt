@@ -355,7 +355,8 @@ fun FocusStudyScreen(
                     userId = userId,
                     date = getCurDate(),
                     moodId = moodId,
-                    additionalMinutes = (elapsedMinutes / 60).toFloat()
+                    additionalMinutes = (elapsedMinutes / 60).toFloat(),
+                    studyMode = "Individual"
                 )
 
                 //Log.d("CompanionDebug", "Companions: $companions")
@@ -557,7 +558,8 @@ fun FocusStudyScreen(
                                     userId = userId,
                                     date = getCurDate(),
                                     moodId = moodId,
-                                    additionalMinutes = (elapsedMinutes / 60).toFloat()
+                                    additionalMinutes = (elapsedMinutes / 60).toFloat(),
+                                    studyMode = "Individual"
                                 )
                             }
                         },

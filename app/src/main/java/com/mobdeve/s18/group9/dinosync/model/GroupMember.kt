@@ -3,8 +3,8 @@ import com.google.firebase.Timestamp
 
 data class GroupMember(
     val startedAt: String = "",
-    val endedAt: String = "",
-    val currentGroupStudyMinutes: Int = 0,
+    var endedAt: String = "",
+    val currentGroupStudyMinutes: Float = 0f,
     val groupId:String = "",
     val isOnBreak: Boolean = false,
     val userId: String = "",
