@@ -1,5 +1,6 @@
 package com.mobdeve.s18.group9.dinosync.repository
 
+import android.util.Log
 import com.google.firebase.firestore.FieldPath
 import com.google.firebase.firestore.FirebaseFirestore
 import com.mobdeve.s18.group9.dinosync.model.*
@@ -199,23 +200,24 @@ class FirebaseRepository {
         val currentMonth = Calendar.getInstance().get(Calendar.MONTH)
         val currentYear = Calendar.getInstance().get(Calendar.YEAR)
 
-        val dailyStudyHistorySnapshot = db.collection("dailystudyhistory")
+        val studySessionSnapshot = db.collection("studysession")
             .whereEqualTo("userId", userId)
-            .orderBy("date")
+            .orderBy("endedAt")
             .get().await()
 
-        val moodEntryIds = dailyStudyHistorySnapshot.documents.mapNotNull {
-            it.getString("moodEntryId")
+        val moodEntryIds = studySessionSnapshot.documents.mapNotNull {
+            it.getString("moodId")
         }
 
         if (moodEntryIds.isEmpty()) return emptyList()
+        Log.d("Repository", "Found mood entries : $moodEntryIds")
 
         // Batch read all mood entries
 
         val moods = mutableListOf<Mood>()
         moodEntryIds.chunked(10).forEach { chunk ->
             val moodSnapshot = db.collection("mood")
-                .whereIn(FieldPath.documentId(), chunk)
+                .whereIn("imageKey", chunk)
                 .get().await()
 
             moods.addAll(moodSnapshot.toObjects<Mood>())
