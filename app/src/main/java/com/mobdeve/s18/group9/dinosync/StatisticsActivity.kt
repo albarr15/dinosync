@@ -1,10 +1,13 @@
 
 package com.mobdeve.s18.group9.dinosync
 
+import StreakGrid
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -50,6 +53,7 @@ import ir.ehsannarmani.compose_charts.models.Pie
 
 
 class StatisticsActivity : ComponentActivity() {
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -96,27 +100,29 @@ class StatisticsActivity : ComponentActivity() {
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun StatsActivityScreen(userId : String){
     val context = LocalContext.current
 
-    val studySessionVM: StudySessionViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
-    val studySessions by studySessionVM.studySessions.collectAsState()
-
-    val dailyStudyHistoryVM: DailyStudyHistoryViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
-    val dailyStudyHistory by dailyStudyHistoryVM.dailyHistory.collectAsState()
-
-    val courseVM: CourseViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
-    val courseList by courseVM.courses.collectAsState()
-
     val statsVM: StatsViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
 
+//    LaunchedEffect(userId) {
+//        studySessionVM.loadStudySessions(userId)
+//        dailyStudyHistoryVM.loadDailyHistory(userId)
+//        courseVM.loadCourses()
+//        statsVM.loadPieData(userId)
+//    }
     LaunchedEffect(userId) {
-        studySessionVM.loadStudySessions(userId)
-        dailyStudyHistoryVM.loadDailyHistory(userId)
-        courseVM.loadCourses()
+        statsVM.loadUserStats(userId)
         statsVM.loadPieData(userId)
     }
+
+    val streakData by statsVM.streakData.collectAsState()
+    val pieData by statsVM.pieData.collectAsState()
+    val studySessions by statsVM.studySessions.collectAsState()
+    val courseList by statsVM.courses.collectAsState()
+    val dailyStudyHistory by statsVM.dailyStudyHistory.collectAsState()
 
     val subjects = courseList.map { it.name }
 
@@ -129,8 +135,6 @@ fun StatsActivityScreen(userId : String){
         }
     }
 
-
-    val dummy_data by statsVM.pieData.collectAsState()
 
     Scaffold(
         bottomBar = {
@@ -193,7 +197,7 @@ fun StatsActivityScreen(userId : String){
                     modifier = Modifier.padding(vertical = 8.dp)
                 )
 
-                PieStats(dummy_data.sortedByDescending { it.data }, totalTime)
+                PieStats(pieData.sortedByDescending { it.data }, totalTime)
             }
 
             // Streak Section
@@ -214,7 +218,7 @@ fun StatsActivityScreen(userId : String){
             }
 
             Spacer(modifier = Modifier.height(5.dp))
-            StreakGrid()
+            StreakGrid(Modifier, streakData)
 
             // Sessions Section
             Row {
@@ -239,73 +243,4 @@ fun StatsActivityScreen(userId : String){
     }
 }
 
-fun getStudyActColor(studyLevel: Int): Color {
-    return when (studyLevel) {
-        0 -> Color.Gray
-        in 1..2 -> Color(0xFFD32F2F) // Terrible - Red
-        in 3..6 -> Color(0xFFF57C00) // Bad - Orange
-        in 7..9 -> Color(0xFFFBC02D) // Meh - Yellow
-        in 10..12 -> Color(0xFF8BC34A) // Good - Light Green
-        in 12..24 -> Color(0xFF388E3C) // Great - Green
-        else -> Color.Gray
-    }
-}
 
-fun generateTimeSampleData(): List<Int> {
-    // Random time levels from 0 to 5
-    return List(365) { (0..24).random() }
-}
-
-@Composable
-fun StreakGrid(
-    modifier: Modifier = Modifier
-) {
-    // val daily_time = listOf(0, 1, 0, 2, 2, 0, 0), latest time at end of list, in hrs
-    val study_act = generateTimeSampleData()
-    val daysToShow = 60
-    val columns = 15
-    val rows = 4
-
-    // Pad moods to always be full grid
-    val recentStudyAct = study_act.takeLast(daysToShow)
-        .let {
-            if (it.size < daysToShow) List(daysToShow - it.size) { 0 } + it else it
-        }
-
-    // Fill grid in top-down, right-to-left row-major order
-    val studyActGrid = Array(rows) { Array(columns) { 0 } }
-
-    for (i in recentStudyAct.indices) {
-        val row = i / columns
-        val col = columns - 1 - (i % columns) // reverse column order
-        if (row < rows) {
-            studyActGrid[row][col] = recentStudyAct[recentStudyAct.size - 1 - i]
-        }
-    }
-
-    Column(
-        modifier = modifier
-            .fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(4.dp)
-    ) {
-        for (row in 0 until rows) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                for (col in 0 until columns) {
-                    val x = studyActGrid[row][col]
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .aspectRatio(1f)
-                            .background(
-                                color = getStudyActColor(x),
-                                shape = RoundedCornerShape(3.dp)
-                            )
-                    )
-                }
-            }
-        }
-    }
-}

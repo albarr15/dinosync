@@ -157,6 +157,25 @@ class FirebaseRepository {
             .await()
     }
 
+    suspend fun getTotalStudyMinsByUserId(userId: String): Map<String, Float> {
+        return try {
+            val studySessionsSnapshot = db.collection("studysession")
+                .whereEqualTo("userId", userId)
+                .get()
+                .await()
+
+            studySessionsSnapshot.documents
+                .mapNotNull { it.toObject(DailyStudyHistory::class.java) }
+                .groupBy { it.date }
+                .mapValues { (date, studyHistories) ->
+                    studyHistories.sumOf { (it.totalIndividualMinutes ?: 0f).toDouble() }.toFloat()
+                }
+        } catch (e: Exception) {
+            Log.e("StudyHistory", "Failed to load: ${e.message}")
+            emptyMap()
+        }
+    }
+
 
 
     // GROUP MEMBERS ✔️

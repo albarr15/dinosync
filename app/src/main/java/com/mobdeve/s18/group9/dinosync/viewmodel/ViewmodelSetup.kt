@@ -465,12 +465,17 @@ class StatsViewModel : ViewModel() {
     private val _pieData = MutableStateFlow<List<Pie>>(emptyList())
     val pieData: MutableStateFlow<List<Pie>> = _pieData
 
+    private val _streakData = MutableStateFlow<Map<String, Float>>(emptyMap())
+    val streakData: MutableStateFlow<Map<String, Float>> = _streakData
+
     fun loadUserStats(userId: String) {
         viewModelScope.launch {
             _user.value = repository.getUserById(userId)
             _studySessions.value = repository.getStudySessionsByUserId(userId)
             _dailyStudyHistory.value = repository.getDailyStudyHistory(userId)
             _courses.value = repository.getAllUserCourses(userId)
+            _streakData.value = repository.getTotalStudyMinsByUserId(userId)
+            Log.d("StreakData", "$_streakData")
         }
     }
 
