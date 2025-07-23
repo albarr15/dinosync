@@ -59,6 +59,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.toSize
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.mobdeve.s18.group9.dinosync.model.Course
 import com.mobdeve.s18.group9.dinosync.ui.theme.YellowGreen
 import com.mobdeve.s18.group9.dinosync.viewmodel.CourseViewModel
 import com.mobdeve.s18.group9.dinosync.viewmodel.UniversityViewModel
@@ -295,10 +296,13 @@ fun DiscoverGroupsScreen(userId: String) {
                     val members = groupMembers.count { it.groupId == group.groupId }
                     val isMember = groupMembers.any { it.groupId == group.groupId && it.userId == userId }
                     val isHost = group.hostId == userId
+                    val courseName = courses.find { it.courseId == group.courseId }?.name ?: "No Subject yet"
+
                     DiscoverGroupItem(
                         group = group,
                         members = members,
                         isMember = isMember,
+                        courseName = courseName,
                         onGroupClick = {
                             Log.d("GroupListScreen", "Navigating to GroupActivity with groupId: ${group.groupId}, userId: $userId")
                             val intent = Intent(context, GroupActivity::class.java)
@@ -332,6 +336,7 @@ fun DiscoverGroupItem(
     group: StudyGroup,
     members: Int,
     isMember: Boolean,
+    courseName: String,
     onGroupClick: () -> Unit,
     onDeleteClick: (() -> Unit)? = null
 ) {
@@ -371,9 +376,9 @@ fun DiscoverGroupItem(
             Spacer(modifier = Modifier.width(12.dp))
 
             Column(modifier = Modifier.weight(1f)) {
-                Text(group.name, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                Text(group.bio, fontSize = 12.sp, maxLines = 1)
-                Spacer(modifier = Modifier.height(4.dp))
+                Text(group.name, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                //Text(group.bio, fontSize = 8.sp, maxLines = 1)
+                Text(courseName, fontSize = 10.sp, color = Color.Gray, maxLines = 1)
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     repeat(members) {
                         Box(
