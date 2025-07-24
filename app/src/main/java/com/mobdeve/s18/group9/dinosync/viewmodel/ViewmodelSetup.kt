@@ -228,7 +228,6 @@ class GroupMemberViewModel : ViewModel() {
         }
         Log.d("GroupActivityGroupActivity", "loadAllMembers called")
     }
-
 }
 
 // Not implemented yet

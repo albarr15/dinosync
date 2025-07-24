@@ -41,7 +41,9 @@ import androidx.compose.ui.unit.sp
 import com.google.firebase.auth.FirebaseAuth
 import com.mobdeve.s18.group9.dinosync.components.BottomNavigationBar
 import com.mobdeve.s18.group9.dinosync.components.PieStats
+import com.mobdeve.s18.group9.dinosync.components.SessionsLineChart
 import com.mobdeve.s18.group9.dinosync.components.TopActionBar
+import com.mobdeve.s18.group9.dinosync.components.UserSessionsLineChart
 // import com.mobdeve.s18.group9.dinosync.components.SessionsLineChart
 import com.mobdeve.s18.group9.dinosync.ui.theme.DinoSyncTheme
 import com.mobdeve.s18.group9.dinosync.ui.theme.DirtyGreen
@@ -238,7 +240,7 @@ fun StatsActivityScreen(userId : String){
             }
 
             Spacer(modifier = Modifier.height(5.dp))
-            // SessionsLineChart(userId, dailyStudyHistory, studySessions)
+            UserSessionsLineChart(userId, dailyStudyHistory, studySessions)
         }
     }
 }

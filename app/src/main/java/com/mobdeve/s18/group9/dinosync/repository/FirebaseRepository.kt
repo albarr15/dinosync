@@ -191,6 +191,15 @@ class FirebaseRepository {
         return snapshot.documents.mapNotNull { it.toObject(GroupMember::class.java) }
     }
 
+
+    suspend fun getAllGroupMembersByGroupId(groupId: String): List<GroupMember> {
+        val snapshot = db.collection("groupmember")
+            .whereEqualTo("groupId", groupId)
+            .get()
+            .await()
+        return snapshot.documents.mapNotNull { it.toObject(GroupMember::class.java) }
+    }
+
     // GROUP SESSIONS  ✔️
     suspend fun getGroupSessions(groupId: String): List<GroupSession> {
         val snapshot = db.collection("groupsession")
@@ -359,9 +368,5 @@ class FirebaseRepository {
     suspend fun deleteTodoItem(id: String) {
         db.collection("todoitem").document(id).delete().await()
     }
-
-
-
-
 }
 
