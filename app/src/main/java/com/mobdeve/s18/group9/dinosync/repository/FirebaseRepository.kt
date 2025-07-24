@@ -159,22 +159,29 @@ class FirebaseRepository {
 
     suspend fun getTotalStudyMinsByUserId(userId: String): Map<String, Float> {
         return try {
-            val studySessionsSnapshot = db.collection("studysession")
+            val historySnapshot = db.collection("dailystudyhistory")
                 .whereEqualTo("userId", userId)
                 .get()
                 .await()
+            // Log.d("StudyHistory", "User ${userId} has ${historySnapshot.size()} entries")
 
-            studySessionsSnapshot.documents
+            historySnapshot.documents
                 .mapNotNull { it.toObject(DailyStudyHistory::class.java) }
                 .groupBy { it.date }
-                .mapValues { (date, studyHistories) ->
-                    studyHistories.sumOf { (it.totalIndividualMinutes ?: 0f).toDouble() }.toFloat()
+                .mapValues { (_, studyHistories) ->
+                    var sumHistories = 0f
+                    studyHistories.forEach { x ->
+                        // Log.d("StudyHistory", "Adding minutes: ${x.totalIndividualMinutes} for date: ${x.date}")
+                        sumHistories += x.totalIndividualMinutes ?: 0f
+                    }
+                    sumHistories
                 }
         } catch (e: Exception) {
             Log.e("StudyHistory", "Failed to load: ${e.message}")
             emptyMap()
         }
     }
+
 
 
 

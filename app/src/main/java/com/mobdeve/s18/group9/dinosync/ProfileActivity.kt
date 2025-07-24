@@ -378,7 +378,7 @@ fun getMoodColor(moodLevel: Int): Color {
         3 -> Color(0xFFFBC02D) // Meh - Yellow
         4 -> Color(0xFF8BC34A) // Good - Light Green
         5 -> Color(0xFF388E3C) // Great - Green
-        else -> Color.Gray
+        else -> Color(0x3B6E6E6E)
     }
 }
 

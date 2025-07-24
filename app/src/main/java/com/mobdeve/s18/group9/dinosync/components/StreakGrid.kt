@@ -22,29 +22,23 @@ fun StreakGrid(
     studyAct: Map<String, Float> // String-> date, Float-> totalMins
 ) {
 
-    Log.d("StreakGrid", "Found studyAct: $studyAct")
+    // Log.d("StreakGrid", "Found studyAct: $studyAct")
     // val daily_time = listOf(0, 1, 0, 2, 2, 0, 0), latest time at end of list, in hrs
-    val studyAct = generateTimeSampleDataMap()
+    // val studyAct = generateTimeSampleDataMap()
     val daysToShow = 60
     val columns = 15
     val rows = 4
 
-    // Get all available dates from the map and sort them
-    val availableDates = studyAct.keys.sorted()
+    // Generate the last 60 consecutive days
+    val today = LocalDate.now()
+    val last60Days = (0 until daysToShow).map { daysAgo ->
+        today.minusDays(daysAgo.toLong()).toString()
+    }.reversed() // oldest to newest
 
-    // Take the most recent dates (up to daysToShow)
-        val recentDates = availableDates.takeLast(daysToShow)
-
-    // Convert map to list, padding with 0s if current days < daysToShow
-        val recentStudyAct = recentDates.map { date ->
-            studyAct[date]?.toFloat() ?: 0F
-        }.let { data ->
-            if (data.size < daysToShow) {
-                List(daysToShow - data.size) { 0F } + data
-            } else {
-                data
-            }
-        }
+    // Map each day to its study time (0 if missing)
+    val recentStudyAct = last60Days.map { date ->
+        studyAct[date] ?: 0F
+    }
 
     // Fill grid in top-down, right-to-left row-major order
     val studyActGrid = Array(rows) { Array(columns) { 0F } }
@@ -86,12 +80,12 @@ fun StreakGrid(
 
 fun getStudyActColor(totalStudyMins: Float): Color {
     return when (totalStudyMins) {
-        0F -> Color.Gray
-        in 1F..30F -> Color(0xFFD32F2F) // 1 to 30 mins
-        in 31F..120F -> Color(0xFFF57C00) // 31 mins to 1 hours
-        in 121F..180F -> Color(0xFFFBC02D) // 1 hrs to 3 hrs
-        in 181F..300F -> Color(0xFF8BC34A) // 3 hrs to 5 hrs
-        else -> Color(0xFF388E3C) // 5 hrs to 24 hrs
+        0F -> Color(0x3B6E6E6E)
+        in 1F..30F -> Color(0x40388E3C) // 1 to 30 mins
+        in 31F..120F -> Color(0x80388E3C) // 31 mins to 1 hours
+        in 121F..180F -> Color(0xBF388E3C) // 1 hrs to 3 hrs
+        in 181F..300F -> Color(0xFF689F38) // 3 hrs to 5 hrs
+        else -> Color(0xFF4CAF50) // 5 hrs to 24 hrs
     }
 }
 

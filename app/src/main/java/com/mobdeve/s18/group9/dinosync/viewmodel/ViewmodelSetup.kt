@@ -475,7 +475,6 @@ class StatsViewModel : ViewModel() {
             _dailyStudyHistory.value = repository.getDailyStudyHistory(userId)
             _courses.value = repository.getAllUserCourses(userId)
             _streakData.value = repository.getTotalStudyMinsByUserId(userId)
-            Log.d("StreakData", "$_streakData")
         }
     }
 
