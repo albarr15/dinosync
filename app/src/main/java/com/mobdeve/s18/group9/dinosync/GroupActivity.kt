@@ -91,6 +91,7 @@ import com.mobdeve.s18.group9.dinosync.viewmodel.MoodViewModel
 import com.mobdeve.s18.group9.dinosync.viewmodel.StudyGroupViewModel
 import com.mobdeve.s18.group9.dinosync.viewmodel.StudySessionViewModel
 import com.mobdeve.s18.group9.dinosync.viewmodel.UserViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -610,9 +611,29 @@ fun OnClickGroupActivityBtn(memberUsers: List<Pair<User, GroupMember>>) {
     }
 }
 
-@SuppressLint("DefaultLocale")
+
 @Composable
 fun UserCard(user: User, groupMember: GroupMember) {
+    val initialTimeInSeconds = (groupMember.currentGroupStudyMinutes * 60).toInt()
+    var remainingSeconds by remember { mutableStateOf(initialTimeInSeconds) }
+
+    val isRunning = groupMember.endedAt.isNullOrEmpty() && !groupMember.onBreak && remainingSeconds > 0
+
+    // Countdown logic for active members
+    LaunchedEffect(groupMember.userId) {
+        while (isRunning) {
+            delay(1000L)
+            remainingSeconds--
+        }
+    }
+
+    val imageRes = when {
+        groupMember.onBreak || remainingSeconds == 0 -> R.drawable.inactive
+        groupMember.currentGroupStudyMinutes >= 240 -> R.drawable.greaterthanequal4hr
+        groupMember.currentGroupStudyMinutes >= 60 -> R.drawable.greaterthanequal1hr
+        else -> R.drawable.lessthan1hr
+    }
+
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Box(
             modifier = Modifier
@@ -627,6 +648,7 @@ fun UserCard(user: User, groupMember: GroupMember) {
                 groupMember.currentGroupStudyMinutes >= 60 -> R.drawable.greaterthanequal1hr
                 else -> R.drawable.lessthan1hr
             }
+
             Image(
                 painter = painterResource(imageRes),
                 contentDescription = null,
@@ -634,26 +656,30 @@ fun UserCard(user: User, groupMember: GroupMember) {
                     if (imageRes == R.drawable.greaterthanequal4hr) 60.dp else 50.dp
                 )
             )
-
         }
+
         Text(user.userName, fontSize = 12.sp)
 
-        val studyText = if (groupMember.onBreak) {
-            "On Break"
+        // Show countdown or "On Break"
+        if (!groupMember.endedAt.isNullOrEmpty() || groupMember.onBreak || remainingSeconds <= 0) {
+            Text("On Break", fontSize = 12.sp)
         } else {
-            val hours = (groupMember.currentGroupStudyMinutes / 60).toInt()
-            val minutes = (groupMember.currentGroupStudyMinutes % 60).toInt()
-
-
-            if (hours > 0) {
-                String.format("%d hr %02d min left", hours, minutes.toInt())
-            } else {
-                String.format("%d min left", minutes)
-            }
+            Text(
+                text = formatElapsedTime(remainingSeconds),
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold
+            )
         }
-        Text(studyText, fontSize = 12.sp)
     }
 }
+
+fun formatElapsedTime(seconds: Int): String {
+    val hrs = seconds / 3600
+    val mins = (seconds % 3600) / 60
+    val secs = seconds % 60
+    return String.format("%02d:%02d:%02d", hrs, mins, secs)
+}
+
 
 fun calculateGroupRanking(
     targetGroupId: String,
