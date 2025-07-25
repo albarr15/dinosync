@@ -80,7 +80,7 @@ fun StreakGrid(
 
 fun getStudyActColor(totalStudyMins: Float): Color {
     return when (totalStudyMins) {
-        0F -> Color(0x3B6E6E6E)
+        0F -> Color(0x3BB6B6B6)
         in 1F..30F -> Color(0x66388E3C) // 1 to 30 mins
         in 31F..120F -> Color(0xBF388E3C) // 31 mins to 1 hours
         in 121F..180F -> Color(0xFF388E3C) // 1 hrs to 3 hrs
