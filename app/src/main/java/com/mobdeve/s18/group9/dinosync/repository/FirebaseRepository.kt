@@ -13,6 +13,8 @@ import com.google.firebase.firestore.toObjects
 import com.mobdeve.s18.group9.dinosync.getCurrentDate
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.withContext
 import java.sql.Timestamp
@@ -259,6 +261,30 @@ class FirebaseRepository {
             )
         }
     }
+
+    fun observeUserGroupStudyMinutes(userId: String, date: String): StateFlow<Float> {
+        val totalMinutesFlow = MutableStateFlow(0f)
+
+        db.collection("groupmember")
+            .whereEqualTo("userId", userId)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    Log.e("FirebaseRepository", "Failed to listen for group study minutes", error)
+                    return@addSnapshotListener
+                }
+
+                if (snapshot != null) {
+                    val totalMinutes = snapshot.documents.sumOf {
+                        it.toObject(GroupMember::class.java)?.currentGroupStudyMinutes?.toDouble() ?: 0.0
+                    }.toFloat()
+
+                    totalMinutesFlow.value = totalMinutes
+                }
+            }
+        return totalMinutesFlow
+    }
+
+
 
 
     // MOODS ✔️

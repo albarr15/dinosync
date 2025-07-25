@@ -618,7 +618,7 @@ fun GroupActivityScreen(
             // Render content based on selected tab
             Box(modifier = Modifier.fillMaxWidth()) {
                 when (selectedTab) {
-                    "Group Activity" -> OnClickGroupActivityBtn(memberUsers)
+                    "Group Activity" -> OnClickGroupActivityBtn(memberUsers, dailyHistoryVM)
                     "Stats" -> OnClickGroupStatsActivityBtn(
                         topMembers = ArrayList(topMembers),
                         group?.groupId.toString(),
@@ -630,20 +630,18 @@ fun GroupActivityScreen(
         }
     }
 }
-
 @Composable
-fun UserCard(user: User, groupMember: GroupMember, onSessionEnd: (GroupMember) -> Unit) {
+fun UserCard(user: User, groupMember: GroupMember, dailyHistoryVM : DailyStudyHistoryViewModel, onSessionEnd: (GroupMember) -> Unit) {
 
-    val startedAt = groupMember.startedAt
-    val studyMinutes = groupMember.currentGroupStudyMinutes
-
+    val currentDate = fetchCurDate()
+    val studyMinutes by dailyHistoryVM.getTotalGroupStudyMinutes(user.userId, currentDate).collectAsState(initial = 0f)
     val initialTimeInSeconds = (groupMember.currentGroupStudyMinutes * 60).toInt()
     var remainingSeconds by remember { mutableStateOf(initialTimeInSeconds) }
 
     var isRunning = groupMember.endedAt.isNullOrEmpty() && !groupMember.onBreak && remainingSeconds > 0
 
     // To reset the timer upon session restart
-    LaunchedEffect(groupMember.startedAt, groupMember.currentGroupStudyMinutes) {
+    LaunchedEffect(groupMember.startedAt, studyMinutes) {
         remainingSeconds = initialTimeInSeconds
         isRunning = true
 
@@ -660,8 +658,8 @@ fun UserCard(user: User, groupMember: GroupMember, onSessionEnd: (GroupMember) -
 
     val imageRes = when {
         groupMember.onBreak || remainingSeconds == 0 -> R.drawable.inactive
-        groupMember.currentGroupStudyMinutes >= 240 -> R.drawable.greaterthanequal4hr
-        groupMember.currentGroupStudyMinutes >= 60 -> R.drawable.greaterthanequal1hr
+        studyMinutes >= 240 -> R.drawable.greaterthanequal4hr
+        studyMinutes >= 60 -> R.drawable.greaterthanequal1hr
         else -> R.drawable.lessthan1hr
     }
 
@@ -705,7 +703,7 @@ fun UserCard(user: User, groupMember: GroupMember, onSessionEnd: (GroupMember) -
 }
 
 @Composable
-fun OnClickGroupActivityBtn(memberUsers: List<Pair<User, GroupMember>>) {
+fun OnClickGroupActivityBtn(memberUsers: List<Pair<User, GroupMember>>, dailyHistoryVM : DailyStudyHistoryViewModel) {
     LaunchedEffect(memberUsers) {
         Log.d("OnClickGroupActivityBtn", "memberUsers size: ${memberUsers.size}")
         memberUsers.forEachIndexed { index, (user, groupMember) ->
@@ -734,7 +732,7 @@ fun OnClickGroupActivityBtn(memberUsers: List<Pair<User, GroupMember>>) {
         ) {
             items(memberUsers.size) { index ->
                 val (user, groupMember) = memberUsers[index]
-                UserCard(user, groupMember, onSessionEnd = {})
+                UserCard(user, groupMember, dailyHistoryVM, onSessionEnd = {})
             }
         }
     }

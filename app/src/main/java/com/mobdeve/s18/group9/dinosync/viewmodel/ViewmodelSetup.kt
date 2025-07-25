@@ -201,6 +201,13 @@ class DailyStudyHistoryViewModel : ViewModel() {
             }
         }
     }
+
+    fun getTotalGroupStudyMinutes(userId: String, date: String): StateFlow<Float> {
+        return repository.observeUserGroupStudyMinutes(userId, date)
+    }
+
+
+
 }
 
 class GroupMemberViewModel : ViewModel() {
@@ -277,18 +284,6 @@ class GroupMemberViewModel : ViewModel() {
     }
 
 }
-
-// Not implemented yet
-class GroupSessionViewModel : ViewModel() {
-    private val repository = FirebaseRepository()
-
-    private val _sessions = MutableStateFlow<List<GroupSession>>(emptyList())
-    val sessions: StateFlow<List<GroupSession>> = _sessions
-
-    fun loadGroupSessions(groupId: String) {
-    }
-}
-
 class MoodViewModel : ViewModel() {
     private val repository = FirebaseRepository()
 
