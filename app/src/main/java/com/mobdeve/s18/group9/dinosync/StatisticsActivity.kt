@@ -1,30 +1,27 @@
 
 package com.mobdeve.s18.group9.dinosync
 
+import StreakGrid
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -33,28 +30,28 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.google.firebase.auth.FirebaseAuth
 import com.mobdeve.s18.group9.dinosync.components.BottomNavigationBar
 import com.mobdeve.s18.group9.dinosync.components.PieStats
 import com.mobdeve.s18.group9.dinosync.components.TopActionBar
-//import com.mobdeve.s18.group9.dinosync.components.UserSessionsLineChart
+import com.mobdeve.s18.group9.dinosync.components.UserSessionsLineChart
+// import com.mobdeve.s18.group9.dinosync.components.SessionsLineChart
 import com.mobdeve.s18.group9.dinosync.ui.theme.DinoSyncTheme
-import com.mobdeve.s18.group9.dinosync.ui.theme.DirtyGreen
-import ir.ehsannarmani.compose_charts.models.Pie
+import com.mobdeve.s18.group9.dinosync.viewmodel.StatsViewModel
 
 
 class StatisticsActivity : ComponentActivity() {
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val userId = intent.getIntExtra("userId", -1)
+        val userId = FirebaseAuth.getInstance().currentUser?.uid
+            ?: throw IllegalStateException("No authenticated user!")
 
         setContent {
             DinoSyncTheme {
-                //StatsActivityScreen(userId = userId)
-
-                // TEMPORARY CHECKER FOR SCREEN ACTIVITY
-                androidx.compose.material3.Surface {
-                    androidx.compose.material3.Text(text = "Stats Activity Screen")
+                DinoSyncTheme {
+                    StatsActivityScreen(userId = userId)
                 }
             }
         }
@@ -91,31 +88,41 @@ class StatisticsActivity : ComponentActivity() {
     }
 }
 
-/*
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun StatsActivityScreen(userId : Int){
+fun StatsActivityScreen(userId : String){
     val context = LocalContext.current
-    val userList = initializeUsers()
-    val selectedUser = userList.random()
 
-    val studySessions = initializeStudySessions()
-    val dailyStudyHistory = initializeDailyStudyHistory()
+    val statsVM: StatsViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
 
-    val courseList = initializeCourses()
+//    LaunchedEffect(userId) {
+//        studySessionVM.loadStudySessions(userId)
+//        dailyStudyHistoryVM.loadDailyHistory(userId)
+//        courseVM.loadCourses()
+//        statsVM.loadPieData(userId)
+//    }
+    LaunchedEffect(userId) {
+        statsVM.loadUserStats(userId)
+        statsVM.loadPieData(userId)
+    }
+
+    val streakData by statsVM.streakData.collectAsState()
+    val pieData by statsVM.pieData.collectAsState()
+    val studySessions by statsVM.studySessions.collectAsState()
+    val courseList by statsVM.courses.collectAsState()
+    val dailyStudyHistory by statsVM.dailyStudyHistory.collectAsState()
+
     val subjects = courseList.map { it.name }
 
-    val totalTime = 2 * 60 * 60; // dummy data, represents total study time across subjects in seconds
+    var totalTime = 0 // represents total study time across subjects in seconds
 
-    var dummy_data by remember {
-        mutableStateOf(
-            listOf(
-                Pie(label = "MOBICOM", data = 63.0, color = DirtyGreen),
-                Pie(label = "STCLOUD", data = 22.0, color = Color(0xFFA7C957)),
-                Pie(label = "CSOPESY", data = 10.0, color = Color.LightGray)
-
-            )
-        )
+    studySessions.forEach() {
+        studySession ->
+        if (studySession.endedAt != null) {
+            totalTime += (studySession.minuteSet * 60) + (studySession.hourSet * 60 * 60)
+        }
     }
+
 
     Scaffold(
         bottomBar = {
@@ -123,17 +130,17 @@ fun StatsActivityScreen(userId : Int){
                 selectedItem = "Stats",
                 onGroupsClick = {
                     val intent = Intent(context, DiscoverGroupsActivity::class.java)
-                    intent.putExtra("userId", selectedUser.userId)
+                    intent.putExtra("userId", userId)
                     context.startActivity(intent)
                 },
                 onHomeClick = {
                     val intent = Intent(context, MainActivity::class.java)
-                    intent.putExtra("userId", selectedUser.userId)
+                    intent.putExtra("userId", userId)
                     context.startActivity(intent)
                 },
                 onStatsClick = {
                     val intent = Intent(context, StatisticsActivity::class.java)
-                    intent.putExtra("userId", selectedUser.userId)
+                    intent.putExtra("userId", userId)
                     context.startActivity(intent)
                 }
             )
@@ -147,12 +154,12 @@ fun StatsActivityScreen(userId : Int){
             TopActionBar(
                 onProfileClick = {
                     val intent = Intent(context, ProfileActivity::class.java)
-                    intent.putExtra("userId", selectedUser.userId)
+                    intent.putExtra("userId", userId)
                     context.startActivity(intent)
                 },
                 onSettingsClick = {
                     val intent = Intent(context, SettingsActivity::class.java)
-                    intent.putExtra("userId", selectedUser.userId)
+                    intent.putExtra("userId", userId)
                     context.startActivity(intent)
                 }
             )
@@ -178,7 +185,7 @@ fun StatsActivityScreen(userId : Int){
                     modifier = Modifier.padding(vertical = 8.dp)
                 )
 
-                PieStats(dummy_data, totalTime)
+                PieStats(pieData.sortedByDescending { it.data }, totalTime)
             }
 
             // Streak Section
@@ -199,7 +206,7 @@ fun StatsActivityScreen(userId : Int){
             }
 
             Spacer(modifier = Modifier.height(5.dp))
-            StreakGrid()
+            StreakGrid(Modifier, streakData)
 
             // Sessions Section
             Row {
@@ -224,74 +231,4 @@ fun StatsActivityScreen(userId : Int){
     }
 }
 
-fun getStudyActColor(studyLevel: Int): Color {
-    return when (studyLevel) {
-        0 -> Color.Gray
-        in 1..2 -> Color(0xFFD32F2F) // Terrible - Red
-        in 3..6 -> Color(0xFFF57C00) // Bad - Orange
-        in 7..9 -> Color(0xFFFBC02D) // Meh - Yellow
-        in 10..12 -> Color(0xFF8BC34A) // Good - Light Green
-        in 12..24 -> Color(0xFF388E3C) // Great - Green
-        else -> Color.Gray
-    }
-}
 
-fun generateTimeSampleData(): List<Int> {
-    // Random time levels from 0 to 5
-    return List(365) { (0..24).random() }
-}
-
-@Composable
-fun StreakGrid(
-    modifier: Modifier = Modifier
-) {
-    // val daily_time = listOf(0, 1, 0, 2, 2, 0, 0), latest time at end of list, in hrs
-    val study_act = generateTimeSampleData()
-    val daysToShow = 60
-    val columns = 15
-    val rows = 4
-
-    // Pad moods to always be full grid
-    val recentStudyAct = study_act.takeLast(daysToShow)
-        .let {
-            if (it.size < daysToShow) List(daysToShow - it.size) { 0 } + it else it
-        }
-
-    // Fill grid in top-down, right-to-left row-major order
-    val studyActGrid = Array(rows) { Array(columns) { 0 } }
-
-    for (i in recentStudyAct.indices) {
-        val row = i / columns
-        val col = columns - 1 - (i % columns) // reverse column order
-        if (row < rows) {
-            studyActGrid[row][col] = recentStudyAct[recentStudyAct.size - 1 - i]
-        }
-    }
-
-    Column(
-        modifier = modifier
-            .fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(4.dp)
-    ) {
-        for (row in 0 until rows) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                for (col in 0 until columns) {
-                    val x = studyActGrid[row][col]
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .aspectRatio(1f)
-                            .background(
-                                color = getStudyActColor(x),
-                                shape = RoundedCornerShape(3.dp)
-                            )
-                    )
-                }
-            }
-        }
-    }
-}
-*/
