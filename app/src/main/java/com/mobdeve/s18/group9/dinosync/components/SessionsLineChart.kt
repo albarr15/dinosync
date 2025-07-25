@@ -34,6 +34,9 @@ import com.patrykandpatrick.vico.compose.cartesian.axis.rememberBottom
 import com.patrykandpatrick.vico.compose.cartesian.axis.rememberStart
 import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLineCartesianLayer
 import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
+import com.patrykandpatrick.vico.compose.cartesian.rememberVicoScrollState
+import com.patrykandpatrick.vico.compose.cartesian.rememberVicoZoomState
+import com.patrykandpatrick.vico.core.cartesian.Zoom
 import com.patrykandpatrick.vico.core.cartesian.axis.HorizontalAxis
 import com.patrykandpatrick.vico.core.cartesian.axis.VerticalAxis
 import com.patrykandpatrick.vico.core.cartesian.data.CartesianChartModelProducer
@@ -42,6 +45,7 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+import java.util.TimeZone
 
 // Sealed class to represent either user or group filtering
 sealed class ChartFilter {
@@ -60,20 +64,20 @@ fun filterDailyHistoryByFilter(
             dailyStudyHistory.filter { history ->
                 history.userId == filter.userId &&
                         studySessions.any { session ->
-                            session.userId == filter.userId && session.status == "done"
+                            session.userId == filter.userId && session.status == "completed"
                         }
             }
         }
         is ChartFilter.ByGroup -> {
             val groupUserIds = filter.groupMembers
-                .filter { it.groupId == filter.groupId } // TODO
+                .filter { it.groupId == filter.groupId }
                 .map { it.userId }
 
             dailyStudyHistory.filter { history ->
                 history.userId in groupUserIds &&
                 studySessions.any { session ->
                     session.userId == history.userId &&
-                            session.status == "done"
+                            session.status == "completed"
                 }
             }
         }
@@ -95,7 +99,7 @@ fun aggregateHourlyChartData(
         is ChartFilter.ByUser -> {
             sessions.filter { session ->
                 session.userId == filter.userId &&
-                        session.status == "done" &&
+                        session.status == "completed" &&
                         session.sessionDate == targetDateStr
             }
         }
@@ -106,7 +110,7 @@ fun aggregateHourlyChartData(
 
             sessions.filter { session ->
                 session.userId in groupUserIds &&
-                        session.status == "done" && session.sessionDate == targetDateStr
+                        session.status == "completed" && session.sessionDate == targetDateStr
             }
         }
     }
@@ -114,9 +118,13 @@ fun aggregateHourlyChartData(
     Log.d("SessionsLineChart", "Found filtered sessions: $filteredSessions")
     filteredSessions.forEach { session ->
         session.endedAt?.toDate()?.let { endedDate ->
-            val calendar = Calendar.getInstance()
+            Log.d("SessionsLineChart", "EndedAt: ${session.endedAt?.toDate()}")
+
+            val calendar = Calendar.getInstance(TimeZone.getTimeZone("Asia/Manila"))
             calendar.time = endedDate
             val startHour = calendar.get(Calendar.HOUR_OF_DAY)
+            Log.d("SessionsLineChart", "Bucketed hour: $startHour")
+
 
             val totalMinutes = session.hourSet * 60 + session.minuteSet
             hourlyMap[startHour] = (hourlyMap[startHour] ?: 0) + totalMinutes
@@ -180,7 +188,7 @@ fun StudyDayLineChart(
     LaunchedEffect(filter, dailyStudyHistory, studySessions) {
         val todayDate = Date()
         val chartData = aggregateHourlyChartData(studySessions, todayDate, filter)
-        val fullSeries = (1..24).map { hour -> chartData[hour] ?: 0 }
+        val fullSeries = (0..23).map { hour -> chartData[hour] ?: 0 }
         modelProducer.runTransaction {
             lineSeries { series(fullSeries) }
         }
@@ -193,9 +201,11 @@ fun StudyDayLineChart(
         chart = rememberCartesianChart(
             rememberLineCartesianLayer(),
             startAxis = VerticalAxis.rememberStart(),
-            bottomAxis = HorizontalAxis.rememberBottom(),
+            bottomAxis = HorizontalAxis.rememberBottom(
+            ),
         ),
         modelProducer = modelProducer,
+        zoomState = rememberVicoZoomState(initialZoom = Zoom.Content),
         modifier = Modifier
             .fillMaxWidth()
             .height(300.dp)
@@ -220,23 +230,26 @@ fun StudyWeeklyLineChart(
             studySessions
         )
 
-        val calendar = Calendar.getInstance()
+        val calendar = Calendar.getInstance(TimeZone.getTimeZone("Asia/Manila"))
         val weeklyData = filteredHistory
             .groupBy { daily ->
                 calendar.time = daily.parsedDate
-                val weekOfYear = calendar.get(Calendar.WEEK_OF_YEAR)
-                val year = calendar.get(Calendar.YEAR)
-                year * 100 + weekOfYear
+                (calendar.get(Calendar.DAY_OF_WEEK) + 5) % 7 // 0 = Monday, 6 = Sunday
             }
             .mapValues { entry ->
-                entry.value.sumOf { it.totalIndividualMinutes / 60 .toDouble() }
+                entry.value.map { it.totalIndividualMinutes / 60f }.sum()
                 Log.d("SessionsLineChart", "Found total mins: ${entry.value.sumOf { it.totalIndividualMinutes.toDouble() }}")
 
             }
             .toSortedMap()
 
-        val chartData = weeklyData.values.map { it.toFloat() }
-        Log.d("SessionsLineChart", "Weekly: $chartData")
+        val fullWeekMap = (0..6).associateWith { 0f }.toMutableMap()
+        weeklyData.forEach { (dayIndex, value) ->
+            fullWeekMap[dayIndex] = value.toFloat()
+        }
+
+        val chartData = fullWeekMap.toSortedMap().values.toList()
+        Log.d("SessionsLineChart", "Weekly full data: $chartData")
 
         modelProducer.runTransaction {
             lineSeries { series(chartData) }
