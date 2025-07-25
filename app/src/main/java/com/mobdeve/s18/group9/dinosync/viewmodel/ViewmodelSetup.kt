@@ -230,18 +230,12 @@ class GroupMemberViewModel : ViewModel() {
             repository.updateGroupMemberEndedAt(userId, groupId, endedAt)
         }
     }
-
-}
-
-// Not implemented yet
-class GroupSessionViewModel : ViewModel() {
-    private val repository = FirebaseRepository()
-
-    private val _sessions = MutableStateFlow<List<GroupSession>>(emptyList())
-    val sessions: StateFlow<List<GroupSession>> = _sessions
-
-    fun loadGroupSessions(groupId: String) {
-    fun startNewGroupSession(userId: String, moodId: String, groupMember: GroupMember, additionalMinutes: Float) {
+    fun startNewGroupSession(
+        userId: String,
+        moodId: String,
+        groupMember: GroupMember,
+        additionalMinutes: Float
+    ) {
         viewModelScope.launch {
             val date = getCurDate()
 
@@ -265,6 +259,17 @@ class GroupSessionViewModel : ViewModel() {
 
     }
 
+}
+
+// Not implemented yet
+class GroupSessionViewModel : ViewModel() {
+    private val repository = FirebaseRepository()
+
+    private val _sessions = MutableStateFlow<List<GroupSession>>(emptyList())
+    val sessions: StateFlow<List<GroupSession>> = _sessions
+
+    fun loadGroupSessions(groupId: String) {
+    }
 }
 
 class MoodViewModel : ViewModel() {
@@ -503,7 +508,7 @@ class StatsViewModel : ViewModel() {
     fun computeTotalSecondsPerCourse(sessions: List<StudySession>): Map<String, Double> {
         return sessions
             .filter { it.courseId != null && it.startedAt != null && it.endedAt != null }
-            .groupBy {  it.courseId?.takeIf { it.isNotBlank() } ?: "Unassigned" }
+            .groupBy { it.courseId?.takeIf { it.isNotBlank() } ?: "Unassigned" }
             .mapValues { (_, courseSessions) ->
                 courseSessions.sumOf { session ->
                     val durationSeconds = (session.hourSet * 3660) + (session.minuteSet * 60)
@@ -520,7 +525,8 @@ class StatsViewModel : ViewModel() {
             val sessions = repository.getStudySessionsByUserId(userId)
 
             val secondsPerCourse = computeTotalSecondsPerCourse(sessions)
-            val totalSeconds = secondsPerCourse.values.sum().coerceAtLeast(1.0) // avoid divide-by-zero
+            val totalSeconds =
+                secondsPerCourse.values.sum().coerceAtLeast(1.0) // avoid divide-by-zero
 
             val allCourseIds = (courses.map { it.courseId } + "Unassigned").distinct()
 
@@ -549,5 +555,4 @@ class StatsViewModel : ViewModel() {
             }
         }
     }
-
 }
