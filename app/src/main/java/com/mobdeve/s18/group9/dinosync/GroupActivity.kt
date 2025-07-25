@@ -153,6 +153,7 @@ class GroupActivity : ComponentActivity() {
                     groupMembers = groupMembers,
                     allUsers = allUsers,
                     dailyStudyHistory = groupHistory,
+                    dailyHistoryVM = historyVM,
                     studySessions = studySessionList.value,
                     moods = moods,
                     selectedMoodState = selectedMoodState,
@@ -195,6 +196,7 @@ fun GroupActivityScreen(
     groupMembers: List<GroupMember>,
     allUsers: List<User>,
     dailyStudyHistory: List<DailyStudyHistory>,
+    dailyHistoryVM : DailyStudyHistoryViewModel,
     studySessions: List<StudySession>,
     onJoinGroup: (GroupMember) -> Unit,
     moods: List<Mood>,
@@ -315,6 +317,8 @@ fun GroupActivityScreen(
                     .padding(vertical = 5.dp)
             )
 
+            val startedAt = getCurrentDateTime();
+            val currentDate = getCurrentDate();
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -393,7 +397,6 @@ fun GroupActivityScreen(
                             containerColor = Color.White
                         )
                     }
-
                     if (showTargetDialog) {
                         AlertDialog(
                             onDismissRequest = { showTargetDialog = false },
@@ -413,17 +416,17 @@ fun GroupActivityScreen(
                                 TextButton(onClick = {
                                     val minutes = targetStudyPeriodMinutes.toFloatOrNull()?: 0f
                                     if (group != null && selectedMoodState.value != null) {
-                                        val now = fetchCurDate()
                                         val newMember = GroupMember(
-                                            startedAt = getCurrentDateTime(),
+                                            startedAt = startedAt,
                                             endedAt = "",
                                             currentGroupStudyMinutes = minutes,
                                             groupId = group.groupId,
                                             onBreak = false,
                                             userId = userId
                                         )
+                                        // validate if there's no instance yet in db before adding
                                         val historyEntry = DailyStudyHistory(
-                                            date = now,
+                                            date = currentDate,
                                             hasStudied = true,
                                             moodEntryId = selectedMoodState.value!!.name,
                                             totalGroupStudyMinutes = minutes,
@@ -524,14 +527,16 @@ fun GroupActivityScreen(
                     Button(
                         onClick = {
                             groupMemberVM.startNewGroupSession(
+                                dailyStudyHistoryViewModel = dailyHistoryVM,
                                 userId = userId,
                                 moodId = selectedMoodState.value!!.name,
                                 groupMember = userGroupMember,
-                                additionalMinutes = targetStudyPeriodMinutes.toFloatOrNull()?: 0f
+                                additionalMinutes = targetStudyPeriodMinutes.toFloatOrNull()?: 0f,
+                                startedAt = startedAt
                             )
 
                             val updated = userGroupMember.copy(
-                                startedAt = getCurrentDateTime(),
+                                startedAt =startedAt,
                                 endedAt = "",
                                 onBreak = false,
                                 currentGroupStudyMinutes = targetStudyPeriodMinutes.toFloatOrNull()?: 0f

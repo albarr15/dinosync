@@ -246,10 +246,11 @@ class FirebaseRepository {
         return snapshot.documents.mapNotNull { it.toObject(GroupMember::class.java) }
     }
 
-    suspend fun resetGroupMemberSession(userId: String, groupId: String, minutes: Float) {
+    suspend fun resetGroupMemberSession(userId: String, groupId: String, minutes: Float, startedAt:String) {
         val snapshot = db.collection("groupmember")
             .whereEqualTo("userId", userId)
             .whereEqualTo("groupId", groupId)
+            .whereEqualTo("startedAt", startedAt)
             .get().await()
 
         if (!snapshot.isEmpty) {
@@ -352,11 +353,6 @@ class FirebaseRepository {
             .whereEqualTo("userId", userId)
             .get().await()
         return snapshot.toObjects(StudySession::class.java)
-    }
-    suspend fun addStudySession(session: StudySession) {
-        val db = FirebaseFirestore.getInstance()
-        val studySessionsRef = db.collection("studysession")
-        studySessionsRef.add(session)
     }
 
     suspend fun createStudySessionAndReturnId(session: StudySession): String {

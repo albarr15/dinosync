@@ -231,32 +231,33 @@ class GroupMemberViewModel : ViewModel() {
         }
     }
     fun startNewGroupSession(
+        dailyStudyHistoryViewModel: DailyStudyHistoryViewModel,
         userId: String,
         moodId: String,
         groupMember: GroupMember,
-        additionalMinutes: Float
+        additionalMinutes: Float,
+        startedAt: String
     ) {
         viewModelScope.launch {
             val date = getCurDate()
 
-            val newEntry = DailyStudyHistory(
+            // 1. Update daily history
+            dailyStudyHistoryViewModel.updateDailyHistory(
                 userId = userId,
                 date = date,
-                hasStudied = true,
-                moodEntryId = moodId,
-                totalGroupStudyMinutes = groupMember.currentGroupStudyMinutes,
+                moodId = moodId,
+                additionalMinutes = additionalMinutes,
+                studyMode = "Group"
             )
-            // 1. Update history with minutes just completed
-            repository.updateDailyStudyHistory(newEntry)
 
             // 2. Reset GroupMember session
             repository.resetGroupMemberSession(
                 userId = userId,
                 groupId = groupMember.groupId,
-                minutes = additionalMinutes
+                minutes = additionalMinutes,
+                startedAt = startedAt
             )
         }
-
     }
 
 }
