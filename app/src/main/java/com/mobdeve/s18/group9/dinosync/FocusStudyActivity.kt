@@ -833,7 +833,7 @@ fun FocusStudyScreen(
             }
         }
      else {
-        Log.d("HatchCard", "showHatchCard = false")
+        // Log.d("HatchCard", "showHatchCard = false")
     }
     if (showNewEggCard) {
         Box(
@@ -848,7 +848,7 @@ fun FocusStudyScreen(
             )
         }
     } else {
-        Log.d("HatchCard", "showNewEggCard = false")
+        // Log.d("HatchCard", "showNewEggCard = false")
     }
 }
 
