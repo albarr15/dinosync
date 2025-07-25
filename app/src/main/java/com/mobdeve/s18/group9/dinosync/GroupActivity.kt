@@ -261,12 +261,7 @@ fun GroupActivityScreen(
     // Flag to show time dialog
     var showTargetDialog by remember { mutableStateOf(false) }
 
-    // Helper to call ViewModel to leave group
-    /* WORKING DB WITH NOT UI DUE TO TIME DIFFERENCE
-    fun onLeaveGroup(userId: String, groupId: String, startedAt: String) {
-        groupMemberVM.leaveGroup(userId, groupId, startedAt, getCurrentDateTime())
-    }
-    */
+
     fun onLeaveGroup(userId: String, groupId: String) {
         val activeMember = groupMembersState.find {
             it.userId == userId && it.groupId == groupId && it.endedAt.isNullOrEmpty()

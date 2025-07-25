@@ -13,6 +13,7 @@ kotlinxCoroutinesAndroid = "1.10.2"
 lifecycleRuntimeKtx = "2.9.1"
 activityCompose = "1.10.1"
 composeBom = "2024.09.00"
+loggingInterceptor = "4.12.0"
 retrofit = "2.9.0"
 spotifyAppRemote = "0.7.2"
 spotifyAuth = "1.2.3"
@@ -42,6 +43,7 @@ androidx-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-man
 androidx-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
 androidx-material3 = { group = "androidx.compose.material3", name = "material3" }
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "kotlinxCoroutinesAndroid" }
+logging-interceptor = { module = "com.squareup.okhttp3:logging-interceptor", version.ref = "loggingInterceptor" }
 retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }
 spotify-app-remote = { module = "com.spotify.android:spotify-app-remote", version.ref = "spotifyAppRemote" }
 spotify-auth = { module = "com.spotify.android:spotify-auth", version.ref = "spotifyAuth" }
