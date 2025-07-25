@@ -80,6 +80,28 @@ class FirebaseRepository {
         return snapshot.toObjects(Course::class.java)
     }
 
+    suspend fun getAllUserCourses(userId: String): List<Course> {
+        val studySessionsSnapshot = db.collection("studysession")
+            .whereEqualTo("userId", userId)
+            .get().await()
+
+        val studySessions = studySessionsSnapshot.toObjects(StudySession::class.java)
+
+        // extract courses found in sessions
+        val courseIds = studySessions.mapNotNull { it.courseId }.toSet()
+
+        val userCourses = mutableListOf<Course>()
+        for (courseId in courseIds) {
+            val courseSnapshot = db.collection("course")
+                .whereEqualTo("name", courseId)
+                .get().await()
+
+            userCourses += courseSnapshot.toObjects(Course::class.java)
+        }
+        Log.d("CourseVM", "Found user courses : $userCourses")
+        return userCourses
+    }
+
     suspend fun addCourse(course: Course) {
         val docRef = db.collection("course").add(course).await()
         val courseId = docRef.id
@@ -135,6 +157,32 @@ class FirebaseRepository {
             .await()
     }
 
+    suspend fun getTotalStudyMinsByUserId(userId: String): Map<String, Float> {
+        return try {
+            val historySnapshot = db.collection("dailystudyhistory")
+                .whereEqualTo("userId", userId)
+                .get()
+                .await()
+            // Log.d("StudyHistory", "User ${userId} has ${historySnapshot.size()} entries")
+
+            historySnapshot.documents
+                .mapNotNull { it.toObject(DailyStudyHistory::class.java) }
+                .groupBy { it.date }
+                .mapValues { (_, studyHistories) ->
+                    var sumHistories = 0f
+                    studyHistories.forEach { x ->
+                        // Log.d("StudyHistory", "Adding minutes: ${x.totalIndividualMinutes} for date: ${x.date}")
+                        sumHistories += x.totalIndividualMinutes ?: 0f
+                    }
+                    sumHistories
+                }
+        } catch (e: Exception) {
+            Log.e("StudyHistory", "Failed to load: ${e.message}")
+            emptyMap()
+        }
+    }
+
+
 
 
     // GROUP MEMBERS ✔️
@@ -176,7 +224,13 @@ class FirebaseRepository {
         }
     }
 
-
+    suspend fun getAllGroupMembersByGroupId(groupId: String): List<GroupMember> {
+        val snapshot = db.collection("groupmember")
+            .whereEqualTo("groupId", groupId)
+            .get()
+            .await()
+        return snapshot.documents.mapNotNull { it.toObject(GroupMember::class.java) }
+    }
 
     // GROUP SESSIONS  ✔️
     suspend fun getGroupSessions(groupId: String): List<GroupSession> {
@@ -346,9 +400,5 @@ class FirebaseRepository {
     suspend fun deleteTodoItem(id: String) {
         db.collection("todoitem").document(id).delete().await()
     }
-
-
-
-
 }
 
