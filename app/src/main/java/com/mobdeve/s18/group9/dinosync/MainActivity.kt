@@ -522,16 +522,6 @@ fun MainScreen(
                                     status = "active" // active,pause, reset, completed
                                 )
                                 studySessionVM.createStudySessionAndGetId(session) { sessionId ->
-                                    val totalMinutes = hourInt * 60 + minuteInt
-
-                                    dailyHistoryVM.updateDailyHistory(
-                                        userId = userId,
-                                        date = fetchCurDate(),
-                                        moodId = moodId,
-                                        additionalMinutes = totalMinutes.toFloat(),
-                                        studyMode = "Individual"
-                                    )
-
                                     Toast.makeText(context, "Session logged successfully!", Toast.LENGTH_SHORT).show()
 
                                     // Reset fields

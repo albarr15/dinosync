@@ -546,7 +546,6 @@ fun FocusStudyScreen(
                                     totalTime = totalTime,
                                     timeLeft = timeLeftBeforeStop
                                 )
-                                //elapsedTimeInSeconds%3600)/60
                                 val minutesPart = (elapsedMinutes % 3600) / 60
                                 val secondsPart = (elapsedMinutes % 60)
                                 val elapsedTimeOnStop = (minutesPart*60) + secondsPart

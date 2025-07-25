@@ -205,9 +205,6 @@ class DailyStudyHistoryViewModel : ViewModel() {
     fun getTotalGroupStudyMinutes(userId: String, date: String): StateFlow<Float> {
         return repository.observeUserGroupStudyMinutes(userId, date)
     }
-
-
-
 }
 
 class GroupMemberViewModel : ViewModel() {
