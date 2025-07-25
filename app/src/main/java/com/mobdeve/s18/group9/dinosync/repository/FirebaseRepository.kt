@@ -226,25 +226,19 @@ class FirebaseRepository {
         }
     }
 
-    suspend fun incrementGroupStudyMinutes(userId: String, minutes: Int) {
-        val today = getCurrentDate()
-        val ref = db.collection("dailystudyhistory")
-            .whereEqualTo("userId", userId)
-            .whereEqualTo("date", today)
-            .get()
-            .await()
+    fun observeAllGroupMembers(onChange: (List<GroupMember>) -> Unit): ListenerRegistration {
+        return db.collection("groupmember")
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    Log.e("FirebaseRepository", "Listen failed.", error)
+                    return@addSnapshotListener
+                }
 
-        if (!ref.isEmpty) {
-            val doc = ref.documents[0].reference
-            doc.update("totalGroupStudyMinutes", FieldValue.increment(minutes.toLong()))
-        }
-    }
-    suspend fun getAllGroupMembersByGroupId(groupId: String): List<GroupMember> {
-        val snapshot = db.collection("groupmember")
-            .whereEqualTo("groupId", groupId)
-            .get()
-            .await()
-        return snapshot.documents.mapNotNull { it.toObject(GroupMember::class.java) }
+                val members = snapshot?.documents
+                    ?.mapNotNull { it.toObject(GroupMember::class.java) } ?: emptyList()
+
+                onChange(members)
+            }
     }
 
     suspend fun resetGroupMemberSession(userId: String, groupId: String, minutes: Float, startedAt:String) {

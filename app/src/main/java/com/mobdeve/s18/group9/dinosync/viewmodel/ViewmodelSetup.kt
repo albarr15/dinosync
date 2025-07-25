@@ -17,6 +17,7 @@ import java.util.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.firestore.ListenerRegistration
 import com.mobdeve.s18.group9.dinosync.getCurDate
 import com.mobdeve.s18.group9.dinosync.ui.theme.DirtyGreen
 import ir.ehsannarmani.compose_charts.models.Pie
@@ -204,15 +205,17 @@ class DailyStudyHistoryViewModel : ViewModel() {
 
 class GroupMemberViewModel : ViewModel() {
     private val repository = FirebaseRepository()
+    private var listenerRegistration: ListenerRegistration? = null
 
     private val _members = MutableStateFlow<List<GroupMember>>(emptyList())
     val members: StateFlow<List<GroupMember>> = _members
 
     fun loadAllMembers() {
-        viewModelScope.launch {
-            _members.value = repository.getAllGroupMembers()
+        listenerRegistration?.remove()
+        listenerRegistration = repository.observeAllGroupMembers { members ->
+            _members.value = members
+            Log.d("GroupMemberViewModel", "Real-time members updated: ${members.size}")
         }
-        Log.d("GroupActivityGroupActivity", "loadAllMembers called")
     }
     fun addGroupMember(newMember: GroupMember) {
         viewModelScope.launch {
@@ -267,6 +270,10 @@ class GroupMemberViewModel : ViewModel() {
                 startedAt = startedAt
             )
         }
+    }
+    override fun onCleared() {
+        super.onCleared()
+        listenerRegistration?.remove()
     }
 
 }

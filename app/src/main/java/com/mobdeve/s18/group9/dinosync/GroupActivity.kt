@@ -207,8 +207,15 @@ fun GroupActivityScreen(
     var selectedTab by remember { mutableStateOf("Group Activity") }
     val groupMemberVM: GroupMemberViewModel = viewModel()
 
+    // Observe StateFlow using collectAsState (this is reactive!)
+    val realTimeMembers by groupMemberVM.members.collectAsState()
+
+    LaunchedEffect(Unit) {
+        groupMemberVM.loadAllMembers()
+    }
+
     // Local stateful list mirroring current group members for recomposition
-    val groupMembersState = remember { mutableStateListOf<GroupMember>().apply { addAll(groupMembers) } }
+    val groupMembersState = remember { mutableStateListOf<GroupMember>() }
 
     // Compose derived list of users currently in this group (not left yet)
     val memberUsers by remember(groupMembersState, allUsers, group) {
@@ -274,11 +281,9 @@ fun GroupActivityScreen(
         }
     }
 
-
-    // Update groupMembersState when passed groupMembers list changes
-    LaunchedEffect(groupMembers) {
+    LaunchedEffect(realTimeMembers) {
         groupMembersState.clear()
-        groupMembersState.addAll(groupMembers)
+        groupMembersState.addAll(realTimeMembers)
     }
 
     Scaffold(
@@ -543,28 +548,35 @@ fun GroupActivityScreen(
                 val userGroupMember = groupMembersState.find { it.userId == userId && it.endedAt.isNullOrEmpty() }
 
                 if (userGroupMember != null) {
-                    Button(
-                        onClick = {
-                            groupMemberVM.startNewGroupSession(
-                                dailyStudyHistoryViewModel = dailyHistoryVM,
-                                userId = userId,
-                                moodId = selectedMoodState.value!!.name,
-                                groupMember = userGroupMember,
-                                additionalMinutes = targetStudyPeriodMinutes.toFloatOrNull()?: 0f,
-                                startedAt = startedAt
-                            )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(),
+                        contentAlignment = Alignment.Center
+                    ){
+                        Button(
+                            onClick = {
+                                groupMemberVM.startNewGroupSession(
+                                    dailyStudyHistoryViewModel = dailyHistoryVM,
+                                    userId = userId,
+                                    moodId = selectedMoodState.value!!.name,
+                                    groupMember = userGroupMember,
+                                    additionalMinutes = targetStudyPeriodMinutes.toFloatOrNull()?: 0f,
+                                    startedAt = startedAt
+                                )
 
-                            val updated = userGroupMember.copy(
-                                startedAt =startedAt,
-                                endedAt = "",
-                                onBreak = false,
-                                currentGroupStudyMinutes = targetStudyPeriodMinutes.toFloatOrNull()?: 0f
-                            )
-                            val idx = groupMembersState.indexOf(userGroupMember)
-                            if (idx != -1) groupMembersState[idx] = updated
+                                val updated = userGroupMember.copy(
+                                    startedAt =startedAt,
+                                    endedAt = "",
+                                    onBreak = false,
+                                    currentGroupStudyMinutes = targetStudyPeriodMinutes.toFloatOrNull()?: 0f
+                                )
+                                val idx = groupMembersState.indexOf(userGroupMember)
+                                if (idx != -1) groupMembersState[idx] = updated
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = DarkGreen)
+                        ) {
+                            Text("Start New Session", color = Color.White)
                         }
-                    ) {
-                        Text("Start New Session")
                     }
                 }
             }
