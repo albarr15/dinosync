@@ -190,36 +190,30 @@ fun DiscoverGroupsScreen(userId: String) {
             Spacer(modifier = Modifier.height(16.dp))
 
             /** Groups **/
+            val userGroupIds = remember(groupMembers) {
+                groupMembers
+                    .filter { it.userId.trim() == userId.toString().trim() } // include all past and present memberships
+                    .map { it.groupId }
+                    .toSet()
+            }
             Text(
-                text = "Your Groups",
+                text = if (userGroupIds.isEmpty()) "Your Groups (None)" else "Your Groups",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold
             )
 
             Spacer(modifier = Modifier.height(8.dp))
 
-
-            val userGroupIds = remember(groupMembers) {
-                groupMembers
-                    .filter { it.userId.trim() == userId.toString().trim() }
-                    .map { it.groupId }
-                    .toSet()
-            }
-
             LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                items(studyGroups.filter { it.groupId in userGroupIds }.take(5)) { group ->
+                items(studyGroups.filter { group ->
+                    groupMembers.any { it.groupId == group.groupId && it.userId == userId }
+                }) { group ->
                     val imageResId = remember(group.image) {
                         context.resources.getIdentifier(group.image, "drawable", context.packageName)
                     }
-                    val isMember = userGroupIds.contains(group.groupId)
-
-                    LaunchedEffect(group.groupId, userGroupIds) {
-                        Log.d(
-                            "DiscoverGroups",
-                            "GroupId=${group.groupId}, GroupName=${group.name}, isMember=$isMember, userGroupIds=$userGroupIds"
-                        )
+                    val isMember = groupMembers.any {
+                        it.groupId == group.groupId && it.userId == userId && it.endedAt.isNullOrEmpty()
                     }
-
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Box(
                             modifier = Modifier
@@ -234,7 +228,6 @@ fun DiscoverGroupsScreen(userId: String) {
                                     .size(30.dp)
                                     .align(Alignment.Center)
                             )
-
                             if (isMember) {
                                 Icon(
                                     imageVector = Icons.Default.CheckCircle,
@@ -246,14 +239,12 @@ fun DiscoverGroupsScreen(userId: String) {
                                         .padding(15.dp)
                                 )
                             }
-
                         }
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(group.name, fontSize = 12.sp, maxLines = 1)
                     }
                 }
             }
-
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -293,8 +284,12 @@ fun DiscoverGroupsScreen(userId: String) {
                 modifier = Modifier.fillMaxHeight()
             ) {
                 items(filteredGroups) { group ->
-                    val members = groupMembers.count { it.groupId == group.groupId }
-                    val isMember = groupMembers.any { it.groupId == group.groupId && it.userId == userId }
+                    val members = groupMembers.count {
+                        it.groupId == group.groupId && (it.endedAt.isNullOrEmpty())
+                    }
+                    val isMember = groupMembers.any {
+                        it.groupId == group.groupId && it.userId == userId && (it.endedAt.isNullOrEmpty())
+                    }
                     val isHost = group.hostId == userId
                     val courseName = courses.find { it.courseId == group.courseId }?.name ?: "No Subject yet"
 
@@ -317,7 +312,8 @@ fun DiscoverGroupsScreen(userId: String) {
                         } else null
                     )
                 }
-                }
+
+            }
             }
 
             LaunchedEffect(groupMembers) {
@@ -380,18 +376,18 @@ fun DiscoverGroupItem(
                 //Text(group.bio, fontSize = 8.sp, maxLines = 1)
                 Text(courseName, fontSize = 10.sp, color = Color.Gray, maxLines = 1)
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    repeat(members) {
-                        Box(
-                            modifier = Modifier
-                                .size(12.dp)
-                                .clip(CircleShape)
-                                .background(Color(0xFF9CCC65))
-                                .padding(2.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                    }
-                    Text("$members Members", fontSize = 12.sp)
+                    Box(
+                        modifier = Modifier
+                            .size(12.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFF9CCC65))
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(text = "$members " + if (members == 1) "Member" else "Members", fontSize = 12.sp)
+
+
                 }
+
             }
 
             // JOIN / JOINED badge

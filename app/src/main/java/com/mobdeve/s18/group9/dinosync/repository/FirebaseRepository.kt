@@ -191,6 +191,38 @@ class FirebaseRepository {
         return snapshot.documents.mapNotNull { it.toObject(GroupMember::class.java) }
     }
 
+    suspend fun addGroupMember(newMember: GroupMember): Result<Unit> {
+        return try {
+            db.collection("groupmember")
+                .add(newMember)
+                .await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    suspend fun updateGroupMemberEndedAt(userId: String, groupId: String, endedAt: String): Result<Unit> {
+        return try {
+            val snapshot = db.collection("groupmember")
+                .whereEqualTo("userId", userId)
+                .whereEqualTo("groupId", groupId)
+                .get()
+                .await()
+
+            val document = snapshot.documents.firstOrNull()
+            if (document != null) {
+                db.collection("groupmember")
+                    .document(document.id)
+                    .update("endedAt", endedAt)
+                    .await()
+                Result.success(Unit)
+            } else {
+                Result.failure(Exception("Group member not found"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 
     suspend fun getAllGroupMembersByGroupId(groupId: String): List<GroupMember> {
         val snapshot = db.collection("groupmember")

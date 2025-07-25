@@ -31,6 +31,7 @@ class AuthRepository {
 
             // Write Firestore user document
             val userMap = mapOf(
+                "userId" to uid,
                 "userName" to userName,
                 "userBio" to userBio,
                 "userProfileImage" to "",

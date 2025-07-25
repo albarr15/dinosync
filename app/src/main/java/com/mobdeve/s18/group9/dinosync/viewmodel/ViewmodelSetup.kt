@@ -181,36 +181,45 @@ class DailyStudyHistoryViewModel : ViewModel() {
         userId: String,
         date: String,
         moodId: String,
-        additionalMinutes: Float
+        additionalMinutes: Float,
+        studyMode : String  // "Group" or  "Individual"
     ) {
-        Log.d("DailyHistoryVM", "updateDailyHistory called → userId: $userId, date: $date, moodId: $moodId, additionalMinutes: $additionalMinutes")
-
+        Log.d("DailyHistoryVM", "updateDailyHistory called → userId: $userId, date: $date, moodId: $moodId, additionalMinutes: $additionalMinutes, studyMode: $studyMode")
+        /*
+        *  If study mode is Individual, then the additionalMinutes is incremented on totalIndividualMinutes while
+        *  if Group, then the additionalMinutes is incremented on totalGroupStudyMinutes
+        * */
         viewModelScope.launch {
             val existing = repository.getDailyStudyHistoryByDate(userId, date)
 
-            val currentMinutes = existing?.totalIndividualMinutes ?: 0f
-            val cappedMinutes = (currentMinutes + additionalMinutes).coerceAtMost(1440f)
+            val currentGroupMinutes = existing?.totalGroupStudyMinutes ?: 0f
+            val currentIndividualMinutes = existing?.totalIndividualMinutes ?: 0f
+
+            val newGroupMinutes = if (studyMode == "Group") (currentGroupMinutes + additionalMinutes).coerceAtMost(1440f) else currentGroupMinutes
+            val newIndividualMinutes = if (studyMode == "Individual") (currentIndividualMinutes + additionalMinutes).coerceAtMost(1440f) else currentIndividualMinutes
 
             if (existing != null) {
                 Log.d("DailyHistoryVM", "Updating existing DailyStudyHistory for date: $date")
+
                 val updatedEntry =  existing.copy(
                     hasStudied = true,
-                    moodEntryId = moodId,
-                    totalIndividualMinutes = cappedMinutes
+                    moodEntryId = if (moodId.isNotBlank()) moodId else existing.moodEntryId,
+                    totalGroupStudyMinutes = newGroupMinutes,
+                    totalIndividualMinutes = newIndividualMinutes
                 )
                 repository.updateDailyStudyHistory(updatedEntry)
 
             } else {
                 Log.d("DailyHistoryVM", "Creating new DailyStudyHistory for date: $date")
-                val create = DailyStudyHistory(
+                val newEntry = DailyStudyHistory(
                     userId = userId,
                     date = date,
                     hasStudied = true,
                     moodEntryId = moodId,
-                    totalIndividualMinutes = 0f,
-                    totalGroupStudyMinutes = 0f
+                    totalGroupStudyMinutes = newGroupMinutes,
+                    totalIndividualMinutes = newIndividualMinutes
                 )
-                repository.insertDailyStudyHistory(create)
+                repository.insertDailyStudyHistory(newEntry)
             }
         }
     }
@@ -228,6 +237,23 @@ class GroupMemberViewModel : ViewModel() {
         }
         Log.d("GroupActivityGroupActivity", "loadAllMembers called")
     }
+    fun addGroupMember(newMember: GroupMember) {
+        viewModelScope.launch {
+            val result = repository.addGroupMember(newMember)
+            if (result.isSuccess) {
+                _members.value = repository.getAllGroupMembers()
+                Log.d("GroupMemberViewModel", "Member added successfully")
+            } else {
+                Log.e("GroupMemberViewModel", "Failed to add member: ${result.exceptionOrNull()}")
+            }
+        }
+    }
+    fun leaveGroup(userId: String, groupId: String, endedAt: String) {
+        viewModelScope.launch {
+            repository.updateGroupMemberEndedAt(userId, groupId, endedAt)
+        }
+    }
+
 }
 
 // Not implemented yet
