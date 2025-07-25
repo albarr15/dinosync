@@ -27,20 +27,19 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mobdeve.s18.group9.dinosync.model.DailyStudyHistory
 import com.mobdeve.s18.group9.dinosync.model.GroupMember
-import com.mobdeve.s18.group9.dinosync.model.StudyGroup
 import com.mobdeve.s18.group9.dinosync.model.StudySession
 import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
 import com.patrykandpatrick.vico.compose.cartesian.axis.rememberBottom
 import com.patrykandpatrick.vico.compose.cartesian.axis.rememberStart
-import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLineCartesianLayer
+import com.patrykandpatrick.vico.compose.cartesian.layer.rememberColumnCartesianLayer
 import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
-import com.patrykandpatrick.vico.compose.cartesian.rememberVicoScrollState
 import com.patrykandpatrick.vico.compose.cartesian.rememberVicoZoomState
 import com.patrykandpatrick.vico.core.cartesian.Zoom
 import com.patrykandpatrick.vico.core.cartesian.axis.HorizontalAxis
 import com.patrykandpatrick.vico.core.cartesian.axis.VerticalAxis
 import com.patrykandpatrick.vico.core.cartesian.data.CartesianChartModelProducer
-import com.patrykandpatrick.vico.core.cartesian.data.lineSeries
+import com.patrykandpatrick.vico.core.cartesian.data.CartesianValueFormatter
+import com.patrykandpatrick.vico.core.cartesian.data.columnSeries
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -115,28 +114,28 @@ fun aggregateHourlyChartData(
         }
     }
 
-    Log.d("SessionsLineChart", "Found filtered sessions: $filteredSessions")
+    // Log.d("SessionsColumnChart", "Found filtered sessions: $filteredSessions")
     filteredSessions.forEach { session ->
         session.endedAt?.toDate()?.let { endedDate ->
-            Log.d("SessionsLineChart", "EndedAt: ${session.endedAt?.toDate()}")
+            //Log.d("SessionsColumnChart", "EndedAt: ${session.endedAt?.toDate()}")
 
             val calendar = Calendar.getInstance(TimeZone.getTimeZone("Asia/Manila"))
             calendar.time = endedDate
             val startHour = calendar.get(Calendar.HOUR_OF_DAY)
-            Log.d("SessionsLineChart", "Bucketed hour: $startHour")
+            //Log.d("SessionsColumnChart", "Bucketed hour: $startHour")
 
 
             val totalMinutes = session.hourSet * 60 + session.minuteSet
             hourlyMap[startHour] = (hourlyMap[startHour] ?: 0) + totalMinutes
         }
     }
-    Log.d("SessionsLineChart", "aggregateHourlyMap: $hourlyMap")
+    //Log.d("SessionsColumnChart", "aggregateHourlyMap: $hourlyMap")
     return hourlyMap.toSortedMap()
 }
 
-// Main composable for sessions line chart - takes either userId or groupId
+// Main composable for sessions column chart - takes either userId or groupId
 @Composable
-fun SessionsLineChart(
+fun SessionsColumnChart(
     filter: ChartFilter,
     dailyStudyHistory: List<DailyStudyHistory>,
     studySessions: List<StudySession>
@@ -169,16 +168,16 @@ fun SessionsLineChart(
         contentAlignment = Alignment.Center
     ) {
         when (selectedTab) {
-            "Day" -> StudyDayLineChart(dailyStudyHistory, studySessions, filter)
-            "Week" -> StudyWeeklyLineChart(dailyStudyHistory, studySessions, filter)
-            "Month" -> StudyMonthlyLineChart(dailyStudyHistory, studySessions, filter)
-            "Year" -> StudyYearlyLineChart(dailyStudyHistory, studySessions, filter)
+            "Day" -> StudyDayColumnChart(dailyStudyHistory, studySessions, filter)
+            "Week" -> StudyWeeklyColumnChart(dailyStudyHistory, studySessions, filter)
+            "Month" -> StudyMonthlyColumnChart(dailyStudyHistory, studySessions, filter)
+            "Year" -> StudyYearlyColumnChart(dailyStudyHistory, studySessions, filter)
         }
     }
 }
 
 @Composable
-fun StudyDayLineChart(
+fun StudyDayColumnChart(
     dailyStudyHistory: List<DailyStudyHistory>,
     studySessions: List<StudySession>,
     filter: ChartFilter
@@ -190,16 +189,16 @@ fun StudyDayLineChart(
         val chartData = aggregateHourlyChartData(studySessions, todayDate, filter)
         val fullSeries = (0..23).map { hour -> chartData[hour] ?: 0 }
         modelProducer.runTransaction {
-            lineSeries { series(fullSeries) }
+            columnSeries { series(fullSeries) }
         }
 
-        Log.d("SessionsLineChart", "Daily: $fullSeries")
+        //Log.d("SessionsColumnChart", "Daily: $fullSeries")
 
     }
 
     CartesianChartHost(
         chart = rememberCartesianChart(
-            rememberLineCartesianLayer(),
+            rememberColumnCartesianLayer(),
             startAxis = VerticalAxis.rememberStart(),
             bottomAxis = HorizontalAxis.rememberBottom(
             ),
@@ -216,12 +215,18 @@ fun StudyDayLineChart(
 }
 
 @Composable
-fun StudyWeeklyLineChart(
+fun StudyWeeklyColumnChart(
     dailyStudyHistory: List<DailyStudyHistory>,
     studySessions: List<StudySession>,
     filter: ChartFilter
 ) {
     val modelProducer = remember { CartesianChartModelProducer() }
+    val daysOfWeek = listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
+    val bottomAxisValueFormatter = CartesianValueFormatter { context, value, _ ->
+        val index = value.toInt()
+        val label = daysOfWeek[index]
+        label
+    }
 
     LaunchedEffect(dailyStudyHistory, studySessions, filter) {
         val filteredHistory = filterDailyHistoryByFilter(
@@ -230,16 +235,23 @@ fun StudyWeeklyLineChart(
             studySessions
         )
 
+//        Log.d("StudyWeeklyColumnChart", "Filtered history count: ${filteredHistory.size}")
+//        filteredHistory.forEach {
+//            Log.d("StudyWeeklyColumnChart", "Date: ${it.parsedDate}, Minutes: ${it.totalIndividualMinutes}")
+//        }
+
         val calendar = Calendar.getInstance(TimeZone.getTimeZone("Asia/Manila"))
         val weeklyData = filteredHistory
             .groupBy { daily ->
-                calendar.time = daily.parsedDate
-                (calendar.get(Calendar.DAY_OF_WEEK) + 5) % 7 // 0 = Monday, 6 = Sunday
+                calendar.setTime(daily.parsedDate)
+                val dow = calendar.get(Calendar.DAY_OF_WEEK) // 1 = Sunday, 7 = Sat
+                // Log.d("StudyWeeklyColumnChart", "Grouping ${daily.parsedDate} into dayIndex = $dow")
+                dow
             }
             .mapValues { entry ->
-                entry.value.map { it.totalIndividualMinutes / 60f }.sum()
-                Log.d("SessionsLineChart", "Found total mins: ${entry.value.sumOf { it.totalIndividualMinutes.toDouble() }}")
-
+                val totalMins = entry.value.map { it.totalIndividualMinutes }.sum()
+                // Log.d("StudyWeeklyColumnChart", "Day ${entry.key} total minutes = $totalMins")
+                totalMins
             }
             .toSortedMap()
 
@@ -249,10 +261,10 @@ fun StudyWeeklyLineChart(
         }
 
         val chartData = fullWeekMap.toSortedMap().values.toList()
-        Log.d("SessionsLineChart", "Weekly full data: $chartData")
+        // Log.d("SessionsColumnChart", "Weekly full data: $chartData")
 
         modelProducer.runTransaction {
-            lineSeries { series(chartData) }
+            columnSeries { series(chartData) }
         }
     }
 
@@ -266,23 +278,32 @@ fun StudyWeeklyLineChart(
     ) {
         CartesianChartHost(
             chart = rememberCartesianChart(
-                rememberLineCartesianLayer(),
+                rememberColumnCartesianLayer(),
                 startAxis = VerticalAxis.rememberStart(),
-                bottomAxis = HorizontalAxis.rememberBottom(),
+                bottomAxis = HorizontalAxis.rememberBottom(
+                    valueFormatter = bottomAxisValueFormatter
+                ),
             ),
             modelProducer = modelProducer,
+            zoomState = rememberVicoZoomState(initialZoom = Zoom.Content),
             modifier = Modifier.fillMaxSize()
         )
     }
 }
 
 @Composable
-fun StudyMonthlyLineChart(
+fun StudyMonthlyColumnChart(
     dailyStudyHistory: List<DailyStudyHistory>,
     studySessions: List<StudySession>,
     filter: ChartFilter
 ) {
     val modelProducer = remember { CartesianChartModelProducer() }
+    val months = listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+    val bottomAxisValueFormatter = CartesianValueFormatter { context, value, _ ->
+        val index = value.toInt()
+        val label = months[index]
+        label
+    }
 
     LaunchedEffect(dailyStudyHistory, studySessions, filter) {
         val filteredHistory = filterDailyHistoryByFilter(
@@ -295,19 +316,29 @@ fun StudyMonthlyLineChart(
         val monthlyData = filteredHistory
             .groupBy { daily ->
                 calendar.time = daily.parsedDate
-                val month = calendar.get(Calendar.MONTH) + 1
-                val year = calendar.get(Calendar.YEAR)
-                year * 100 + month
+                val month = calendar.get(Calendar.MONTH)
+                month
             }
             .mapValues { entry ->
-                entry.value.sumOf { it.totalIndividualMinutes / 60 .toDouble() }
+                val sum = entry.value.sumOf { it.totalIndividualMinutes.toDouble() }
+                //Log.d("StudyMonthlyColumnChart", "Key: ${entry.key}, Sum of minutes: $sum")
+                sum
             }
             .toSortedMap()
 
-        val chartData = monthlyData.values.map { it.toFloat() }
+        val fullMonthMap = (0..11).associateWith { 0f }.toMutableMap()
+        monthlyData.forEach { (monthIndex, value) ->
+            fullMonthMap[monthIndex] = value.toFloat()
+        }
+
+        val chartData = fullMonthMap.toSortedMap().values.toList()
+
+        // val chartData = monthlyData.values.map { it.toFloat() }
+        //og.d("StudyMonthlyColumnChart", "Final chartData: $chartData")
 
         modelProducer.runTransaction {
-            lineSeries { series(chartData) }
+            //Log.d("StudyMonthlyColumnChart", "Updating chart model with data")
+            columnSeries { series(chartData) }
         }
     }
 
@@ -321,23 +352,35 @@ fun StudyMonthlyLineChart(
     ) {
         CartesianChartHost(
             chart = rememberCartesianChart(
-                rememberLineCartesianLayer(),
+                rememberColumnCartesianLayer(),
                 startAxis = VerticalAxis.rememberStart(),
-                bottomAxis = HorizontalAxis.rememberBottom(),
+                bottomAxis = HorizontalAxis.rememberBottom(
+                    valueFormatter = bottomAxisValueFormatter
+                ),
             ),
             modelProducer = modelProducer,
+            zoomState = rememberVicoZoomState(initialZoom = Zoom.Content),
             modifier = Modifier.fillMaxSize()
         )
     }
 }
 
+
 @Composable
-fun StudyYearlyLineChart(
+fun StudyYearlyColumnChart(
     dailyStudyHistory: List<DailyStudyHistory>,
     studySessions: List<StudySession>,
     filter: ChartFilter
 ) {
     val modelProducer = remember { CartesianChartModelProducer() }
+    val calendar = Calendar.getInstance()
+    val currentYear = calendar.get(Calendar.YEAR)
+
+    val years = (currentYear - 4..currentYear).map { it.toString() }
+    val bottomAxisValueFormatter = CartesianValueFormatter { _, value, _ ->
+        val index = value.toInt()
+        years.getOrNull(index) ?: ""
+    }
 
     LaunchedEffect(dailyStudyHistory, studySessions, filter) {
         val filteredHistory = filterDailyHistoryByFilter(
@@ -346,21 +389,26 @@ fun StudyYearlyLineChart(
             studySessions
         )
 
-        val calendar = Calendar.getInstance()
         val yearlyData = filteredHistory
             .groupBy { daily ->
                 calendar.time = daily.parsedDate
                 calendar.get(Calendar.YEAR)
             }
             .mapValues { entry ->
-                entry.value.sumOf { it.totalIndividualMinutes / 60 .toDouble() }
+                entry.value.sumOf { it.totalIndividualMinutes.toDouble()}
             }
             .toSortedMap()
 
-        val chartData = yearlyData.values.map { it.toFloat() }
+        // shows the past five to current years
+        val fullYearMap = ((currentYear - 4)..currentYear).associateWith { 0f }.toMutableMap()
+        yearlyData.forEach { (monthIndex, value) ->
+            fullYearMap[monthIndex] = value.toFloat()
+        }
+
+        val chartData = fullYearMap.toSortedMap().values.toList()
 
         modelProducer.runTransaction {
-            lineSeries { series(chartData) }
+            columnSeries { series(chartData) }
         }
     }
 
@@ -374,11 +422,14 @@ fun StudyYearlyLineChart(
     ) {
         CartesianChartHost(
             chart = rememberCartesianChart(
-                rememberLineCartesianLayer(),
+                rememberColumnCartesianLayer(),
                 startAxis = VerticalAxis.rememberStart(),
-                bottomAxis = HorizontalAxis.rememberBottom(),
+                bottomAxis = HorizontalAxis.rememberBottom(
+                    valueFormatter = bottomAxisValueFormatter
+                ),
             ),
             modelProducer = modelProducer,
+            zoomState = rememberVicoZoomState(initialZoom = Zoom.Content),
             modifier = Modifier.fillMaxSize()
         )
     }
@@ -386,12 +437,12 @@ fun StudyYearlyLineChart(
 
 // Convenience functions for easier usage
 @Composable
-fun UserSessionsLineChart(
+fun UserSessionsColumnChart(
     userId: String,
     dailyStudyHistory: List<DailyStudyHistory>,
     studySessions: List<StudySession>
 ) {
-    SessionsLineChart(
+    SessionsColumnChart(
         filter = ChartFilter.ByUser(userId),
         dailyStudyHistory = dailyStudyHistory,
         studySessions = studySessions
@@ -399,13 +450,13 @@ fun UserSessionsLineChart(
 }
 
 @Composable
-fun GroupSessionsLineChart(
+fun GroupSessionsColumnChart(
     groupId: String,
     dailyStudyHistory: List<DailyStudyHistory>,
     studySessions: List<StudySession>,
     groupMembers: List<GroupMember>
 ) {
-    SessionsLineChart(
+    SessionsColumnChart(
         filter = ChartFilter.ByGroup(groupId, groupMembers),
         dailyStudyHistory = dailyStudyHistory,
         studySessions = studySessions
