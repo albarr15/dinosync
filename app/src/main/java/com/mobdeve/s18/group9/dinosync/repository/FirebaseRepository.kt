@@ -202,11 +202,12 @@ class FirebaseRepository {
             Result.failure(e)
         }
     }
-    suspend fun updateGroupMemberEndedAt(userId: String, groupId: String, endedAt: String): Result<Unit> {
+    suspend fun updateGroupMemberEndedAt(userId: String, groupId: String, startedAt: String, endedAt: String): Result<Unit> {
         return try {
             val snapshot = db.collection("groupmember")
                 .whereEqualTo("userId", userId)
                 .whereEqualTo("groupId", groupId)
+                .whereEqualTo("startedAt", startedAt)
                 .get()
                 .await()
 

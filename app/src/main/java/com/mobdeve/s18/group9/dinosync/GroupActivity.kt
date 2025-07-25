@@ -255,9 +255,25 @@ fun GroupActivityScreen(
     var showTargetDialog by remember { mutableStateOf(false) }
 
     // Helper to call ViewModel to leave group
-    fun onLeaveGroup(userId: String, groupId: String) {
-        groupMemberVM.leaveGroup(userId, groupId, getCurrentDateTime())
+    /* WORKING DB WITH NOT UI DUE TO TIME DIFFERENCE
+    fun onLeaveGroup(userId: String, groupId: String, startedAt: String) {
+        groupMemberVM.leaveGroup(userId, groupId, startedAt, getCurrentDateTime())
     }
+    */
+    fun onLeaveGroup(userId: String, groupId: String) {
+        val activeMember = groupMembersState.find {
+            it.userId == userId && it.groupId == groupId && it.endedAt.isNullOrEmpty()
+        }
+
+        val startedAt = activeMember?.startedAt ?: ""
+
+        if (startedAt.isNotEmpty()) {
+            groupMemberVM.leaveGroup(userId, groupId, startedAt, getCurrentDateTime())
+        } else {
+            Log.e("onLeaveGroup", "No active group member session found.")
+        }
+    }
+
 
     // Update groupMembersState when passed groupMembers list changes
     LaunchedEffect(groupMembers) {
@@ -288,6 +304,10 @@ fun GroupActivityScreen(
             )
         }
     ) { padding ->
+
+        val startedAt = getCurrentDateTime();
+        val currentDate = getCurrentDate();
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -317,8 +337,6 @@ fun GroupActivityScreen(
                     .padding(vertical = 5.dp)
             )
 
-            val startedAt = getCurrentDateTime();
-            val currentDate = getCurrentDate();
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -336,6 +354,7 @@ fun GroupActivityScreen(
                                     // Leave group: update backend and UI state
                                     if (isMemberJoined) {
                                         onLeaveGroup(userId, group?.groupId ?:"")
+
                                         val index = groupMembersState.indexOfFirst {
                                             it.userId == userId && it.groupId == group?.groupId
                                         }

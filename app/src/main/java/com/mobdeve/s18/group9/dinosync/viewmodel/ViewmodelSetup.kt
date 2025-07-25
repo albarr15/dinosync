@@ -225,11 +225,20 @@ class GroupMemberViewModel : ViewModel() {
             }
         }
     }
-    fun leaveGroup(userId: String, groupId: String, endedAt: String) {
+    fun leaveGroup(userId: String, groupId: String, startedAt: String, endedAt: String) {
+        Log.d("leaveGroup", "Initiating leave group for userId=$userId, groupId=$groupId")
+        Log.d("leaveGroup", "StartedAt=$startedAt, EndedAt=$endedAt")
+
         viewModelScope.launch {
-            repository.updateGroupMemberEndedAt(userId, groupId, endedAt)
+            try {
+                repository.updateGroupMemberEndedAt(userId, groupId, startedAt, endedAt)
+                Log.d("leaveGroup", "Successfully updated endedAt in repository.")
+            } catch (e: Exception) {
+                Log.e("leaveGroup", "Failed to update endedAt", e)
+            }
         }
     }
+
     fun startNewGroupSession(
         dailyStudyHistoryViewModel: DailyStudyHistoryViewModel,
         userId: String,
