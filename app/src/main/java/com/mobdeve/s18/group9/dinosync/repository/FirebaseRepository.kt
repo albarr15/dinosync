@@ -2,6 +2,7 @@ package com.mobdeve.s18.group9.dinosync.repository
 
 import android.util.Log
 import com.google.firebase.firestore.FieldPath
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.mobdeve.s18.group9.dinosync.model.*
 import kotlinx.coroutines.tasks.await
@@ -9,6 +10,7 @@ import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Query
 import kotlinx.coroutines.Dispatchers
 import com.google.firebase.firestore.toObjects
+import com.mobdeve.s18.group9.dinosync.getCurrentDate
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -111,7 +113,7 @@ class FirebaseRepository {
     }
 
 
-    suspend fun updateDailyStudyHistory(history: DailyStudyHistory) = withContext(Dispatchers.IO) {
+    suspend fun updateDailyStudyHistory(history: DailyStudyHistory) {
         val db = FirebaseFirestore.getInstance()
         val querySnapshot = db.collection("dailystudyhistory")
             .whereEqualTo("userId", history.userId)
@@ -134,7 +136,6 @@ class FirebaseRepository {
             .add(history)
             .await()
     }
-
 
 
     // GROUP MEMBERS ✔️
@@ -176,14 +177,36 @@ class FirebaseRepository {
         }
     }
 
+    suspend fun incrementGroupStudyMinutes(userId: String, minutes: Int) {
+        val today = getCurrentDate()
+        val ref = db.collection("dailystudyhistory")
+            .whereEqualTo("userId", userId)
+            .whereEqualTo("date", today)
+            .get()
+            .await()
 
+        if (!ref.isEmpty) {
+            val doc = ref.documents[0].reference
+            doc.update("totalGroupStudyMinutes", FieldValue.increment(minutes.toLong()))
+        }
+    }
 
-    // GROUP SESSIONS  ✔️
-    suspend fun getGroupSessions(groupId: String): List<GroupSession> {
-        val snapshot = db.collection("groupsession")
+    suspend fun resetGroupMemberSession(userId: String, groupId: String, minutes: Float) {
+        val snapshot = db.collection("groupmember")
+            .whereEqualTo("userId", userId)
             .whereEqualTo("groupId", groupId)
             .get().await()
-        return snapshot.toObjects(GroupSession::class.java)
+
+        if (!snapshot.isEmpty) {
+            val docRef = snapshot.documents[0].reference
+            docRef.update(
+                mapOf(
+                    "onBreak" to false,
+                    "endedAt" to null,
+                    "currentGroupStudyMinutes" to minutes
+                )
+            )
+        }
     }
 
 

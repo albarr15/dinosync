@@ -15,6 +15,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 import androidx.compose.runtime.*
 import androidx.lifecycle.viewModelScope
+import com.mobdeve.s18.group9.dinosync.getCurDate
 import kotlinx.coroutines.launch
 
 class CompanionViewModel : ViewModel() {
@@ -151,27 +152,6 @@ class DailyStudyHistoryViewModel : ViewModel() {
         }
         Log.d("GroupActivityGroupActivity", "loadDailyHistory called")
     }
-    /*
-    fun createDailyHistory(
-        userId: String,
-        date: String,
-        moodId: String,
-    ) {
-        viewModelScope.launch {
-            val newEntry = DailyStudyHistory(
-                userId = userId,
-                hasStudied = true,
-                date = date,
-                moodEntryId = moodId,
-                totalIndividualMinutes = 0f,
-                totalGroupStudyMinutes = 0f
-
-            )
-            repository.insertDailyStudyHistory(newEntry)
-        }
-        Log.d("DailyHistoryVM", "createDailyHistory, ${userId},  ${date}, ${moodId}")
-
-    }*/
 
     fun updateDailyHistory(
         userId: String,
@@ -181,10 +161,7 @@ class DailyStudyHistoryViewModel : ViewModel() {
         studyMode : String  // "Group" or  "Individual"
     ) {
         Log.d("DailyHistoryVM", "updateDailyHistory called → userId: $userId, date: $date, moodId: $moodId, additionalMinutes: $additionalMinutes, studyMode: $studyMode")
-        /*
-        *  If study mode is Individual, then the additionalMinutes is incremented on totalIndividualMinutes while
-        *  if Group, then the additionalMinutes is incremented on totalGroupStudyMinutes
-        * */
+
         viewModelScope.launch {
             val existing = repository.getDailyStudyHistoryByDate(userId, date)
 
@@ -250,21 +227,30 @@ class GroupMemberViewModel : ViewModel() {
         }
     }
 
-
-}
-
-// Not implemented yet
-class GroupSessionViewModel : ViewModel() {
-    private val repository = FirebaseRepository()
-
-    private val _sessions = MutableStateFlow<List<GroupSession>>(emptyList())
-    val sessions: StateFlow<List<GroupSession>> = _sessions
-
-    fun loadGroupSessions(groupId: String) {
+    fun startNewGroupSession(userId: String, moodId: String, groupMember: GroupMember, additionalMinutes: Float) {
         viewModelScope.launch {
-            _sessions.value = repository.getGroupSessions(groupId)
+            val date = getCurDate()
+
+            val newEntry = DailyStudyHistory(
+                userId = userId,
+                date = date,
+                hasStudied = true,
+                moodEntryId = moodId,
+                totalGroupStudyMinutes = groupMember.currentGroupStudyMinutes,
+            )
+            // 1. Update history with minutes just completed
+            repository.updateDailyStudyHistory(newEntry)
+
+            // 2. Reset GroupMember session
+            repository.resetGroupMemberSession(
+                userId = userId,
+                groupId = groupMember.groupId,
+                minutes = additionalMinutes
+            )
         }
+
     }
+
 }
 
 class MoodViewModel : ViewModel() {
