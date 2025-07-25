@@ -72,6 +72,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil3.compose.rememberAsyncImagePainter
 import com.mobdeve.s18.group9.dinosync.components.BottomNavigationBar
+import com.mobdeve.s18.group9.dinosync.components.GroupSessionsLineChart
 import com.mobdeve.s18.group9.dinosync.components.TopActionBar
 import com.mobdeve.s18.group9.dinosync.model.Course
 import com.mobdeve.s18.group9.dinosync.model.DailyStudyHistory
@@ -625,7 +626,8 @@ fun GroupActivityScreen(
                         topMembers = ArrayList(topMembers),
                         group?.groupId.toString(),
                         dailyStudyHistory,
-                        studySessions
+                        studySessions,
+                        groupMembers                //groupMembers: List<GroupMember>
                     )
                 }
             }
@@ -747,7 +749,6 @@ fun formatElapsedTime(seconds: Int): String {
     return String.format("%02d:%02d:%02d", hrs, mins, secs)
 }
 
-
 fun calculateGroupRanking(
     targetGroupId: String,
     groupMembers: List<GroupMember>
@@ -778,7 +779,8 @@ fun OnClickGroupStatsActivityBtn(
     topMembers: ArrayList<User>,
     selectedGroup: String,
     dailyStudyHistory: List<DailyStudyHistory>,
-    studySessions: List<StudySession>
+    studySessions: List<StudySession>,
+    groupMembers: List<GroupMember>
 ) {
     Box(modifier = Modifier.fillMaxWidth()) {
         HorizontalDivider(
@@ -833,7 +835,8 @@ fun OnClickGroupStatsActivityBtn(
             fontSize = 20.sp,
             modifier = Modifier.padding(bottom = 8.dp)
         )
-        //GroupSessionsLineChart(selectedGroup, dailyStudyHistory, studySessions)
+        //TODO: CHECK IF THIS PARAM ARE CORRECT
+        GroupSessionsLineChart(selectedGroup, dailyStudyHistory, studySessions, groupMembers)
     }
 }
 
