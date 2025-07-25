@@ -17,6 +17,8 @@ import java.util.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.firestore.ListenerRegistration
+import com.mobdeve.s18.group9.dinosync.getCurDate
 import com.mobdeve.s18.group9.dinosync.ui.theme.DirtyGreen
 import ir.ehsannarmani.compose_charts.models.Pie
 import kotlinx.coroutines.launch
@@ -155,27 +157,6 @@ class DailyStudyHistoryViewModel : ViewModel() {
         }
         Log.d("GroupActivityGroupActivity", "loadDailyHistory called")
     }
-    /*
-    fun createDailyHistory(
-        userId: String,
-        date: String,
-        moodId: String,
-    ) {
-        viewModelScope.launch {
-            val newEntry = DailyStudyHistory(
-                userId = userId,
-                hasStudied = true,
-                date = date,
-                moodEntryId = moodId,
-                totalIndividualMinutes = 0f,
-                totalGroupStudyMinutes = 0f
-
-            )
-            repository.insertDailyStudyHistory(newEntry)
-        }
-        Log.d("DailyHistoryVM", "createDailyHistory, ${userId},  ${date}, ${moodId}")
-
-    }*/
 
     fun updateDailyHistory(
         userId: String,
@@ -185,10 +166,7 @@ class DailyStudyHistoryViewModel : ViewModel() {
         studyMode : String  // "Group" or  "Individual"
     ) {
         Log.d("DailyHistoryVM", "updateDailyHistory called → userId: $userId, date: $date, moodId: $moodId, additionalMinutes: $additionalMinutes, studyMode: $studyMode")
-        /*
-        *  If study mode is Individual, then the additionalMinutes is incremented on totalIndividualMinutes while
-        *  if Group, then the additionalMinutes is incremented on totalGroupStudyMinutes
-        * */
+
         viewModelScope.launch {
             val existing = repository.getDailyStudyHistoryByDate(userId, date)
 
@@ -223,19 +201,25 @@ class DailyStudyHistoryViewModel : ViewModel() {
             }
         }
     }
+
+    fun getTotalGroupStudyMinutes(userId: String, date: String): StateFlow<Float> {
+        return repository.observeUserGroupStudyMinutes(userId, date)
+    }
 }
 
 class GroupMemberViewModel : ViewModel() {
     private val repository = FirebaseRepository()
+    private var listenerRegistration: ListenerRegistration? = null
 
     private val _members = MutableStateFlow<List<GroupMember>>(emptyList())
     val members: StateFlow<List<GroupMember>> = _members
 
     fun loadAllMembers() {
-        viewModelScope.launch {
-            _members.value = repository.getAllGroupMembers()
+        listenerRegistration?.remove()
+        listenerRegistration = repository.observeAllGroupMembers { members ->
+            _members.value = members
+            Log.d("GroupMemberViewModel", "Real-time members updated: ${members.size}")
         }
-        Log.d("GroupActivityGroupActivity", "loadAllMembers called")
     }
     fun addGroupMember(newMember: GroupMember) {
         viewModelScope.launch {
@@ -248,28 +232,55 @@ class GroupMemberViewModel : ViewModel() {
             }
         }
     }
-    fun leaveGroup(userId: String, groupId: String, endedAt: String) {
+    fun leaveGroup(userId: String, groupId: String, startedAt: String, endedAt: String) {
+        Log.d("leaveGroup", "Initiating leave group for userId=$userId, groupId=$groupId")
+        Log.d("leaveGroup", "StartedAt=$startedAt, EndedAt=$endedAt")
+
         viewModelScope.launch {
-            repository.updateGroupMemberEndedAt(userId, groupId, endedAt)
+            try {
+                repository.updateGroupMemberEndedAt(userId, groupId, startedAt, endedAt)
+                Log.d("leaveGroup", "Successfully updated endedAt in repository.")
+            } catch (e: Exception) {
+                Log.e("leaveGroup", "Failed to update endedAt", e)
+            }
         }
     }
 
-}
-
-// Not implemented yet
-class GroupSessionViewModel : ViewModel() {
-    private val repository = FirebaseRepository()
-
-    private val _sessions = MutableStateFlow<List<GroupSession>>(emptyList())
-    val sessions: StateFlow<List<GroupSession>> = _sessions
-
-    fun loadGroupSessions(groupId: String) {
+    fun startNewGroupSession(
+        dailyStudyHistoryViewModel: DailyStudyHistoryViewModel,
+        userId: String,
+        moodId: String,
+        groupMember: GroupMember,
+        additionalMinutes: Float,
+        startedAt: String
+    ) {
         viewModelScope.launch {
-            _sessions.value = repository.getGroupSessions(groupId)
+            val date = getCurDate()
+
+            // 1. Update daily history
+            dailyStudyHistoryViewModel.updateDailyHistory(
+                userId = userId,
+                date = date,
+                moodId = moodId,
+                additionalMinutes = additionalMinutes,
+                studyMode = "Group"
+            )
+
+            // 2. Reset GroupMember session
+            repository.resetGroupMemberSession(
+                userId = userId,
+                groupId = groupMember.groupId,
+                minutes = additionalMinutes,
+                startedAt = startedAt
+            )
         }
     }
-}
+    override fun onCleared() {
+        super.onCleared()
+        listenerRegistration?.remove()
+    }
 
+}
 class MoodViewModel : ViewModel() {
     private val repository = FirebaseRepository()
 
@@ -506,7 +517,7 @@ class StatsViewModel : ViewModel() {
     fun computeTotalSecondsPerCourse(sessions: List<StudySession>): Map<String, Double> {
         return sessions
             .filter { it.courseId != null && it.startedAt != null && it.endedAt != null }
-            .groupBy {  it.courseId?.takeIf { it.isNotBlank() } ?: "Unassigned" }
+            .groupBy { it.courseId?.takeIf { it.isNotBlank() } ?: "Unassigned" }
             .mapValues { (_, courseSessions) ->
                 courseSessions.sumOf { session ->
                     val durationSeconds = (session.hourSet * 3660) + (session.minuteSet * 60)
@@ -523,7 +534,8 @@ class StatsViewModel : ViewModel() {
             val sessions = repository.getStudySessionsByUserId(userId)
 
             val secondsPerCourse = computeTotalSecondsPerCourse(sessions)
-            val totalSeconds = secondsPerCourse.values.sum().coerceAtLeast(1.0) // avoid divide-by-zero
+            val totalSeconds =
+                secondsPerCourse.values.sum().coerceAtLeast(1.0) // avoid divide-by-zero
 
             val allCourseIds = (courses.map { it.courseId } + "Unassigned").distinct()
 
@@ -552,5 +564,4 @@ class StatsViewModel : ViewModel() {
             }
         }
     }
-
 }

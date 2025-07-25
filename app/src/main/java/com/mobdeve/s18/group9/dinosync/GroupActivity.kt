@@ -72,6 +72,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil3.compose.rememberAsyncImagePainter
 import com.mobdeve.s18.group9.dinosync.components.BottomNavigationBar
+import com.mobdeve.s18.group9.dinosync.components.GroupSessionsLineChart
 import com.mobdeve.s18.group9.dinosync.components.TopActionBar
 import com.mobdeve.s18.group9.dinosync.model.Course
 import com.mobdeve.s18.group9.dinosync.model.DailyStudyHistory
@@ -153,6 +154,7 @@ class GroupActivity : ComponentActivity() {
                     groupMembers = groupMembers,
                     allUsers = allUsers,
                     dailyStudyHistory = groupHistory,
+                    dailyHistoryVM = historyVM,
                     studySessions = studySessionList.value,
                     moods = moods,
                     selectedMoodState = selectedMoodState,
@@ -168,13 +170,8 @@ class GroupActivity : ComponentActivity() {
                                 date = fetchCurDate(),
                                 moodId = selectedMoodState.value?.name ?: "",
                                 additionalMinutes = newMember.currentGroupStudyMinutes,
-                                studyMode = "Group"
+                                studyMode = "Group",
                             )
-                        }
-                    },
-                    onLeaveGroup = { userId, groupId ->
-                        lifecycleScope.launch {
-                            memberVM.leaveGroup(userId, groupId, getCurrentTimestamp().toString())
                         }
                     }
                 )
@@ -200,34 +197,44 @@ fun GroupActivityScreen(
     groupMembers: List<GroupMember>,
     allUsers: List<User>,
     dailyStudyHistory: List<DailyStudyHistory>,
+    dailyHistoryVM : DailyStudyHistoryViewModel,
     studySessions: List<StudySession>,
     onJoinGroup: (GroupMember) -> Unit,
     moods: List<Mood>,
     selectedMoodState: MutableState<Mood?>,
-    onJoinComplete: (GroupMember, DailyStudyHistory) -> Unit,
-    onLeaveGroup: (String, String) -> Unit
+    onJoinComplete: (GroupMember, DailyStudyHistory) -> Unit
 ) {
     val context = LocalContext.current
     var selectedTab by remember { mutableStateOf("Group Activity") }
     val groupMemberVM: GroupMemberViewModel = viewModel()
 
-    val groupMembersState = remember { mutableStateListOf<GroupMember>().apply { addAll(groupMembers) } }
+    // Observe StateFlow using collectAsState (this is reactive!)
+    val realTimeMembers by groupMemberVM.members.collectAsState()
+
+    LaunchedEffect(Unit) {
+        groupMemberVM.loadAllMembers()
+    }
+
+    // Local stateful list mirroring current group members for recomposition
+    val groupMembersState = remember { mutableStateListOf<GroupMember>() }
+
+    // Compose derived list of users currently in this group (not left yet)
     val memberUsers by remember(groupMembersState, allUsers, group) {
         derivedStateOf {
             groupMembersState
                 .filter { it.groupId == group?.groupId && it.endedAt.isNullOrEmpty() }
                 .mapNotNull { gm ->
                     val user = allUsers.find { it.userId == gm.userId }
-                    user?.let { user -> user to gm }
+                    user?.let { user -> user to gm } // Pair<User, GroupMember>
                 }
         }
     }
 
-
+    // Top 3 members based on study minutes
     val topMembers =
         memberUsers.sortedByDescending { it.second.currentGroupStudyMinutes }.map { it.first }
             .take(3)
-
+    // Setup for using Google Fonts
     val provider = GoogleFont.Provider(
         providerAuthority = "com.google.android.gms.fonts",
         providerPackage = "com.google.android.gms",
@@ -241,25 +248,38 @@ fun GroupActivityScreen(
             weight = FontWeight.Medium
         )
     )
+
+    // Boolean derived to check if current user has an active membership
     val isMemberJoined by remember(allGroupMembers, userId) {
         derivedStateOf {
             allGroupMembers.any { it.userId == userId && it.endedAt.isNullOrEmpty() }
         }
     }
-
-
-
+    // Flag to show mood dialog
     var showJoinDialog by remember { mutableStateOf(false) }
+    // Input minutes
     var targetStudyPeriodMinutes by remember { mutableStateOf("") }
+    // Flag to show time dialog
     var showTargetDialog by remember { mutableStateOf(false) }
 
+
     fun onLeaveGroup(userId: String, groupId: String) {
-        groupMemberVM.leaveGroup(userId, groupId, getCurrentDateTime())
+        val activeMember = groupMembersState.find {
+            it.userId == userId && it.groupId == groupId && it.endedAt.isNullOrEmpty()
+        }
+
+        val startedAt = activeMember?.startedAt ?: ""
+
+        if (startedAt.isNotEmpty()) {
+            groupMemberVM.leaveGroup(userId, groupId, startedAt, getCurrentDateTime())
+        } else {
+            Log.e("onLeaveGroup", "No active group member session found.")
+        }
     }
 
-    LaunchedEffect(groupMembers) {
+    LaunchedEffect(realTimeMembers) {
         groupMembersState.clear()
-        groupMembersState.addAll(groupMembers)
+        groupMembersState.addAll(realTimeMembers)
     }
 
     Scaffold(
@@ -273,8 +293,10 @@ fun GroupActivityScreen(
                     context.startActivity(intent)
                 },
                 onHomeClick = {
-                    val intent = Intent(context, MainActivity::class.java)
-                    intent.putExtra("userId", userId)
+                    val intent = Intent(context, MainActivity::class.java).apply {
+                        flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+                        putExtra("userId", userId)
+                    }
                     context.startActivity(intent)
                 },
                 onStatsClick = {
@@ -285,6 +307,10 @@ fun GroupActivityScreen(
             )
         }
     ) { padding ->
+
+        val startedAt = getCurrentDateTime();
+        val currentDate = getCurrentDate();
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -323,17 +349,15 @@ fun GroupActivityScreen(
             ) {
 
                 Column {
+                    // JOIN/LEAVE button
                     Box(
-                        modifier = Modifier
-                            .width(60.dp)
-                            .clip(RoundedCornerShape(16.dp))
-                            .height(25.dp)
-                            .align(Alignment.End)
-                            .background(YellowGreen)
+                        modifier = Modifier.width(60.dp).clip(RoundedCornerShape(16.dp)).height(25.dp).align(Alignment.End).background(YellowGreen)
                             .clickable(
                                 onClick = {
+                                    // Leave group: update backend and UI state
                                     if (isMemberJoined) {
                                         onLeaveGroup(userId, group?.groupId ?:"")
+
                                         val index = groupMembersState.indexOfFirst {
                                             it.userId == userId && it.groupId == group?.groupId
                                         }
@@ -342,6 +366,7 @@ fun GroupActivityScreen(
                                             groupMembersState[index] = updatedMember
                                         }
                                     } else {
+                                        // Show mood dialog to join
                                         showJoinDialog = true
                                     }
                                 }
@@ -394,7 +419,6 @@ fun GroupActivityScreen(
                             containerColor = Color.White
                         )
                     }
-
                     if (showTargetDialog) {
                         AlertDialog(
                             onDismissRequest = { showTargetDialog = false },
@@ -414,17 +438,17 @@ fun GroupActivityScreen(
                                 TextButton(onClick = {
                                     val minutes = targetStudyPeriodMinutes.toFloatOrNull()?: 0f
                                     if (group != null && selectedMoodState.value != null) {
-                                        val now = fetchCurDate()
                                         val newMember = GroupMember(
-                                            startedAt = getCurrentDateTime(),
+                                            startedAt = startedAt,
                                             endedAt = "",
                                             currentGroupStudyMinutes = minutes,
                                             groupId = group.groupId,
                                             onBreak = false,
                                             userId = userId
                                         )
+                                        // validate if there's no instance yet in db before adding
                                         val historyEntry = DailyStudyHistory(
-                                            date = now,
+                                            date = currentDate,
                                             hasStudied = true,
                                             moodEntryId = selectedMoodState.value!!.name,
                                             totalGroupStudyMinutes = minutes,
@@ -515,8 +539,48 @@ fun GroupActivityScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(5.dp))
 
+            // Show button to start session if user is a member
+            if (isMemberJoined) {
+                val userGroupMember = groupMembersState.find { it.userId == userId && it.endedAt.isNullOrEmpty() }
+
+                if (userGroupMember != null) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(),
+                        contentAlignment = Alignment.Center
+                    ){
+                        Button(
+                            onClick = {
+                                groupMemberVM.startNewGroupSession(
+                                    dailyStudyHistoryViewModel = dailyHistoryVM,
+                                    userId = userId,
+                                    moodId = selectedMoodState.value!!.name,
+                                    groupMember = userGroupMember,
+                                    additionalMinutes = targetStudyPeriodMinutes.toFloatOrNull()?: 0f,
+                                    startedAt = startedAt
+                                )
+
+                                val updated = userGroupMember.copy(
+                                    startedAt =startedAt,
+                                    endedAt = "",
+                                    onBreak = false,
+                                    currentGroupStudyMinutes = targetStudyPeriodMinutes.toFloatOrNull()?: 0f
+                                )
+                                val idx = groupMembersState.indexOf(userGroupMember)
+                                if (idx != -1) groupMembersState[idx] = updated
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = DarkGreen)
+                        ) {
+                            Text("Start New Session", color = Color.White)
+                        }
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(5.dp))
+
+            // Tab buttons (Group Activity / Stats)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
@@ -524,9 +588,7 @@ fun GroupActivityScreen(
                 Button(
                     onClick = { selectedTab = "Group Activity" },
                     colors = ButtonDefaults.buttonColors(if (selectedTab == "Group Activity") YellowGreen else LightGray),
-                    modifier = Modifier
-                        .width(170.dp)
-                        .clip(RoundedCornerShape(topStart = 15.dp, topEnd = 15.dp)),
+                    modifier = Modifier.width(170.dp).clip(RoundedCornerShape(topStart = 15.dp, topEnd = 15.dp)),
                     shape = RectangleShape
                 ) {
                     Text(
@@ -556,81 +618,52 @@ fun GroupActivityScreen(
                 }
             }
 
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-            ) {
+            // Render content based on selected tab
+            Box(modifier = Modifier.fillMaxWidth()) {
                 when (selectedTab) {
-                    "Group Activity" -> OnClickGroupActivityBtn(memberUsers)
+                    "Group Activity" -> OnClickGroupActivityBtn(memberUsers, dailyHistoryVM)
                     "Stats" -> OnClickGroupStatsActivityBtn(
                         topMembers = ArrayList(topMembers),
                         group?.groupId.toString(),
                         dailyStudyHistory,
-                        studySessions
+                        studySessions,
+                        groupMembers                //groupMembers: List<GroupMember>
                     )
                 }
             }
         }
     }
 }
-
-
 @Composable
-fun OnClickGroupActivityBtn(memberUsers: List<Pair<User, GroupMember>>) {
-    LaunchedEffect(memberUsers) {
-        Log.d("OnClickGroupActivityBtn", "memberUsers size: ${memberUsers.size}")
-        memberUsers.forEachIndexed { index, (user, groupMember) ->
-            Log.d("OnClickGroupActivityBtn", "[$index] user=${user.userId}, groupMember=${groupMember.groupId}")
-        }
-    }
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Box(modifier = Modifier.fillMaxWidth()) {
-            HorizontalDivider(
-                modifier = Modifier
-                    .width(365.dp)
-                    .offset(y = (-5).dp)
-                    .align(Alignment.Center),
-                thickness = 0.5.dp,
-                color = Color.Black
-            )
-        }
+fun UserCard(user: User, groupMember: GroupMember, dailyHistoryVM : DailyStudyHistoryViewModel, onSessionEnd: (GroupMember) -> Unit) {
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(3),
-            contentPadding = PaddingValues(8.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            items(memberUsers.size) { index ->
-                val (user, groupMember) = memberUsers[index]
-                UserCard(user, groupMember)
-            }
-        }
-    }
-}
-
-
-@Composable
-fun UserCard(user: User, groupMember: GroupMember) {
+    val currentDate = fetchCurDate()
+    val studyMinutes by dailyHistoryVM.getTotalGroupStudyMinutes(user.userId, currentDate).collectAsState(initial = 0f)
     val initialTimeInSeconds = (groupMember.currentGroupStudyMinutes * 60).toInt()
     var remainingSeconds by remember { mutableStateOf(initialTimeInSeconds) }
 
-    val isRunning = groupMember.endedAt.isNullOrEmpty() && !groupMember.onBreak && remainingSeconds > 0
+    var isRunning = groupMember.endedAt.isNullOrEmpty() && !groupMember.onBreak && remainingSeconds > 0
 
-    // Countdown logic for active members
-    LaunchedEffect(groupMember.userId) {
-        while (isRunning) {
+    // To reset the timer upon session restart
+    LaunchedEffect(groupMember.startedAt, studyMinutes) {
+        remainingSeconds = initialTimeInSeconds
+        isRunning = true
+
+        while (isRunning && remainingSeconds > 0) {
             delay(1000L)
             remainingSeconds--
+        }
+
+        if (remainingSeconds == 0) {
+            isRunning = false
+            onSessionEnd(groupMember)
         }
     }
 
     val imageRes = when {
         groupMember.onBreak || remainingSeconds == 0 -> R.drawable.inactive
-        groupMember.currentGroupStudyMinutes >= 240 -> R.drawable.greaterthanequal4hr
-        groupMember.currentGroupStudyMinutes >= 60 -> R.drawable.greaterthanequal1hr
+        studyMinutes >= 240 -> R.drawable.greaterthanequal4hr
+        studyMinutes >= 60 -> R.drawable.greaterthanequal1hr
         else -> R.drawable.lessthan1hr
     }
 
@@ -673,13 +706,48 @@ fun UserCard(user: User, groupMember: GroupMember) {
     }
 }
 
+@Composable
+fun OnClickGroupActivityBtn(memberUsers: List<Pair<User, GroupMember>>, dailyHistoryVM : DailyStudyHistoryViewModel) {
+    LaunchedEffect(memberUsers) {
+        Log.d("OnClickGroupActivityBtn", "memberUsers size: ${memberUsers.size}")
+        memberUsers.forEachIndexed { index, (user, groupMember) ->
+            Log.d("OnClickGroupActivityBtn", "[$index] user=${user.userId}, groupMember=${groupMember.groupId}")
+        }
+    }
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Box(modifier = Modifier.fillMaxWidth()) {
+            HorizontalDivider(
+                modifier = Modifier
+                    .width(365.dp)
+                    .offset(y = (-5).dp)
+                    .align(Alignment.Center),
+                thickness = 0.5.dp,
+                color = Color.Black
+            )
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(3),
+            contentPadding = PaddingValues(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            items(memberUsers.size) { index ->
+                val (user, groupMember) = memberUsers[index]
+                UserCard(user, groupMember, dailyHistoryVM, onSessionEnd = {})
+            }
+        }
+    }
+}
+
 fun formatElapsedTime(seconds: Int): String {
     val hrs = seconds / 3600
     val mins = (seconds % 3600) / 60
     val secs = seconds % 60
     return String.format("%02d:%02d:%02d", hrs, mins, secs)
 }
-
 
 fun calculateGroupRanking(
     targetGroupId: String,
@@ -711,7 +779,8 @@ fun OnClickGroupStatsActivityBtn(
     topMembers: ArrayList<User>,
     selectedGroup: String,
     dailyStudyHistory: List<DailyStudyHistory>,
-    studySessions: List<StudySession>
+    studySessions: List<StudySession>,
+    groupMembers: List<GroupMember>
 ) {
     Box(modifier = Modifier.fillMaxWidth()) {
         HorizontalDivider(
@@ -766,7 +835,8 @@ fun OnClickGroupStatsActivityBtn(
             fontSize = 20.sp,
             modifier = Modifier.padding(bottom = 8.dp)
         )
-        //GroupSessionsLineChart(selectedGroup, dailyStudyHistory, studySessions)
+        //TODO: CHECK IF THIS PARAM ARE CORRECT
+        GroupSessionsLineChart(selectedGroup, dailyStudyHistory, studySessions, groupMembers)
     }
 }
 

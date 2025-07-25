@@ -120,8 +120,10 @@ fun DiscoverGroupsScreen(userId: String) {
                 selectedItem = "Groups",
                 onGroupsClick = {},
                 onHomeClick = {
-                    val intent = Intent(context, MainActivity::class.java)
-                    intent.putExtra("userId", userId)
+                    val intent = Intent(context, MainActivity::class.java).apply {
+                        flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+                        putExtra("userId", userId)
+                    }
                     context.startActivity(intent)
                 },
                 onStatsClick = {

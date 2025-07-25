@@ -31,7 +31,7 @@
         <activity android:name=".ProfileActivity" />
         <activity android:name=".StatisticsActivity" />
         <activity android:name=".DiscoverGroupsActivity" />
-        <activity android:name=".MainActivity" />
+        <activity android:name=".MainActivity" android:launchMode="singleTop" />
         <activity android:name=".SignInActivity" />
         <activity android:name=".SettingsActivity" />
         <activity android:name=".CompanionActivity" />

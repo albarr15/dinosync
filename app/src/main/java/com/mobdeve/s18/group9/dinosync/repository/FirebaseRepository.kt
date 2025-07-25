@@ -2,6 +2,7 @@ package com.mobdeve.s18.group9.dinosync.repository
 
 import android.util.Log
 import com.google.firebase.firestore.FieldPath
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.mobdeve.s18.group9.dinosync.model.*
 import kotlinx.coroutines.tasks.await
@@ -9,8 +10,11 @@ import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Query
 import kotlinx.coroutines.Dispatchers
 import com.google.firebase.firestore.toObjects
+import com.mobdeve.s18.group9.dinosync.getCurrentDate
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.withContext
 import java.sql.Timestamp
@@ -133,7 +137,7 @@ class FirebaseRepository {
     }
 
 
-    suspend fun updateDailyStudyHistory(history: DailyStudyHistory) = withContext(Dispatchers.IO) {
+    suspend fun updateDailyStudyHistory(history: DailyStudyHistory) {
         val db = FirebaseFirestore.getInstance()
         val querySnapshot = db.collection("dailystudyhistory")
             .whereEqualTo("userId", history.userId)
@@ -184,7 +188,6 @@ class FirebaseRepository {
 
 
 
-
     // GROUP MEMBERS ✔️
     suspend fun getAllGroupMembers(): List<GroupMember> {
         val snapshot = db.collection("groupmember").get().await()
@@ -201,11 +204,12 @@ class FirebaseRepository {
             Result.failure(e)
         }
     }
-    suspend fun updateGroupMemberEndedAt(userId: String, groupId: String, endedAt: String): Result<Unit> {
+    suspend fun updateGroupMemberEndedAt(userId: String, groupId: String, startedAt: String, endedAt: String): Result<Unit> {
         return try {
             val snapshot = db.collection("groupmember")
                 .whereEqualTo("userId", userId)
                 .whereEqualTo("groupId", groupId)
+                .whereEqualTo("startedAt", startedAt)
                 .get()
                 .await()
 
@@ -224,21 +228,63 @@ class FirebaseRepository {
         }
     }
 
-    suspend fun getAllGroupMembersByGroupId(groupId: String): List<GroupMember> {
-        val snapshot = db.collection("groupmember")
-            .whereEqualTo("groupId", groupId)
-            .get()
-            .await()
-        return snapshot.documents.mapNotNull { it.toObject(GroupMember::class.java) }
+    fun observeAllGroupMembers(onChange: (List<GroupMember>) -> Unit): ListenerRegistration {
+        return db.collection("groupmember")
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    Log.e("FirebaseRepository", "Listen failed.", error)
+                    return@addSnapshotListener
+                }
+
+                val members = snapshot?.documents
+                    ?.mapNotNull { it.toObject(GroupMember::class.java) } ?: emptyList()
+
+                onChange(members)
+            }
     }
 
-    // GROUP SESSIONS  ✔️
-    suspend fun getGroupSessions(groupId: String): List<GroupSession> {
-        val snapshot = db.collection("groupsession")
+    suspend fun resetGroupMemberSession(userId: String, groupId: String, minutes: Float, startedAt:String) {
+        val snapshot = db.collection("groupmember")
+            .whereEqualTo("userId", userId)
             .whereEqualTo("groupId", groupId)
+            .whereEqualTo("startedAt", startedAt)
             .get().await()
-        return snapshot.toObjects(GroupSession::class.java)
+
+        if (!snapshot.isEmpty) {
+            val docRef = snapshot.documents[0].reference
+            docRef.update(
+                mapOf(
+                    "onBreak" to false,
+                    "endedAt" to null,
+                    "currentGroupStudyMinutes" to minutes
+                )
+            )
+        }
     }
+
+    fun observeUserGroupStudyMinutes(userId: String, date: String): StateFlow<Float> {
+        val totalMinutesFlow = MutableStateFlow(0f)
+
+        db.collection("groupmember")
+            .whereEqualTo("userId", userId)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    Log.e("FirebaseRepository", "Failed to listen for group study minutes", error)
+                    return@addSnapshotListener
+                }
+
+                if (snapshot != null) {
+                    val totalMinutes = snapshot.documents.sumOf {
+                        it.toObject(GroupMember::class.java)?.currentGroupStudyMinutes?.toDouble() ?: 0.0
+                    }.toFloat()
+
+                    totalMinutesFlow.value = totalMinutes
+                }
+            }
+        return totalMinutesFlow
+    }
+
+
 
 
     // MOODS ✔️
@@ -328,11 +374,6 @@ class FirebaseRepository {
             .whereEqualTo("userId", userId)
             .get().await()
         return snapshot.toObjects(StudySession::class.java)
-    }
-    suspend fun addStudySession(session: StudySession) {
-        val db = FirebaseFirestore.getInstance()
-        val studySessionsRef = db.collection("studysession")
-        studySessionsRef.add(session)
     }
 
     suspend fun createStudySessionAndReturnId(session: StudySession): String {

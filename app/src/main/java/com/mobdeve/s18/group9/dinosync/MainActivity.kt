@@ -368,9 +368,12 @@ fun MainScreen(
                     context.startActivity(intent)
                 },
                 onHomeClick = {
-                    val intent = Intent(context, MainActivity::class.java)
-                    intent.putExtra("userId", userId)
+                    val intent = Intent(context, MainActivity::class.java).apply {
+                        flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+                        putExtra("userId", userId)
+                    }
                     context.startActivity(intent)
+
                 },
                 onStatsClick = {
                     val intent = Intent(context, StatisticsActivity::class.java)
@@ -522,16 +525,6 @@ fun MainScreen(
                                     status = "active" // active,pause, reset, completed
                                 )
                                 studySessionVM.createStudySessionAndGetId(session) { sessionId ->
-                                    val totalMinutes = hourInt * 60 + minuteInt
-
-                                    dailyHistoryVM.updateDailyHistory(
-                                        userId = userId,
-                                        date = fetchCurDate(),
-                                        moodId = moodId,
-                                        additionalMinutes = totalMinutes.toFloat(),
-                                        studyMode = "Individual"
-                                    )
-
                                     Toast.makeText(context, "Session logged successfully!", Toast.LENGTH_SHORT).show()
 
                                     // Reset fields

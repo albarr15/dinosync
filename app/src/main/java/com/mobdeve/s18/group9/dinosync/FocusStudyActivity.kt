@@ -428,7 +428,13 @@ fun FocusStudyScreen(
             BottomNavigationBar(
                 selectedItem = null,
                 onGroupsClick = { context.startActivity(Intent(context, DiscoverGroupsActivity::class.java)) },
-                onHomeClick = { context.startActivity(Intent(context, MainActivity::class.java)) },
+                onHomeClick = {
+                    val intent = Intent(context, MainActivity::class.java).apply {
+                        flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+                        putExtra("userId", userId)
+                    }
+                    context.startActivity(intent)
+                },
                 onStatsClick = { context.startActivity(Intent(context, StatisticsActivity::class.java)) }
             )
         }
@@ -546,7 +552,6 @@ fun FocusStudyScreen(
                                     totalTime = totalTime,
                                     timeLeft = timeLeftBeforeStop
                                 )
-                                //elapsedTimeInSeconds%3600)/60
                                 val minutesPart = (elapsedMinutes % 3600) / 60
                                 val secondsPart = (elapsedMinutes % 60)
                                 val elapsedTimeOnStop = (minutesPart*60) + secondsPart
