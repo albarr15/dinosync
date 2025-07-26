@@ -3,6 +3,7 @@ package com.mobdeve.s18.group9.dinosync
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
@@ -202,7 +203,6 @@ fun ProfileActivityScreen(userId: String) {
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    // TODO: utilize user's custom profile (fetch from firestore db)
                     Image(
                         painter = painterResource(R.drawable.althea),
                         contentDescription = null,
@@ -237,15 +237,20 @@ fun ProfileActivityScreen(userId: String) {
             Text("Collection", fontWeight = FontWeight.Medium, fontSize = 18.sp)
             Spacer(modifier = Modifier.height(5.dp))
 
-            if (companions.isEmpty()) {
+            val latestCompanions = companions
+                .sortedByDescending { it.dateAwarded }
+                .take(3)
+
+
+            if (latestCompanions.isEmpty()) {
                 Text("No companions yet.", color = Color.Gray)
             } else {
                 LazyRow(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     contentPadding = PaddingValues(horizontal = 4.dp)
                 ) {
-                    items(companions.size) { index ->
-                        val companion = companions[index]
+                    items(latestCompanions.size) { index ->
+                        val companion = latestCompanions[index]
                         Box(
                             modifier = Modifier
                                 .size(80.dp)
@@ -294,18 +299,31 @@ fun ProfileActivityScreen(userId: String) {
             // GROUPS SECTION
             Text("Groups", fontWeight = FontWeight.Medium, fontSize = 18.sp)
             Spacer(modifier = Modifier.height(5.dp))
-            if (userGroups.isEmpty()) {
+
+            val topGroups = userGroups
+                .sortedBy { it.name }
+                .take(3)
+
+            if (topGroups.isEmpty()) {
                 Text("No groups yet.", color = Color.Gray)
             } else {
                 LazyRow(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     contentPadding = PaddingValues(horizontal = 4.dp)
                 ) {
-                    items(userGroups.size) { index ->
+                    items(topGroups.size) { index ->
                         Box(
                             modifier = Modifier
                                 .size(80.dp)
-                                .background(Color.LightGray, RoundedCornerShape(10.dp)),
+                                .background(Color.LightGray, RoundedCornerShape(10.dp))
+                                .clickable {
+                                    Log.d("ProfileActivity", "Navigating to GroupActivity with groupId: " +
+                                            "${topGroups[index].groupId}, userId: $userId")
+                                    val intent = Intent(context, GroupActivity::class.java)
+                                    intent.putExtra("groupId", topGroups[index].groupId)
+                                    intent.putExtra("userId", userId)
+                                    context.startActivity(intent)
+                                },
                             contentAlignment = Alignment.Center
                         ) {
                             Column(
@@ -359,12 +377,6 @@ fun ProfileActivityScreen(userId: String) {
             // MOOD LOG SECTION
             Row {
                 Text("Mood Log", fontWeight = FontWeight.Medium, fontSize = 18.sp)
-                Text(
-                    text = "Latest Mood",
-                    fontSize = 12.sp,
-                    textAlign = TextAlign.End,
-                    modifier = Modifier.fillMaxWidth()
-                )
             }
             Spacer(modifier = Modifier.height(5.dp))
             MoodTrackerGrid(moods = moodHistory)
@@ -409,7 +421,7 @@ fun MoodTrackerGrid(
 
     for (i in recentMoods.indices) {
         val row = i / columns
-        val col = columns - 1 - (i % columns) // reverse column order
+        val col = i % columns
         if (row < rows) {
             moodGrid[row][col] = recentMoods[recentMoods.size - 1 - i]
         }

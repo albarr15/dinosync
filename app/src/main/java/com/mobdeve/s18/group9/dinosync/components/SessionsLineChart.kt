@@ -229,6 +229,8 @@ fun StudyWeeklyLineChart(
         label
     }
 
+    val dateFormatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+
     LaunchedEffect(dailyStudyHistory, studySessions, filter) {
         val filteredHistory = filterDailyHistoryByFilter(
             filter,
@@ -236,13 +238,31 @@ fun StudyWeeklyLineChart(
             studySessions
         )
 
-//        Log.d("StudyWeeklyLineChart", "Filtered history count: ${filteredHistory.size}")
-//        filteredHistory.forEach {
-//            Log.d("StudyWeeklyLineChart", "Date: ${it.parsedDate}, Minutes: ${it.totalIndividualMinutes}")
-//        }
-
         val calendar = Calendar.getInstance(TimeZone.getTimeZone("Asia/Manila"))
-        val weeklyData = filteredHistory
+        val today = calendar.time
+
+        // Set calendar to the start of the week (Sunday)
+        calendar.set(Calendar.HOUR_OF_DAY, 0)
+        calendar.set(Calendar.MINUTE, 0)
+        calendar.set(Calendar.SECOND, 0)
+        calendar.set(Calendar.MILLISECOND, 0)
+        calendar.set(Calendar.DAY_OF_WEEK, calendar.firstDayOfWeek) // Usually Sunday
+
+        val startOfWeek = calendar.time
+
+        // End of week (Saturday)
+        calendar.add(Calendar.DAY_OF_WEEK, 6)
+        val endOfWeek = calendar.time
+
+
+        // Filter only this week's entries
+        val thisWeekHistory = filteredHistory.filter { daily ->
+            val currentDate = dateFormatter.parse(daily.date)
+
+            currentDate.after(startOfWeek) && currentDate.before(endOfWeek) ||
+                    currentDate == startOfWeek || currentDate == endOfWeek
+        }
+        val weeklyData = thisWeekHistory
             .groupBy { daily ->
                 calendar.setTime(daily.parsedDate)
                 val dow = calendar.get(Calendar.DAY_OF_WEEK) // 1 = Sunday, 7 = Sat
@@ -256,7 +276,7 @@ fun StudyWeeklyLineChart(
             }
             .toSortedMap()
 
-        val fullWeekMap = (0..6).associateWith { 0f }.toMutableMap()
+        val fullWeekMap = (1..7).associateWith { 0f }.toMutableMap()
         weeklyData.forEach { (dayIndex, value) ->
             fullWeekMap[dayIndex] = value.toFloat()
         }

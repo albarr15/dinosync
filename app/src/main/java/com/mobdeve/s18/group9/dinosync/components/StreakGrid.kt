@@ -40,12 +40,12 @@ fun StreakGrid(
         studyAct[date] ?: 0F
     }
 
-    // Fill grid in top-down, right-to-left row-major order
+    // Fill grid in top-down, left-to-right row-major order
     val studyActGrid = Array(rows) { Array(columns) { 0F } }
 
     for (i in recentStudyAct.indices) {
         val row = i / columns
-        val col = columns - 1 - (i % columns) // reverse column order
+        val col = i % columns
         if (row < rows) {
             studyActGrid[row][col] = recentStudyAct[recentStudyAct.size - 1 - i]
         }
