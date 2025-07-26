@@ -28,6 +28,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -782,61 +784,69 @@ fun OnClickGroupStatsActivityBtn(
     studySessions: List<StudySession>,
     groupMembers: List<GroupMember>
 ) {
-    Box(modifier = Modifier.fillMaxWidth()) {
-        HorizontalDivider(
-            modifier = Modifier
-                .width(365.dp)
-                .offset(y = (-5).dp)
-                .align(Alignment.Center),
-            thickness = 0.5.dp,
-            color = Color.Black
-        )
-    }
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .verticalScroll(rememberScrollState())
+            .padding(bottom = 180.dp)
     ) {
-        // Top Members Section
-        Text(
-            text = "Top Members",
-            fontSize = 20.sp,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly
+        Box(modifier = Modifier.fillMaxWidth()) {
+            HorizontalDivider(
+                modifier = Modifier
+                    .width(365.dp)
+                    .offset(y = (-5).dp)
+                    .align(Alignment.Center),
+                thickness = 0.5.dp,
+                color = Color.Black
+            )
+        }
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp)
         ) {
-            topMembers.take(2).forEach { user ->
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Box(
-                        modifier = Modifier
-                            .size(70.dp)
-                            .clip(CircleShape)
-                            .background(Color.LightGray)
-                    ) {
-                        Image(
-                            painter = rememberAsyncImagePainter(user.userProfileImage),
-                            contentDescription = user.userName,
-                            modifier = Modifier.fillMaxSize()
-                        )
+            // Top Members Section
+            Text(
+                text = "Top Members",
+                fontSize = 20.sp,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                topMembers.take(2).forEach { user ->
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Box(
+                            modifier = Modifier
+                                .size(70.dp)
+                                .clip(CircleShape)
+                                .background(Color.LightGray)
+                        ) {
+                            Image(
+                                painter = rememberAsyncImagePainter(user.userProfileImage),
+                                contentDescription = user.userName,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
+                        Text(user.userName, fontSize = 14.sp)
                     }
-                    Text(user.userName, fontSize = 14.sp)
                 }
             }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Sessions Section
+            Text(
+                text = "Sessions",
+                fontSize = 20.sp,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            GroupSessionsLineChart(selectedGroup, dailyStudyHistory, studySessions, groupMembers)
         }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Sessions Section
-        Text(
-            text = "Sessions",
-            fontSize = 20.sp,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
-        //TODO: CHECK IF THIS PARAM ARE CORRECT
-        GroupSessionsLineChart(selectedGroup, dailyStudyHistory, studySessions, groupMembers)
     }
+
 }
 
