@@ -2,6 +2,7 @@ package com.mobdeve.s18.group9.dinosync.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.auth.FirebaseAuth
 import com.mobdeve.s18.group9.dinosync.repository.AuthRepository
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -55,5 +56,9 @@ class AuthViewModel @Inject constructor(
                 onError(result.exceptionOrNull()?.localizedMessage ?: "Login failed")
             }
         }
+    }
+
+    fun logout() {
+        FirebaseAuth.getInstance().signOut()
     }
 }

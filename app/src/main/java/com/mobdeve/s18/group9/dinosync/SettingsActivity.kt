@@ -22,33 +22,15 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.input.TextObfuscationMode
-import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.outlined.DarkMode
-import androidx.compose.material.icons.outlined.Delete
-import androidx.compose.material.icons.outlined.FrontHand
-import androidx.compose.material.icons.outlined.Lock
-import androidx.compose.material.icons.outlined.Mail
 import androidx.compose.material.icons.outlined.ManageAccounts
-import androidx.compose.material.icons.outlined.Notifications
-import androidx.compose.material.icons.outlined.Person
-import androidx.compose.material.icons.outlined.Timer
-import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedSecureTextField
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
@@ -70,10 +52,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.google.firebase.auth.FirebaseAuth
 import com.mobdeve.s18.group9.dinosync.components.BottomNavigationBar
@@ -81,8 +60,8 @@ import com.mobdeve.s18.group9.dinosync.components.TopActionBar
 import com.mobdeve.s18.group9.dinosync.ui.theme.DarkGreen
 import com.mobdeve.s18.group9.dinosync.ui.theme.DinoSyncTheme
 import com.mobdeve.s18.group9.dinosync.ui.theme.GreenGray
+import com.mobdeve.s18.group9.dinosync.viewmodel.AuthViewModel
 import com.mobdeve.s18.group9.dinosync.viewmodel.UserViewModel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 class SettingsActivity : ComponentActivity() {
@@ -137,24 +116,17 @@ fun SettingsActivityScreen(userId: String) {
     val context = LocalContext.current
 
     val userVM: UserViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+    val authVM: AuthViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
 
     LaunchedEffect(userId) {
         userVM.loadUser(userId)
     }
 
     // Modal states
-    var showProfileVisibilityModal by remember { mutableStateOf(false) }
-    var showChangePasswordModal by remember { mutableStateOf(false) }
-    var showChangeEmailModal by remember { mutableStateOf(false) }
-    var showDeleteAccountModal by remember { mutableStateOf(false) }
-    var showTimerDurationModal by remember { mutableStateOf(false) }
-    var showBreakRemindersModal by remember { mutableStateOf(false) }
     var showEditProfileModal by remember { mutableStateOf(false) }
-    var showSpotifyYouTubeModal by remember { mutableStateOf(false) }
-    var showAppBlockingModal by remember { mutableStateOf(false) }
     var showAppInfoModal by remember { mutableStateOf(false) }
-    var showPrivacyPolicyModal by remember { mutableStateOf(false) }
     var showCreditsModal by remember { mutableStateOf(false) }
+    var showLogoutModal by remember { mutableStateOf(false) }
 
     Scaffold(
         bottomBar = {
@@ -216,66 +188,20 @@ fun SettingsActivityScreen(userId: String) {
                         color = Color.Black
                     )
                     Spacer(modifier = Modifier.height(10.dp))
-                    // Appearance Section
-                    SettingsSection(title = "Appearance") {
-                        SettingRow("Enable Dark Mode", Icons.Outlined.DarkMode, hasSwitch = true)
-                    }
 
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    // Account & Profile Section
-                    SettingsSection(title = "Account & Profile") {
+                    // Account Section
+                    SettingsSection(title = "Account") {
                         SettingRow("Edit Profile", Icons.Outlined.ManageAccounts,
                             onClick = { showEditProfileModal = true })
-                        SettingRow("Spotify / YouTube connection", Icons.Outlined.Person,
-                            onClick = {showSpotifyYouTubeModal = true} )
-                        SettingRow(
-                            "Profile Visibility",
-                            Icons.Outlined.Person,
-                            onClick = { showProfileVisibilityModal = true }
-                        )
-                        SettingRow(
-                            "Change Password",
-                            Icons.Outlined.Lock,
-                            onClick = { showChangePasswordModal = true }
-                        )
-                        SettingRow(
-                            "Change Email",
-                            Icons.Outlined.Mail,
-                            onClick = { showChangeEmailModal = true }
-                        )
-                        SettingRow(
-                            "Delete Account",
-                            Icons.Outlined.Delete,
-                            onClick = { showDeleteAccountModal = true }
-                        )
+                        SettingRow("Logout", Icons.AutoMirrored.Outlined.Logout,
+                            onClick = { showLogoutModal = true })
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Timer & Focus Section
-                    SettingsSection(title = "Timer & Focus") {
-                        SettingRow(
-                            "Default timer durations",
-                            Icons.Outlined.Timer,
-                            onClick = { showTimerDurationModal = true }
-                        )
-                        SettingRow(
-                            "Break reminders",
-                            Icons.Outlined.Notifications,
-                            onClick = { showBreakRemindersModal = true }
-                        )
-                        SettingRow("Lock apps on Focus", Icons.Outlined.FrontHand, hasSwitch = true)
-                        SettingRow("App blocking whitelist", Icons.Outlined.FrontHand,
-                            onClick = { showAppBlockingModal = true } )
-                    }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    // About This App Section
-                    SettingsSection(title = "About This App") {
+                    // App Section
+                    SettingsSection(title = "App") {
                         SettingRow("App Info", onClick = {showAppInfoModal = true} )
-                        SettingRow("Privacy Policy", onClick = {showPrivacyPolicyModal = true} )
                         SettingRow("Credits", onClick = {showCreditsModal = true} )
                     }
                 }
@@ -284,453 +210,21 @@ fun SettingsActivityScreen(userId: String) {
     }
 
     // Modal Dialogs
-    if (showProfileVisibilityModal) {
-        ProfileVisibilityModal(onDismiss = { showProfileVisibilityModal = false })
-    }
-
-    if (showChangePasswordModal) {
-        ChangePasswordModal(onDismiss = { showChangePasswordModal = false })
-    }
-
-    if (showChangeEmailModal) {
-        ChangeEmailModal(onDismiss = { showChangeEmailModal = false })
-    }
-
-    if (showDeleteAccountModal) {
-        DeleteAccountModal(onDismiss = { showDeleteAccountModal = false })
-    }
-
-    if (showTimerDurationModal) {
-        TimerDurationModal(onDismiss = { showTimerDurationModal = false })
-    }
-
-    if (showBreakRemindersModal) {
-        BreakRemindersModal(onDismiss = { showBreakRemindersModal = false })
-    }
-
     if (showEditProfileModal) {
         EditProfileModal(onDismiss = { showEditProfileModal = false }, userVM)
     }
 
-    if (showSpotifyYouTubeModal) {
-        SpotifyYouTubeModal(onDismiss = { showSpotifyYouTubeModal = false })
-    }
-
-    if (showAppBlockingModal) {
-        AppBlockingModal(onDismiss = { showAppBlockingModal = false })
+    if (showLogoutModal) {
+        LogoutModal(onDismiss = { showLogoutModal = false }, authVM)
     }
 
     if (showAppInfoModal) {
         AppInfoModal(onDismiss = { showAppInfoModal = false })
     }
 
-    if (showPrivacyPolicyModal) {
-        PrivacyPolicyModal(onDismiss = { showPrivacyPolicyModal = false })
-    }
-
     if (showCreditsModal) {
         CreditsModal(onDismiss = { showCreditsModal = false })
     }
-}
-
-
-@Composable
-fun ProfileVisibilityModal(onDismiss: () -> Unit) {
-    var selectedVisibility by remember { mutableStateOf("Public") }
-    val visibilityOptions = listOf("Public", "Friends Only", "Private")
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Profile Visibility") },
-        containerColor = Color.White,
-        text = {
-            Column {
-                Text(
-                    text = "Choose who can see your profile",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.Gray,
-                    modifier = Modifier.padding(bottom = 16.dp)
-                )
-                visibilityOptions.forEach { visibility ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { selectedVisibility = visibility }
-                            .padding(vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        RadioButton(
-                            selected = selectedVisibility == visibility,
-                            onClick = { selectedVisibility = visibility }
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Column {
-                            Text(visibility, fontWeight = FontWeight.Medium)
-                            Text(
-                                when (visibility) {
-                                    "Public" -> "Anyone can see your profile"
-                                    "Friends Only" -> "Only your friends can see your profile"
-                                    "Private" -> "Only you can see your profile"
-                                    else -> ""
-                                },
-                                style = MaterialTheme.typography.bodySmall,
-                                color = Color.Gray
-                            )
-                        }
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Save")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
-            }
-        }
-    )
-}
-
-@Composable
-fun ChangePasswordModal(onDismiss: () -> Unit) {
-    var currentPassword by remember { mutableStateOf("") }
-    var newPassword by remember { mutableStateOf("") }
-    var confirmPassword by remember { mutableStateOf("") }
-
-    var isPWVisible by remember { mutableStateOf(false) }
-    var isPWVisible_new by remember { mutableStateOf(false) }
-    var isPWVisible_confirm by remember { mutableStateOf(false) }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Change Password") },
-        containerColor = Color.White,
-        text = {
-            Column {
-                OutlinedSecureTextField(
-                    state = rememberTextFieldState(),
-                    label = { Text("Password") },
-                    trailingIcon = @Composable {
-                        IconButton(onClick = {
-                            isPWVisible = !isPWVisible
-                        }) {
-                            if (isPWVisible) {
-                                Icon(
-                                    imageVector = Icons.Filled.Visibility,
-                                    contentDescription = "Show Password",
-                                    tint = Color.Black
-                                )
-                            } else {
-                                Icon(
-                                    imageVector = Icons.Outlined.VisibilityOff,
-                                    contentDescription = "Hide Password",
-                                    tint = Color.Black
-                                )
-                            }
-                        }
-                    },
-                    textObfuscationMode = if (isPWVisible) {
-                        TextObfuscationMode.Visible} else {TextObfuscationMode.RevealLastTyped},
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedSecureTextField(
-                    state = rememberTextFieldState(),
-                    label = { Text("New Password") },
-                    trailingIcon = @Composable {
-                        IconButton(onClick = {
-                            isPWVisible_new = !isPWVisible_new
-                        }) {
-                            if (isPWVisible_new) {
-                                Icon(
-                                    imageVector = Icons.Filled.Visibility,
-                                    contentDescription = "Show Password",
-                                    tint = Color.Black
-                                )
-                            } else {
-                                Icon(
-                                    imageVector = Icons.Outlined.VisibilityOff,
-                                    contentDescription = "Hide Password",
-                                    tint = Color.Black
-                                )
-                            }
-                        }
-                    },
-                    textObfuscationMode = if (isPWVisible_new) {
-                        TextObfuscationMode.Visible} else {TextObfuscationMode.RevealLastTyped},
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedSecureTextField(
-                    state = rememberTextFieldState(),
-                    label = { Text("Confirm Password") },
-                    trailingIcon = @Composable {
-                        IconButton(onClick = {
-                            isPWVisible_confirm = !isPWVisible_confirm
-                        }) {
-                            if (isPWVisible_confirm) {
-                                Icon(
-                                    imageVector = Icons.Filled.Visibility,
-                                    contentDescription = "Show Password",
-                                    tint = Color.Black
-                                )
-                            } else {
-                                Icon(
-                                    imageVector = Icons.Outlined.VisibilityOff,
-                                    contentDescription = "Hide Password",
-                                    tint = Color.Black
-                                )
-                            }
-                        }
-                    },
-                    textObfuscationMode = if (isPWVisible_confirm) {
-                        TextObfuscationMode.Visible} else {TextObfuscationMode.RevealLastTyped},
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(
-                onClick = onDismiss,
-                enabled = currentPassword.isNotEmpty() &&
-                        newPassword.isNotEmpty() &&
-                        newPassword == confirmPassword
-            ) {
-                Text("Update Password")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
-            }
-        }
-    )
-}
-
-@Composable
-fun ChangeEmailModal(onDismiss: () -> Unit) {
-    var currentEmail by remember { mutableStateOf("user@example.com") }
-    var newEmail by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Change Email Address") },
-        containerColor = Color.White,
-        text = {
-            Column {
-                Text(
-                    text = "Current Email: $currentEmail",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.Gray,
-                    modifier = Modifier.padding(bottom = 16.dp)
-                )
-                OutlinedTextField(
-                    value = newEmail,
-                    onValueChange = { newEmail = it },
-                    label = { Text("New Email Address") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = password,
-                    onValueChange = { password = it },
-                    label = { Text("Confirm Password") },
-                    modifier = Modifier.fillMaxWidth(),
-                    visualTransformation = PasswordVisualTransformation()
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(
-                onClick = onDismiss,
-                enabled = newEmail.isNotEmpty() && password.isNotEmpty()
-            ) {
-                Text("Update Email")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
-            }
-        }
-    )
-}
-
-@Composable
-fun DeleteAccountModal(onDismiss: () -> Unit) {
-    var confirmText by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Text(
-                "Delete Account",
-                color = MaterialTheme.colorScheme.error
-            )
-        },
-        containerColor = Color.White,
-        text = {
-            Column {
-                Text(
-                    text = "⚠️ This action cannot be undone!",
-                    color = MaterialTheme.colorScheme.error,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-                Text(
-                    text = "All your data, including study sessions, groups, and statistics will be permanently deleted.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(bottom = 16.dp)
-                )
-                Text(
-                    text = "Type 'DELETE' to confirm:",
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-                OutlinedTextField(
-                    value = confirmText,
-                    onValueChange = { confirmText = it },
-                    placeholder = { Text("DELETE") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = password,
-                    onValueChange = { password = it },
-                    label = { Text("Confirm Password") },
-                    modifier = Modifier.fillMaxWidth(),
-                    visualTransformation = PasswordVisualTransformation()
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(
-                onClick = onDismiss,
-                enabled = confirmText == "DELETE" && password.isNotEmpty(),
-                colors = ButtonDefaults.textButtonColors(
-                    contentColor = MaterialTheme.colorScheme.error
-                )
-            ) {
-                Text("Delete Account")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
-            }
-        }
-    )
-}
-
-@Composable
-fun TimerDurationModal(onDismiss: () -> Unit) {
-    var duration by remember { mutableStateOf("25") }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Default Timer Durations") },
-        containerColor = Color.White,
-        text = {
-            Column {
-                OutlinedTextField(
-                    value = duration,
-                    onValueChange = { duration = it },
-                    label = { Text("Timer Duration (minutes)") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Save")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
-            }
-        }
-    )
-}
-
-@Composable
-fun BreakRemindersModal(onDismiss: () -> Unit) {
-    var enableReminders by remember { mutableStateOf(true) }
-    var reminderInterval by remember { mutableStateOf("30") }
-    var reminderSound by remember { mutableStateOf(true) }
-    var reminderVibration by remember { mutableStateOf(true) }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Break Reminders") },
-        containerColor = Color.White,
-        text = {
-            Column {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text("Enable break reminders")
-                    Switch(
-                        checked = enableReminders,
-                        onCheckedChange = { enableReminders = it }
-                    )
-                }
-
-                if (enableReminders) {
-                    Spacer(modifier = Modifier.height(16.dp))
-                    OutlinedTextField(
-                        value = reminderInterval,
-                        onValueChange = { reminderInterval = it },
-                        label = { Text("Reminder interval (minutes)") },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text("Sound notification")
-                        Switch(
-                            checked = reminderSound,
-                            onCheckedChange = { reminderSound = it }
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text("Vibration")
-                        Switch(
-                            checked = reminderVibration,
-                            onCheckedChange = { reminderVibration = it }
-                        )
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Save")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
-            }
-        }
-    )
 }
 
 @Composable
@@ -742,7 +236,6 @@ fun EditProfileModal(onDismiss: () -> Unit,
 
     var userName by remember(user) { mutableStateOf(user?.userName ?: "") }
     var userBio by remember(user) { mutableStateOf(user?.userBio ?: "") }
-    var userProfile by remember(user) { mutableStateOf(user?.userProfileImage ?: "") }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -767,12 +260,6 @@ fun EditProfileModal(onDismiss: () -> Unit,
                     supportingText = { Text("${userBio.length}/150") }
                 )
                 Spacer(modifier = Modifier.height(8.dp))
-//                OutlinedTextField(
-//                    value = location,
-//                    onValueChange = { location = it },
-//                    label = { Text("Location (Optional)") },
-//                    modifier = Modifier.fillMaxWidth()
-//                )
             }
         },
         confirmButton = {
@@ -826,210 +313,39 @@ fun EditProfileModal(onDismiss: () -> Unit,
 }
 
 @Composable
-fun SpotifyYouTubeModal(onDismiss: () -> Unit) {
-    var spotifyConnected by remember { mutableStateOf(false) }
-    var youtubeConnected by remember { mutableStateOf(false) }
+fun LogoutModal(onDismiss: () -> Unit, authVM: AuthViewModel) {
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Music Service Connections") },
+        title = { Text("Logout") },
         containerColor = Color.White,
         text = {
             Column {
                 Text(
-                    text = "Connect your music services to sync your listening activity during study sessions.",
+                    text = "Are you sure you want to logout?",
                     style = MaterialTheme.typography.bodyMedium,
                     color = Color.Gray,
                     modifier = Modifier.padding(bottom = 16.dp)
                 )
-
-                // Spotify Connection
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 8.dp),
-                    colors = CardDefaults.cardColors(containerColor = if (spotifyConnected) Color(0xFF1DB954) else Color.LightGray)
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                painter = painterResource(R.drawable.ic_spotify),
-                                contentDescription = "Spotify",
-                                modifier = Modifier.size(24.dp),
-                                tint = if (spotifyConnected) Color.White else Color.Gray
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Column {
-                                Text(
-                                    "Spotify",
-                                    fontWeight = FontWeight.Bold,
-                                    color = if (spotifyConnected) Color.White else Color.Black
-                                )
-                                Text(
-                                    if (spotifyConnected) "Connected" else "Not connected",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = if (spotifyConnected) Color.White else Color.Gray
-                                )
-                            }
-                        }
-                        Button(
-                            onClick = { spotifyConnected = !spotifyConnected },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = if (spotifyConnected) Color.White else Color(0xFF1DB954),
-                                contentColor = if (spotifyConnected) Color(0xFF1DB954) else Color.White
-                            )
-                        ) {
-                            Text(if (spotifyConnected) "Disconnect" else "Connect")
-                        }
-                    }
-                }
-
-                // YouTube Music Connection
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = if (youtubeConnected) Color(0xFFFF0000) else Color.LightGray)
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                painter = painterResource(R.drawable.ic_youtube),
-                                contentDescription = "YouTube Music",
-                                modifier = Modifier.size(24.dp),
-                                tint = if (youtubeConnected) Color.White else Color.Gray
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Column {
-                                Text(
-                                    "YouTube Music",
-                                    fontWeight = FontWeight.Bold,
-                                    color = if (youtubeConnected) Color.White else Color.Black
-                                )
-                                Text(
-                                    if (youtubeConnected) "Connected" else "Not connected",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = if (youtubeConnected) Color.White else Color.Gray
-                                )
-                            }
-                        }
-                        Button(
-                            onClick = { youtubeConnected = !youtubeConnected },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = if (youtubeConnected) Color.White else Color(0xFFFF0000),
-                                contentColor = if (youtubeConnected) Color(0xFFFF0000) else Color.White
-                            )
-                        ) {
-                            Text(if (youtubeConnected) "Disconnect" else "Connect")
-                        }
-                    }
-                }
             }
         },
         confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Done")
-            }
-        }
-    )
-}
-
-@Composable
-fun AppBlockingModal(onDismiss: () -> Unit) {
-    var whitelistedApps by remember { mutableStateOf(listOf("Calculator", "Notes", "Dictionary")) }
-    var newAppName by remember { mutableStateOf("") }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("App Blocking Whitelist") },
-        containerColor = Color.White,
-        text = {
-            Column {
-                Text(
-                    text = "Apps in this list will remain accessible during focus sessions.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.Gray,
-                    modifier = Modifier.padding(bottom = 16.dp)
-                )
-
-                // Add new app
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    OutlinedTextField(
-                        value = newAppName,
-                        onValueChange = { newAppName = it },
-                        label = { Text("Add app") },
-                        modifier = Modifier.weight(1f)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Button(
-                        onClick = {
-                            if (newAppName.isNotEmpty()) {
-                                whitelistedApps = whitelistedApps + newAppName
-                                newAppName = ""
-                            }
-                        },
-                        enabled = newAppName.isNotEmpty()
-                    ) {
-                        Text("Add")
+            TextButton(
+                onClick = {
+                    coroutineScope.launch {
+                        authVM.logout()
+                        Toast.makeText(context, "Logged out successfully", Toast.LENGTH_SHORT).show()
+                        onDismiss()
+                        // Navigate to login screen and clear back stack
+                        val intent = Intent(context, SignInActivity::class.java)
+                        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                        context.startActivity(intent)
                     }
                 }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Whitelisted apps
-                Text(
-                    "Whitelisted Apps:",
-                    fontWeight = FontWeight.Medium,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-
-                whitelistedApps.forEach { app ->
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 2.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5))
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(12.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(app)
-                            IconButton(
-                                onClick = {
-                                    whitelistedApps = whitelistedApps.filter { it != app }
-                                }
-                            ) {
-                                Icon(
-                                    Icons.Outlined.Delete,
-                                    contentDescription = "Remove",
-                                    tint = Color.Red
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Save")
+            ) {
+                Text("Logout")
             }
         },
         dismissButton = {
@@ -1069,7 +385,7 @@ fun AppInfoModal(onDismiss: () -> Unit) {
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text("Build:", fontWeight = FontWeight.Medium)
-                    Text("20250617")
+                    Text("20250728")
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(
@@ -1096,65 +412,6 @@ fun AppInfoModal(onDismiss: () -> Unit) {
 }
 
 @Composable
-fun PrivacyPolicyModal(onDismiss: () -> Unit) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Privacy Policy") },
-        containerColor = Color.White,
-        text = {
-            Column(
-                modifier = Modifier.verticalScroll(rememberScrollState())
-            ) {
-                Text(
-                    "Last updated: June 17, 2025",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray,
-                    modifier = Modifier.padding(bottom = 16.dp)
-                )
-
-                Text(
-                    "Data Collection",
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-                Text(
-                    "We collect information you provide directly to us, such as when you create an account, join study groups, or contact us for support. This includes your name, email address, profile information, and study session data.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(bottom = 16.dp)
-                )
-
-                Text(
-                    "How We Use Your Information",
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-                Text(
-                    "We use the information we collect to provide, maintain, and improve our services, including tracking your study progress, facilitating group study sessions, and sending you relevant notifications.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(bottom = 16.dp)
-                )
-
-                Text(
-                    "Data Security",
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-                Text(
-                    "We implement appropriate security measures to protect your personal information against unauthorized access, alteration, disclosure, or destruction.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(bottom = 16.dp)
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Close")
-            }
-        }
-    )
-}
-
-@Composable
 fun CreditsModal(onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -1170,7 +427,7 @@ fun CreditsModal(onDismiss: () -> Unit) {
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
                 Text(
-                    "• Albarracin, Clarissa M.\n• Garcia, Reina Althea\n• Santos, Miko",
+                    "• Albarracin, Clarissa\n• Garcia, Reina Althea\n• Santos, Miko",
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.padding(bottom = 16.dp)
                 )
@@ -1181,7 +438,7 @@ fun CreditsModal(onDismiss: () -> Unit) {
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
                 Text(
-                    "• Sir Oliver Berris\n• Beta testers and early users",
+                    "• Sir Oliver Berris",
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.padding(bottom = 16.dp)
                 )
@@ -1196,9 +453,8 @@ fun CreditsModal(onDismiss: () -> Unit) {
                             "• Compose Charts by ehsannarmani\n" +
                             "• Vico by patrykandpatrick\n",
                             style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(bottom = 16.dp)
+                    modifier = Modifier.padding(bottom = 8.dp)
                 )
-
                 Text(
                     "Icons & Assets",
                     fontWeight = FontWeight.Bold,
