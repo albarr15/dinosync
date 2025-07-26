@@ -191,43 +191,34 @@ fun StatsActivityScreen(userId : String){
             }
 
             // Streak Section
-            Row {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+            ) {
                 Text(
                     text = "Streak",
                     style = MaterialTheme.typography.titleMedium,
                     color = Color.Gray,
                     modifier = Modifier.padding(vertical = 8.dp)
                 )
-                Text(
-                    text = "Latest Study History",
-                    fontSize = 12.sp,
-                    textAlign = TextAlign.End,
-                    modifier = Modifier.fillMaxWidth()
-                        .padding(top = 5.dp)
-                )
             }
+
 
             Spacer(modifier = Modifier.height(5.dp))
             StreakGrid(Modifier, streakData)
 
             // Sessions Section
-            Row {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+            ) {
                 Text(
                     text = "Sessions",
                     style = MaterialTheme.typography.titleMedium,
                     color = Color.Gray,
                     modifier = Modifier.padding(vertical = 8.dp)
                 )
-                Text(
-                    text = "Latest Session",
-                    fontSize = 12.sp,
-                    textAlign = TextAlign.End,
-                    modifier = Modifier.fillMaxWidth()
-                        .padding(top = 5.dp)
-                )
             }
-
-            Spacer(modifier = Modifier.height(5.dp))
             UserSessionsLineChart(userId, dailyStudyHistory, studySessions)
         }
     }

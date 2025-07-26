@@ -8,6 +8,7 @@ import com.mobdeve.s18.group9.dinosync.model.*
 import kotlinx.coroutines.tasks.await
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Query
+import com.google.firebase.firestore.toObject
 import kotlinx.coroutines.Dispatchers
 import com.google.firebase.firestore.toObjects
 import com.mobdeve.s18.group9.dinosync.getCurrentDate
@@ -374,17 +375,22 @@ class FirebaseRepository {
         }
 
         if (moodEntryIds.isEmpty()) return emptyList()
+
         Log.d("Repository", "Found mood entries : $moodEntryIds")
 
-        // Batch read all mood entries
-
         val moods = mutableListOf<Mood>()
-        moodEntryIds.chunked(10).forEach { chunk ->
-            val moodSnapshot = db.collection("mood")
-                .whereIn("imageKey", chunk)
-                .get().await()
+        moodEntryIds.forEach { moodId ->
+            try {
+                val moodSnapshot = db.collection("mood")
+                    .whereEqualTo("imageKey", moodId)
+                    .get().await()
 
-            moods.addAll(moodSnapshot.toObjects<Mood>())
+                moodSnapshot.documents.firstOrNull()?.toObject<Mood>()?.let { mood ->
+                    moods.add(mood)
+                }
+            } catch (e: Exception) {
+                Log.w("Repository", "Failed to fetch mood $moodId", e)
+            }
         }
 
         return moods

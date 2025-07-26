@@ -377,12 +377,6 @@ fun ProfileActivityScreen(userId: String) {
             // MOOD LOG SECTION
             Row {
                 Text("Mood Log", fontWeight = FontWeight.Medium, fontSize = 18.sp)
-                Text(
-                    text = "Latest Mood",
-                    fontSize = 12.sp,
-                    textAlign = TextAlign.End,
-                    modifier = Modifier.fillMaxWidth()
-                )
             }
             Spacer(modifier = Modifier.height(5.dp))
             MoodTrackerGrid(moods = moodHistory)
@@ -427,7 +421,7 @@ fun MoodTrackerGrid(
 
     for (i in recentMoods.indices) {
         val row = i / columns
-        val col = columns - 1 - (i % columns) // reverse column order
+        val col = i % columns
         if (row < rows) {
             moodGrid[row][col] = recentMoods[recentMoods.size - 1 - i]
         }
