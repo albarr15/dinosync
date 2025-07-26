@@ -62,11 +62,19 @@ class RegisterActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val userId = intent.getIntExtra("userId", -1)
+        val currentUser = FirebaseAuth.getInstance().currentUser
 
-        setContent {
-            DinoSyncTheme {
-                RegisterActivityScreen()
+        if (currentUser != null) {
+            setContent {
+                DinoSyncTheme {
+                    MainScreen(currentUser.uid)
+                }
+            }
+        } else {
+            setContent {
+                DinoSyncTheme {
+                    RegisterActivityScreen()
+                }
             }
         }
     }
