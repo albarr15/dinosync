@@ -54,6 +54,8 @@ import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -70,25 +72,25 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.google.firebase.auth.FirebaseAuth
 import com.mobdeve.s18.group9.dinosync.components.BottomNavigationBar
 import com.mobdeve.s18.group9.dinosync.components.TopActionBar
 import com.mobdeve.s18.group9.dinosync.ui.theme.DarkGreen
 import com.mobdeve.s18.group9.dinosync.ui.theme.DinoSyncTheme
 import com.mobdeve.s18.group9.dinosync.ui.theme.GreenGray
+import com.mobdeve.s18.group9.dinosync.viewmodel.UserViewModel
 
 class SettingsActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val userId = intent.getIntExtra("userId", -1)
+        val userId = FirebaseAuth.getInstance().currentUser?.uid
+            ?: throw IllegalStateException("No authenticated user!")
 
         setContent {
             DinoSyncTheme {
-                //SettingsActivityScreen(/*userId = userId*/)
-
-                // TEMPORARY CHECKER FOR SCREEN ACTIVITY
-                androidx.compose.material3.Surface {
-                    androidx.compose.material3.Text(text = "Settings Activity Screen")
+                DinoSyncTheme {
+                    SettingsActivityScreen(userId = userId)
                 }
             }
         }
@@ -125,12 +127,15 @@ class SettingsActivity : ComponentActivity() {
     }
 }
 
-/*
-@Preview
 @Composable
-fun SettingsActivityScreen() {
+fun SettingsActivityScreen(userId: String) {
     val context = LocalContext.current
-    val userId = initializeUsers().random().userId
+
+    val userVM: UserViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+
+    LaunchedEffect(userId) {
+        userVM.loadUser(userId)
+    }
 
     // Modal states
     var showProfileVisibilityModal by remember { mutableStateOf(false) }
@@ -299,7 +304,7 @@ fun SettingsActivityScreen() {
     }
 
     if (showEditProfileModal) {
-        EditProfileModal(onDismiss = { showEditProfileModal = false })
+        EditProfileModal(onDismiss = { showEditProfileModal = false }, userVM)
     }
 
     if (showSpotifyYouTubeModal) {
@@ -724,11 +729,13 @@ fun BreakRemindersModal(onDismiss: () -> Unit) {
 }
 
 @Composable
-fun EditProfileModal(onDismiss: () -> Unit) {
-    var displayName by remember { mutableStateOf("John Doe") }
-    var username by remember { mutableStateOf("johndoe123") }
-    var bio by remember { mutableStateOf("Focused student passionate about productivity") }
-    var location by remember { mutableStateOf("Manila, Philippines") }
+fun EditProfileModal(onDismiss: () -> Unit,
+                     userVM: UserViewModel) {
+    val user by userVM.user.collectAsState()
+
+    var userName by remember(user) { mutableStateOf(user?.userName ?: "") }
+    var userBio by remember(user) { mutableStateOf(user?.userBio ?: "") }
+    var userProfile by remember(user) { mutableStateOf(user?.userProfileImage ?: "") }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -737,41 +744,38 @@ fun EditProfileModal(onDismiss: () -> Unit) {
         text = {
             Column {
                 OutlinedTextField(
-                    value = displayName,
-                    onValueChange = { displayName = it },
-                    label = { Text("Display Name") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = username,
-                    onValueChange = { username = it },
+                    value = userName,
+                    onValueChange = { userName = it },
                     label = { Text("Username") },
                     modifier = Modifier.fillMaxWidth(),
                     leadingIcon = { Text("@", color = Color.Gray) }
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 OutlinedTextField(
-                    value = bio,
-                    onValueChange = { bio = it },
+                    value = userBio,
+                    onValueChange = { userBio = it },
                     label = { Text("Bio") },
                     modifier = Modifier.fillMaxWidth(),
                     maxLines = 3,
-                    supportingText = { Text("${bio.length}/150") }
+                    supportingText = { Text("${userBio.length}/150") }
                 )
                 Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = location,
-                    onValueChange = { location = it },
-                    label = { Text("Location (Optional)") },
-                    modifier = Modifier.fillMaxWidth()
-                )
+//                OutlinedTextField(
+//                    value = location,
+//                    onValueChange = { location = it },
+//                    label = { Text("Location (Optional)") },
+//                    modifier = Modifier.fillMaxWidth()
+//                )
             }
         },
         confirmButton = {
             TextButton(
-                onClick = onDismiss,
-                enabled = displayName.isNotEmpty() && username.isNotEmpty()
+                onClick = {
+                    // Update user through ViewModel
+                    userVM.updateUser(userName, userBio)
+                    onDismiss()
+                },
+                enabled = userName.isNotEmpty()
             ) {
                 Text("Save Changes")
             }
@@ -1168,7 +1172,7 @@ fun CreditsModal(onDismiss: () -> Unit) {
                             "• pch.vector / Freepik\n" +
                             "• pikisuperstar / Freepik\n" +
                             "• macrovector / Freepik\n" +
-                            "• Gstudioimagen / Freepik\n"
+                            "• Gstudioimagen / Freepik\n" +
                             "• Orin zuu / the Noun Project\n" +
                             "• etika ariatna / the Noun Project\n",
                     style = MaterialTheme.typography.bodyMedium,
@@ -1276,4 +1280,3 @@ fun SettingRow(label: String, icon: ImageVector? = null, hasSwitch: Boolean = fa
         }
     }
 }
-*/

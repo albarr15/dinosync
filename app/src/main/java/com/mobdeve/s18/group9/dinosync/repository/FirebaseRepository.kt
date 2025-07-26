@@ -306,6 +306,10 @@ class FirebaseRepository {
         return snapshot.toObject(User::class.java)
     }
 
+    suspend fun updateUser(user: User) {
+        db.collection("users").document(user.userId).set(user).await()
+    }
+
     // ✔️
     suspend fun getAllUsers(): List<User> {
         val snapshot = db.collection("users").get().await()
