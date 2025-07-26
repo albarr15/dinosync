@@ -306,8 +306,26 @@ class FirebaseRepository {
         return snapshot.toObject(User::class.java)
     }
 
-    suspend fun updateUser(user: User) {
-        db.collection("users").document(user.userId).set(user).await()
+    suspend fun updateUser(user: User): Result<Unit> {
+        return try {
+            // Check username uniqueness (exclude current user)
+            val usernameQuery = db.collection("users")
+                .whereEqualTo("userName", user.userName)
+                .whereNotEqualTo(FieldPath.documentId(), user.userId)
+                .get()
+                .await()
+
+            val usernameExists = usernameQuery.isEmpty.not()
+
+            if (usernameExists) {
+                Result.failure(IllegalArgumentException("Username '${user.userName}' is already taken."))
+            } else {
+                db.collection("users").document(user.userId).set(user).await()
+                Result.success(Unit)
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 
     // ✔️

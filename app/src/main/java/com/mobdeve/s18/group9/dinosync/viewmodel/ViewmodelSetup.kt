@@ -429,38 +429,36 @@ class UserViewModel : ViewModel() {
     private val _isUpdating = MutableStateFlow(false)
     val isUpdating: StateFlow<Boolean> = _isUpdating
 
-    private val _updateError = MutableStateFlow<String?>(null)
-    val updateError: StateFlow<String?> = _updateError
-
     fun loadUser(userId: String) {
         viewModelScope.launch {
             _user.value = repository.getUserById(userId)
         }
     }
 
-    fun updateUser(username: String,
-                   bio: String?) {
-        val currentUser = _user.value ?: return
+    suspend fun updateUser(username: String,
+                   bio: String?) : Result<Unit>
+    {
+        val currentUser = _user.value ?: return Result.failure(Exception("User not found."))
 
-        viewModelScope.launch {
-            _isUpdating.value = true
-            _updateError.value = null
+        _isUpdating.value = true
 
-            try {
-                val updatedUser = currentUser.copy(
-                    userName = username,
-                    userBio = bio ?: ""
-                )
+        return try {
+            val updatedUser = currentUser.copy(
+                userName = username,
+                userBio = bio ?: ""
+            )
 
-                repository.updateUser(updatedUser)
-
+            val result = repository.updateUser(updatedUser)
+            if (result.isSuccess) {
                 _user.value = updatedUser
-            } catch (e: Exception) {
-                _updateError.value = e.message
-                Log.e("UserViewModel", "Error updating profile", e)
-            } finally {
-                _isUpdating.value = false
             }
+
+            result
+            } catch (e: Exception) {
+                Log.e("UserViewModel", "Error updating profile", e)
+                Result.failure(e)
+        } finally {
+            _isUpdating.value = false
         }
     }
 

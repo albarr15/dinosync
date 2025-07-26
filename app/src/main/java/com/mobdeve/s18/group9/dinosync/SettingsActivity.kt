@@ -3,6 +3,8 @@ package com.mobdeve.s18.group9.dinosync
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
@@ -59,6 +61,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -79,6 +82,8 @@ import com.mobdeve.s18.group9.dinosync.ui.theme.DarkGreen
 import com.mobdeve.s18.group9.dinosync.ui.theme.DinoSyncTheme
 import com.mobdeve.s18.group9.dinosync.ui.theme.GreenGray
 import com.mobdeve.s18.group9.dinosync.viewmodel.UserViewModel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 class SettingsActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -732,6 +737,8 @@ fun BreakRemindersModal(onDismiss: () -> Unit) {
 fun EditProfileModal(onDismiss: () -> Unit,
                      userVM: UserViewModel) {
     val user by userVM.user.collectAsState()
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
 
     var userName by remember(user) { mutableStateOf(user?.userName ?: "") }
     var userBio by remember(user) { mutableStateOf(user?.userBio ?: "") }
@@ -771,11 +778,41 @@ fun EditProfileModal(onDismiss: () -> Unit,
         confirmButton = {
             TextButton(
                 onClick = {
-                    // Update user through ViewModel
-                    userVM.updateUser(userName, userBio)
-                    onDismiss()
-                },
-                enabled = userName.isNotEmpty()
+                    if (userName.isBlank() || userBio.isBlank()) {
+                        Toast.makeText(context, "Please fill all fields", Toast.LENGTH_SHORT).show()
+                        return@TextButton
+                    }
+
+                    if (userBio.length > 150) {
+                        Toast.makeText(
+                            context,
+                            "Bio must be 150 characters or less",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        return@TextButton
+                    }
+
+                    coroutineScope.launch {
+                        val result = userVM.updateUser(userName, userBio)
+                        result
+                            .onSuccess {
+                                Toast.makeText(
+                                    context,
+                                    "Succesfully updated profile!",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                                onDismiss()
+                            }
+                            .onFailure { e ->
+                                Toast.makeText(
+                                    context,
+                                    e.message ?: "Failed to update profile",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                                Log.e("EditProfileModal", "Error: ${e.message}", e)
+                            }
+                    }
+                }
             ) {
                 Text("Save Changes")
             }
