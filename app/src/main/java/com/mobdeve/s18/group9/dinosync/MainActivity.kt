@@ -190,16 +190,21 @@ class MainActivity : ComponentActivity() {
 
         val prefs = getSharedPreferences("spotify_prefs", Context.MODE_PRIVATE)
         val accessToken = prefs.getString("access_token", null)
-        val request = AuthorizationRequest.Builder(
-            SpotifyConstants.CLIENT_ID,
-            AuthorizationResponse.Type.TOKEN,
-            SpotifyConstants.REDIRECT_URI
-        )
-            .setScopes(SpotifyConstants.SCOPES)
-            .build()
 
-        AuthorizationClient.openLoginActivity(this, SpotifyConstants.REQUEST_CODE, request)
+        if (accessToken == null) {
+            val request = AuthorizationRequest.Builder(
+                SpotifyConstants.CLIENT_ID,
+                AuthorizationResponse.Type.TOKEN,
+                SpotifyConstants.REDIRECT_URI
+            )
+                .setScopes(SpotifyConstants.SCOPES)
+                .build()
+
+            AuthorizationClient.openLoginActivity(this, SpotifyConstants.REQUEST_CODE, request)
+        } else{
+            connectToSpotify()
         }
+    }
 
     private fun connectToSpotify() {
             spotifyAppRemote?.let { SpotifyAppRemote.disconnect(it) }
