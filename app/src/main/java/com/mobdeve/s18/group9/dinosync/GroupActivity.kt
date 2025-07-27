@@ -548,10 +548,10 @@ fun GroupActivityScreen(
             Spacer(modifier = Modifier.height(5.dp))
 
             // Show button to start session if user is a member
-            if (isMemberJoined) {
+            if (isMemberJoined ) {
                 val userGroupMember = groupMembersState.find { it.userId == userId && it.endedAt.isNullOrEmpty() }
 
-                if (userGroupMember != null) {
+                if (userGroupMember != null && selectedTab == "Group Activity") {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth(),
