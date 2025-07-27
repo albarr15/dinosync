@@ -177,6 +177,7 @@ fun ProfileActivityScreen(userId: String) {
                 .background(Color.White)
                 .padding(16.dp)
         ) {
+            Spacer(modifier = Modifier.height(16.dp))
             TopActionBar(
                 onProfileClick = {
                     val intent = Intent(context, ProfileActivity::class.java)
