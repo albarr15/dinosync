@@ -22,7 +22,6 @@ class SpotifyAuthorizationActivity : AppCompatActivity() {
                 AuthorizationResponse.Type.CODE -> {
                     val authCode = response.code
                     Log.d("SpotifyAuth", "Authorization code: $authCode")
-                    // Pass to backend or exchange for token here
 
                     val returnIntent = Intent(this, MainActivity::class.java)
                     returnIntent.putExtra("SPOTIFY_AUTH_CODE", authCode)
@@ -40,8 +39,6 @@ class SpotifyAuthorizationActivity : AppCompatActivity() {
                 }
             }
         }
-        // Optional: close this activity and return to main
-
         finish()
     }
 
