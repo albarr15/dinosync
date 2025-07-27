@@ -330,9 +330,9 @@ fun FocusStudyScreen(
     }
 
     // ✅ Timer countdown logic
-    LaunchedEffect(currentSessionId, currentCompanion) {
-        if (isRunning) {
-            while (timeLeft > 0) {
+    LaunchedEffect(isRunning) {
+        //if (isRunning && timeLeft > 0) { //Pause
+            while (isRunning && timeLeft > 0) {
                 delay(1000L)
                 timeLeft = maxOf(0, timeLeft - 1)
             }
@@ -381,7 +381,7 @@ fun FocusStudyScreen(
                     Log.d("CompanionVM ", "ERROR: no currentCompanion found.")
                 }
             }
-        }
+
     }
 
     var localProgress by remember { mutableStateOf(0f) }
