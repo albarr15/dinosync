@@ -633,7 +633,7 @@ fun GroupActivityScreen(
                         group?.groupId.toString(),
                         dailyStudyHistory,
                         studySessions,
-                        groupMembers                //groupMembers: List<GroupMember>
+                        groupMembers
                     )
                 }
             }

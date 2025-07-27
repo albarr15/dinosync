@@ -219,7 +219,7 @@ fun StatsActivityScreen(userId : String){
                     modifier = Modifier.padding(vertical = 8.dp)
                 )
             }
-            UserSessionsLineChart(userId, dailyStudyHistory, studySessions)
+            UserSessionsLineChart(userId, dailyStudyHistory, studySessions, emptyList())
         }
     }
 }
