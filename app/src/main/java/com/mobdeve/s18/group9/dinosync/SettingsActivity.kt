@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.addCallback
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
@@ -74,6 +75,10 @@ class SettingsActivity : ComponentActivity() {
         val userId = FirebaseAuth.getInstance().currentUser?.uid
             ?: throw IllegalStateException("No authenticated user!")
 
+        onBackPressedDispatcher.addCallback(this) {
+            navigateToMainActivity(userId)
+        }
+
         setContent {
             DinoSyncTheme {
                 DinoSyncTheme {
@@ -82,6 +87,16 @@ class SettingsActivity : ComponentActivity() {
             }
         }
     }
+
+    private fun navigateToMainActivity(userId: String) {
+        val intent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            putExtra("userId", userId)
+        }
+        startActivity(intent)
+        finish()
+    }
+
     /******** ACTIVITY LIFE CYCLE ******** */
     override fun onStart() {
         super.onStart()

@@ -5,6 +5,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
+import androidx.activity.addCallback
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Image
@@ -80,12 +81,26 @@ class ProfileActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         val userId = intent.getStringExtra("userId") ?: ""
+        onBackPressedDispatcher.addCallback(this) {
+            navigateToMainActivity(userId)
+        }
+
         setContent {
             DinoSyncTheme {
                 ProfileActivityScreen(userId = userId)
             }
         }
     }
+
+    private fun navigateToMainActivity(userId: String) {
+        val intent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            putExtra("userId", userId)
+        }
+        startActivity(intent)
+        finish()
+    }
+
     /******** ACTIVITY LIFE CYCLE ******** */
     override fun onStart() {
         super.onStart()

@@ -5,6 +5,7 @@ import android.content.Intent
 import android.util.Log
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.addCallback
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Image
@@ -73,11 +74,23 @@ class DiscoverGroupsActivity : ComponentActivity() {
         val userId = intent.getStringExtra("userId") ?: "-1"
         Log.d("CurrentUser", "Logged in userId in DiscoverGroupsActivity = $userId")
 
+        onBackPressedDispatcher.addCallback(this) {
+            navigateToMainActivity(userId)
+        }
+
         setContent {
             DinoSyncTheme {
                 DiscoverGroupsScreen(userId)
             }
         }
+    }
+    private fun navigateToMainActivity(userId: String) {
+        val intent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            putExtra("userId", userId)
+        }
+        startActivity(intent)
+        finish()
     }
 
     /******** ACTIVITY LIFE CYCLE ******** */
