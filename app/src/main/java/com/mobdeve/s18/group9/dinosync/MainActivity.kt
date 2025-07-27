@@ -1099,15 +1099,14 @@ fun requireSpotifyModal(
         onDismissRequest = onDismiss,
         title = { Text("Spotify Required") },
         text = {
-            Text("To use the Spotify feature, please install the Spotify app from the Play Store.")
+            Text("To play music from your Spotify account during study sessions, please install the Spotify app before proceeding.")
         },
         confirmButton = {
             TextButton(
                 onClick = {
-                    // Launch Spotify on Play Store
                     val spotifyIntent = Intent(Intent.ACTION_VIEW).apply {
                         data = android.net.Uri.parse("https://play.google.com/store/apps/details?id=com.spotify.music")
-                        setPackage("com.android.vending") // Optional, opens directly in Play Store
+                        setPackage("com.android.vending")
                     }
                     context.startActivity(spotifyIntent)
                 }
