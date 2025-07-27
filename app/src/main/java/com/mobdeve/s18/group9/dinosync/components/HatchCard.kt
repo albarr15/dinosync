@@ -14,18 +14,20 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.mobdeve.s18.group9.dinosync.model.Companion
+import com.mobdeve.s18.group9.dinosync.ui.theme.DarkGreen
 
 @Composable
 fun HatchCard(
     companionName: String,
-    imageRes: Int
+    imageRes: Int,
+    onContinueClick: () -> Unit = {}
 ) {
     Card(
         modifier = Modifier
             .width(300.dp)
             .height(500.dp),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        colors = CardDefaults.cardColors(containerColor = Color.White),
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
 
@@ -76,6 +78,20 @@ fun HatchCard(
                     color = Color.Gray,
                     textAlign = TextAlign.Center
                 )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Button(
+                    onClick = onContinueClick,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = DarkGreen,
+                        contentColor = Color.White
+                    ),
+                    shape = RoundedCornerShape(20.dp),
+                    modifier = Modifier.align(Alignment.End)
+                ) {
+                    Text("Get a new egg")
+                }
             }
         }
     }

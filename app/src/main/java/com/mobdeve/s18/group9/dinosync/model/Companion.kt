@@ -8,7 +8,7 @@ import com.google.firebase.firestore.PropertyName
 // originally Achievements + DinoCatalog
 // represents egg + hatched dinos
 data class Companion(
-    var requiredHatchTime: Int = 3600, // how many seconds need to hatch; default to 1 hr
+    var requiredHatchTime: Int = 120, // how many seconds need to hatch; default to 2 mins
     var remainingHatchTime: Int = -1, // sentinel value; will be set to requiredHatchTime if not provided
     var typeString: String = DinoType.entries.random().name, // store as string in Firestore
     var name: String = "", // will be set according to type
