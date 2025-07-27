@@ -22,7 +22,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -63,8 +65,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mobdeve.s18.group9.dinosync.model.Mood
+import com.mobdeve.s18.group9.dinosync.ui.theme.DirtyGreen
 import com.mobdeve.s18.group9.dinosync.viewmodel.ProfileViewModel
 
 
@@ -243,7 +248,24 @@ fun ProfileActivityScreen(userId: String) {
 
 
             if (latestCompanions.isEmpty()) {
-                Text("No companions yet.", color = Color.Gray)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("No companions yet.", color = Color.Gray)
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    Text(
+                        text = "View companions here",
+                        color = DirtyGreen,
+                        style = TextStyle(
+                            textDecoration = TextDecoration.Underline
+                        ),
+                        modifier = Modifier.clickable {
+                            val intent = Intent(context, CompanionActivity::class.java)
+                            intent.putExtra("userId", userId)
+                            context.startActivity(intent)
+                        }
+                    )
+                }
             } else {
                 LazyRow(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -305,7 +327,24 @@ fun ProfileActivityScreen(userId: String) {
                 .take(3)
 
             if (topGroups.isEmpty()) {
-                Text("No groups yet.", color = Color.Gray)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("No groups yet.", color = Color.Gray)
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    Text(
+                        text = "View groups here",
+                        color = DirtyGreen,
+                        style = TextStyle(
+                            textDecoration = TextDecoration.Underline
+                        ),
+                        modifier = Modifier.clickable {
+                            val intent = Intent(context, DiscoverGroupsActivity::class.java)
+                            intent.putExtra("userId", userId)
+                            context.startActivity(intent)
+                        }
+                    )
+                }
             } else {
                 LazyRow(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
