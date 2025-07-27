@@ -89,8 +89,8 @@ class CompanionViewModel : ViewModel() {
                 // 2. Create new egg
                 val newEgg = Companion(
                     userId = userId,
-                    requiredHatchTime = 5, // TODO: adjust as needed
-                    remainingHatchTime = 5,
+                    requiredHatchTime = 120,
+                    remainingHatchTime = 120,
                     current = true,
                     dateCreated = now
                 )
@@ -557,7 +557,6 @@ class StatsViewModel : ViewModel() {
     }
 
 
-    // TODO: LIMIT TO 5 COURSES
     fun loadPieData(userId: String) {
         viewModelScope.launch {
             val courses = repository.getAllUserCourses(userId)
