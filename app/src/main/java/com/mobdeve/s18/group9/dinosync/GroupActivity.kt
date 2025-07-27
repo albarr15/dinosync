@@ -564,7 +564,7 @@ fun GroupActivityScreen(
                                 groupMemberVM.startNewGroupSession(
                                     dailyStudyHistoryViewModel = dailyHistoryVM,
                                     userId = userId,
-                                    moodId = selectedMoodState.value!!.name,
+                                    moodId = selectedMoodState.value?.name ?: "",
                                     groupMember = userGroupMember,
                                     additionalMinutes = targetStudyPeriodMinutes.toFloatOrNull()?: 0f,
                                     startedAt = startedAt

@@ -214,6 +214,13 @@ fun StudyDayLineChart(
     groupMembers: List<GroupMember>
 ) {
     val modelProducer = remember { CartesianChartModelProducer() }
+    val hrsOfDay = listOf("12AM", "1AM", "2AM", "3AM", "4AM", "5AM", "6AM", "7AM", "8AM", "9AM", "10AM", "11AM", "12PM",
+        "1PM", "2PM", "3PM", "4PM", "5PM", "6PM", "7PM", "8PM", "9PM", "10PM", "11PM")
+    val bottomAxisValueFormatter = CartesianValueFormatter { context, value, _ ->
+        val index = value.toInt()
+        val label = hrsOfDay[index]
+        label
+    }
 
     LaunchedEffect(filter, dailyStudyHistory, studySessions) {
         val todayDate = Date()
@@ -233,6 +240,7 @@ fun StudyDayLineChart(
             startAxis = VerticalAxis.rememberStart(
             ),
             bottomAxis = HorizontalAxis.rememberBottom(
+                valueFormatter = bottomAxisValueFormatter
             ),
         ),
         modelProducer = modelProducer,
