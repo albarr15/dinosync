@@ -61,6 +61,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.toSize
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.google.firebase.auth.FirebaseAuth
 import com.mobdeve.s18.group9.dinosync.model.Course
 import com.mobdeve.s18.group9.dinosync.ui.theme.YellowGreen
 import com.mobdeve.s18.group9.dinosync.viewmodel.CourseViewModel
@@ -71,7 +72,9 @@ class DiscoverGroupsActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        val userId = intent.getStringExtra("userId") ?: "-1"
+        val userId = FirebaseAuth.getInstance().currentUser?.uid
+            ?: throw IllegalStateException("No authenticated user!")
+
         Log.d("CurrentUser", "Logged in userId in DiscoverGroupsActivity = $userId")
 
         onBackPressedDispatcher.addCallback(this) {

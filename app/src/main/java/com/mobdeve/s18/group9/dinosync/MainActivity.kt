@@ -222,7 +222,7 @@ class MainActivity : ComponentActivity() {
 
             AuthorizationClient.openLoginActivity(this, SpotifyConstants.REQUEST_CODE, request)
             //Toast.makeText(this, "Connected to Spotify!", Toast.LENGTH_SHORT).show()
-        } else{
+        } else {
             connectToSpotify()
             //Toast.makeText(this, "Connected to Spotify!", Toast.LENGTH_SHORT).show()
         }
