@@ -87,7 +87,8 @@ dependencies {
     implementation("io.coil-kt.coil3:coil-network-okhttp:3.2.0")
 
     // Import Spotify API
-    implementation ("com.spotify.android:auth:1.2.5")
+    implementation (libs.auth)
+    //implementation (libs.spotify.app.remote.release)
 
     implementation (libs.retrofit)
     implementation (libs.converter.gson)

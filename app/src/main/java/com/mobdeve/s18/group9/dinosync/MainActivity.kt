@@ -192,6 +192,13 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    /**
+     * Called when the activity is becoming visible to the user.
+     *
+     * This is typically where the Spotify connection is initiated by calling {@link #connectToSpotify()}.
+     * Ensures the app reconnects to Spotify when the activity resumes.
+     */
+
     override fun onStart() {
         super.onStart()
         println("MainActivity onStart()")
@@ -204,22 +211,33 @@ class MainActivity : ComponentActivity() {
         val accessToken = prefs.getString("access_token", null)
 
         if (accessToken == null) {
+            // This AuthorizationRequest.Builder and openLoginActivity keeps launching when i clicked Home button
+            // meaning the access token is not being stored properly
             Toast.makeText(this, "Logging in to Spotify...", Toast.LENGTH_SHORT).show()
             val request = AuthorizationRequest.Builder(
                 SpotifyConstants.CLIENT_ID,
-                AuthorizationResponse.Type.TOKEN,
+                AuthorizationResponse.Type.CODE,
                 SpotifyConstants.REDIRECT_URI
             )
                 .setScopes(SpotifyConstants.SCOPES)
                 .build()
 
             AuthorizationClient.openLoginActivity(this, SpotifyConstants.REQUEST_CODE, request)
-
+            Toast.makeText(this, "Connected to Spotify!", Toast.LENGTH_SHORT).show()
         } else{
             connectToSpotify()
             //Toast.makeText(this, "Connected to Spotify!", Toast.LENGTH_SHORT).show()
         }
+
     }
+
+    /**
+     * Initiates a connection to the Spotify app using SpotifyAppRemote.
+     *
+     * This method sets the required connection parameters such as CLIENT_ID and REDIRECT_URI,
+     * and attempts to establish a remote session. If successful, it calls {@link #connected()}.
+     * On failure, the error is logged or handled appropriately.
+     */
 
     private fun connectToSpotify() {
             spotifyAppRemote?.let { SpotifyAppRemote.disconnect(it) }
@@ -232,15 +250,15 @@ class MainActivity : ComponentActivity() {
             SpotifyAppRemote.connect(this, connectionParams, object : Connector.ConnectionListener {
                 override fun onConnected(remote: SpotifyAppRemote) {
                     spotifyAppRemote = remote
-                    Log.d("♫ Spotify", "Connected to Spotify App Remote")
+                    Log.d("♫ Spotify connectToSpotify", "Connected to Spotify App Remote")
                     connected()
                 }
 
                 override fun onFailure(error: Throwable) {
-                    Log.e("♫ Spotify", "Connection failed", error)
+                    Log.e("♫ Spotify connectToSpotify", "Connection failed", error)
                     when (error) {
                         is NotLoggedInException, is UserNotAuthorizedException -> {
-                            Log.e("♫ Spotify", "User not logged in or authorized.")
+                            Log.e("♫ Spotify connectToSpotify", "User not logged in or authorized.")
                         }
                     }
                 }
@@ -249,12 +267,19 @@ class MainActivity : ComponentActivity() {
                 if (success) {
                     spotifyPlaybackManager.subscribeToPlayerState(
                         onPlayerStateChanged = { playerState ->
-                            Log.d("Spotify", "${playerState.track.name} by ${playerState.track.artist.name}")
+                            Log.d("♫ Spotify connectToSpotify", "${playerState.track.name} by ${playerState.track.artist.name}")
                         }
                     )
                 }
             }
     }
+
+    /**
+     * Called when the activity is no longer visible to the user.
+     *
+     * This method is used to clean up resources, including disconnecting from Spotify
+     * using SpotifyAppRemote.disconnect() to prevent memory leaks and save battery.
+     */
 
     override fun onStop() {
         super.onStop()
@@ -268,10 +293,20 @@ class MainActivity : ComponentActivity() {
         spotifyPlaybackManager.disconnect() //Unresolved reference 'spotifyPlaybackManager'.
     }
 
+    /**
+     * Callback method invoked after a successful connection to Spotify.
+     *
+     * Use this method to interact with Spotify, such as fetching player state,
+     * controlling playback, or updating the UI based on user session.
+     *
+     * This function is typically called from within the onConnected() method of SpotifyAppRemote.
+     */
+
     private fun connected() {
+        Toast.makeText(this, "About to play music! connected() ", Toast.LENGTH_SHORT).show()
         spotifyAppRemote?.apply {
             // Uncomment to instantly play 'Sun Bleached Flies' upon logging in to Spotify.
-            // playerApi.play("spotify:track:6fKIyDJHZ9m84jRhSmpuwS")
+            //playerApi.play("spotify:track:6fKIyDJHZ9m84jRhSmpuwS")
 
             playerApi.subscribeToPlayerState()
                 .setEventCallback { playerState ->
@@ -293,6 +328,16 @@ class MainActivity : ComponentActivity() {
                 }
         }
     }
+    /**
+     * Handles the result returned from the Spotify authorization activity.
+     *
+     * @param requestCode The request code originally supplied to startActivityForResult().
+     * @param resultCode The integer result code returned by the child activity through its setResult().
+     * @param intent The data returned from the Spotify login activity.
+     *
+     * This method extracts the AuthorizationResponse from the intent data and processes the result
+     * based on its type (e.g., TOKEN, CODE, or ERROR).
+     */
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, intent: Intent?) {
         super.onActivityResult(requestCode, resultCode, intent)
@@ -300,24 +345,25 @@ class MainActivity : ComponentActivity() {
         if (requestCode == SpotifyConstants.REQUEST_CODE) {
             val response = AuthorizationClient.getResponse(resultCode, intent)
             when (response.type) {
-                AuthorizationResponse.Type.TOKEN -> {
-                    val accessToken = response.accessToken
-                    Log.d("♫ SpotifyAuth", "Access token received: $accessToken")
+                AuthorizationResponse.Type.CODE -> {
+                    val authorizationCode = response.code
+                    Log.d("♫ Spotify onActivityResult", "Authorization code received: $authorizationCode")
 
-                    // Store access token
+                    // Store code (optional — usually exchanged server-side or via Web API)
                     val prefs = getSharedPreferences("spotify_prefs", Context.MODE_PRIVATE)
-                    prefs.edit().putString("access_token", accessToken).apply()
+                    prefs.edit().putString("authorization_code", authorizationCode).apply()
 
-                    connectToSpotify()
+                    connectToSpotify() // If this relies only on AppRemote, this is fine
+
                 }
 
                 AuthorizationResponse.Type.ERROR -> {
-                    Log.e("♫ SpotifyAuth", "Auth error: ${response.error}")
+                    Log.e("♫ Spotify onActivityResult", "Auth error: ${response.error}")
                     Toast.makeText(this, "Spotify authentication failed", Toast.LENGTH_SHORT).show()
                 }
 
                 else -> {
-                    Log.w("♫ SpotifyAuth", "Auth cancelled or unknown response.")
+                    Log.w("♫ Spotify onActivityResult", "Auth cancelled or unknown response.")
                 }
             }
         }
