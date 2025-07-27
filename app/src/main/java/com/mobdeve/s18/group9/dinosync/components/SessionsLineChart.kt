@@ -1,6 +1,7 @@
 
 package com.mobdeve.s18.group9.dinosync.components
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -56,28 +57,34 @@ sealed class ChartFilter {
 fun filterDailyHistoryByFilter(
     filter: ChartFilter,
     dailyStudyHistory: List<DailyStudyHistory>,
-    studySessions: List<StudySession>
+    studySessions: List<StudySession>,
+    groupMembers: List<GroupMember>
 ): List<DailyStudyHistory> {
     return when (filter) {
         is ChartFilter.ByUser -> {
             dailyStudyHistory.filter { history ->
                 history.userId == filter.userId &&
                         studySessions.any { session ->
-                            session.userId == filter.userId && session.status == "completed"
+                            session.userId == filter.userId &&
+                                    session.status == "completed" &&
+                                    session.sessionDate == history.date
                         }
             }
         }
         is ChartFilter.ByGroup -> {
-            val groupUserIds = filter.groupMembers
+            val userIdsInGroup = filter.groupMembers
                 .filter { it.groupId == filter.groupId }
                 .map { it.userId }
+                .toSet()
 
             dailyStudyHistory.filter { history ->
-                history.userId in groupUserIds &&
-                studySessions.any { session ->
-                    session.userId == history.userId &&
-                            session.status == "completed"
-                }
+                history.userId in userIdsInGroup &&
+                        groupMembers.any { member ->
+                            member.userId == history.userId &&
+                                    member.groupId == filter.groupId &&
+                                    member.startedAt.isNotEmpty() &&
+                                    member.endedAt.isNotEmpty()
+                        }
             }
         }
     }
@@ -88,48 +95,70 @@ fun aggregateHourlyChartData(
     sessions: List<StudySession>,
     targetDate: Date,
     filter: ChartFilter,
+    groupMembers: List<GroupMember>
 ): Map<Int, Int> {
     val formatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
     val targetDateStr = formatter.format(targetDate)
 
     val hourlyMap = mutableMapOf<Int, Int>()
 
-    val filteredSessions = when (filter) {
+    when (filter) {
         is ChartFilter.ByUser -> {
-            sessions.filter { session ->
+            val filteredSessions = sessions.filter { session ->
                 session.userId == filter.userId &&
                         session.status == "completed" &&
                         session.sessionDate == targetDateStr
             }
+
+            filteredSessions.forEach { session ->
+                session.endedAt?.toDate()?.let { endedDate ->
+                    val calendar = Calendar.getInstance(TimeZone.getTimeZone("Asia/Manila"))
+                    calendar.time = endedDate
+                    val startHour = calendar.get(Calendar.HOUR_OF_DAY)
+
+                    val totalMinutes = session.hourSet * 60 + session.minuteSet
+                    hourlyMap[startHour] = (hourlyMap[startHour] ?: 0) + totalMinutes
+                }
+            }
         }
+
         is ChartFilter.ByGroup -> {
             val groupUserIds = filter.groupMembers
                 .filter { it.groupId == filter.groupId }
                 .map { it.userId }
+                .toSet()
 
-            sessions.filter { session ->
-                session.userId in groupUserIds &&
-                        session.status == "completed" && session.sessionDate == targetDateStr
+            val targetDateOnly = formatter.parse(targetDateStr)!!
+
+            groupMembers.filter { member ->
+                member.userId in groupUserIds &&
+                        member.groupId == filter.groupId &&
+                        member.startedAt.isNotEmpty() && member.endedAt.isNotEmpty()
+            }.forEach { member ->
+                try {
+                    val start = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault()).parse(member.startedAt)
+                    val end = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault()).parse(member.endedAt)
+
+                    if (start != null && end != null) {
+                        val cal = Calendar.getInstance(TimeZone.getTimeZone("Asia/Manila"))
+                        cal.time = end
+                        val endHour = cal.get(Calendar.HOUR_OF_DAY)
+
+                        val memberDateStr = formatter.format(start)
+                        val isSameDate = memberDateStr == targetDateStr
+
+                        if (isSameDate) {
+                            val durationInMinutes = ((end.time - start.time) / 60000).toInt()
+                            hourlyMap[endHour] = (hourlyMap[endHour] ?: 0) + durationInMinutes
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.e("HourlyChart", "Date parse error for member: ${member.userId}", e)
+                }
             }
         }
     }
 
-    // Log.d("SessionsLineChart", "Found filtered sessions: $filteredSessions")
-    filteredSessions.forEach { session ->
-        session.endedAt?.toDate()?.let { endedDate ->
-            //Log.d("SessionsLineChart", "EndedAt: ${session.endedAt?.toDate()}")
-
-            val calendar = Calendar.getInstance(TimeZone.getTimeZone("Asia/Manila"))
-            calendar.time = endedDate
-            val startHour = calendar.get(Calendar.HOUR_OF_DAY)
-            //Log.d("SessionsLineChart", "Bucketed hour: $startHour")
-
-
-            val totalMinutes = session.hourSet * 60 + session.minuteSet
-            hourlyMap[startHour] = (hourlyMap[startHour] ?: 0) + totalMinutes
-        }
-    }
-    //Log.d("SessionsLineChart", "aggregateHourlyMap: $hourlyMap")
     return hourlyMap.toSortedMap()
 }
 
@@ -138,7 +167,8 @@ fun aggregateHourlyChartData(
 fun SessionsLineChart(
     filter: ChartFilter,
     dailyStudyHistory: List<DailyStudyHistory>,
-    studySessions: List<StudySession>
+    studySessions: List<StudySession>,
+    groupMembers: List<GroupMember>
 ) {
     var selectedTab by remember { mutableStateOf("Day") }
 
@@ -168,10 +198,10 @@ fun SessionsLineChart(
         contentAlignment = Alignment.Center
     ) {
         when (selectedTab) {
-            "Day" -> StudyDayLineChart(dailyStudyHistory, studySessions, filter)
-            "Week" -> StudyWeeklyLineChart(dailyStudyHistory, studySessions, filter)
-            "Month" -> StudyMonthlyLineChart(dailyStudyHistory, studySessions, filter)
-            "Year" -> StudyYearlyLineChart(dailyStudyHistory, studySessions, filter)
+            "Day" -> StudyDayLineChart(dailyStudyHistory, studySessions, filter, groupMembers)
+            "Week" -> StudyWeeklyLineChart(dailyStudyHistory, studySessions, filter, groupMembers)
+            "Month" -> StudyMonthlyLineChart(dailyStudyHistory, studySessions, filter, groupMembers)
+            "Year" -> StudyYearlyLineChart(dailyStudyHistory, studySessions, filter, groupMembers)
         }
     }
 }
@@ -180,13 +210,14 @@ fun SessionsLineChart(
 fun StudyDayLineChart(
     dailyStudyHistory: List<DailyStudyHistory>,
     studySessions: List<StudySession>,
-    filter: ChartFilter
+    filter: ChartFilter,
+    groupMembers: List<GroupMember>
 ) {
     val modelProducer = remember { CartesianChartModelProducer() }
 
     LaunchedEffect(filter, dailyStudyHistory, studySessions) {
         val todayDate = Date()
-        val chartData = aggregateHourlyChartData(studySessions, todayDate, filter)
+        val chartData = aggregateHourlyChartData(studySessions, todayDate, filter, groupMembers)
         val fullSeries = (0..23).map { hour -> chartData[hour] ?: 0 }
         modelProducer.runTransaction {
             lineSeries { series(fullSeries) }
@@ -219,7 +250,8 @@ fun StudyDayLineChart(
 fun StudyWeeklyLineChart(
     dailyStudyHistory: List<DailyStudyHistory>,
     studySessions: List<StudySession>,
-    filter: ChartFilter
+    filter: ChartFilter,
+    groupMembers: List<GroupMember>
 ) {
     val modelProducer = remember { CartesianChartModelProducer() }
     val daysOfWeek = listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
@@ -235,7 +267,8 @@ fun StudyWeeklyLineChart(
         val filteredHistory = filterDailyHistoryByFilter(
             filter,
             dailyStudyHistory,
-            studySessions
+            studySessions,
+            groupMembers
         )
 
         val calendar = Calendar.getInstance(TimeZone.getTimeZone("Asia/Manila"))
@@ -258,9 +291,10 @@ fun StudyWeeklyLineChart(
         // Filter only this week's entries
         val thisWeekHistory = filteredHistory.filter { daily ->
             val currentDate = dateFormatter.parse(daily.date)
+            !currentDate.before(startOfWeek) && !currentDate.after(endOfWeek)
 
-            currentDate.after(startOfWeek) && currentDate.before(endOfWeek) ||
-                    currentDate == startOfWeek || currentDate == endOfWeek
+//            currentDate.after(startOfWeek) && currentDate.before(endOfWeek) ||
+//                    currentDate == startOfWeek || currentDate == endOfWeek
         }
         val weeklyData = thisWeekHistory
             .groupBy { daily ->
@@ -270,8 +304,12 @@ fun StudyWeeklyLineChart(
                 dow
             }
             .mapValues { entry ->
-                val totalMins = entry.value.map { it.totalIndividualMinutes }.sum()
-                // Log.d("StudyWeeklyLineChart", "Day ${entry.key} total minutes = $totalMins")
+                val totalMins = when (filter) {
+                    is ChartFilter.ByUser -> entry.value.sumOf { it.totalIndividualMinutes.toDouble() }
+                    is ChartFilter.ByGroup -> entry.value.sumOf { it.totalGroupStudyMinutes.toDouble() }
+                }
+
+                Log.d("StudyWeeklyLineChart", "Day ${entry.key} total minutes = $totalMins")
                 totalMins
             }
             .toSortedMap()
@@ -282,7 +320,7 @@ fun StudyWeeklyLineChart(
         }
 
         val chartData = fullWeekMap.toSortedMap().values.toList()
-        // Log.d("SessionsLineChart", "Weekly full data: $chartData")
+        Log.d("StudyWeeklyLineChart", "Weekly full data: $chartData")
 
         modelProducer.runTransaction {
             lineSeries { series(chartData) }
@@ -316,7 +354,8 @@ fun StudyWeeklyLineChart(
 fun StudyMonthlyLineChart(
     dailyStudyHistory: List<DailyStudyHistory>,
     studySessions: List<StudySession>,
-    filter: ChartFilter
+    filter: ChartFilter,
+    groupMembers: List<GroupMember>
 ) {
     val modelProducer = remember { CartesianChartModelProducer() }
     val months = listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
@@ -330,7 +369,8 @@ fun StudyMonthlyLineChart(
         val filteredHistory = filterDailyHistoryByFilter(
             filter,
             dailyStudyHistory,
-            studySessions
+            studySessions,
+            groupMembers
         )
 
         val calendar = Calendar.getInstance()
@@ -341,7 +381,10 @@ fun StudyMonthlyLineChart(
                 month
             }
             .mapValues { entry ->
-                val sum = entry.value.sumOf { it.totalIndividualMinutes.toDouble() }
+                val sum = when (filter) {
+                    is ChartFilter.ByUser -> entry.value.sumOf { it.totalIndividualMinutes.toDouble() }
+                    is ChartFilter.ByGroup -> entry.value.sumOf { it.totalGroupStudyMinutes.toDouble() }
+                }
                 //Log.d("StudyMonthlyLineChart", "Key: ${entry.key}, Sum of minutes: $sum")
                 sum
             }
@@ -391,7 +434,8 @@ fun StudyMonthlyLineChart(
 fun StudyYearlyLineChart(
     dailyStudyHistory: List<DailyStudyHistory>,
     studySessions: List<StudySession>,
-    filter: ChartFilter
+    filter: ChartFilter,
+    groupMembers: List<GroupMember>
 ) {
     val modelProducer = remember { CartesianChartModelProducer() }
     val calendar = Calendar.getInstance()
@@ -407,7 +451,8 @@ fun StudyYearlyLineChart(
         val filteredHistory = filterDailyHistoryByFilter(
             filter,
             dailyStudyHistory,
-            studySessions
+            studySessions,
+            groupMembers
         )
 
         val yearlyData = filteredHistory
@@ -416,7 +461,10 @@ fun StudyYearlyLineChart(
                 calendar.get(Calendar.YEAR)
             }
             .mapValues { entry ->
-                entry.value.sumOf { it.totalIndividualMinutes.toDouble() / 60}
+                when (filter) {
+                    is ChartFilter.ByUser -> entry.value.sumOf { it.totalIndividualMinutes.toDouble() }
+                    is ChartFilter.ByGroup -> entry.value.sumOf { it.totalGroupStudyMinutes.toDouble() }
+                }
             }
             .toSortedMap()
 
@@ -461,12 +509,14 @@ fun StudyYearlyLineChart(
 fun UserSessionsLineChart(
     userId: String,
     dailyStudyHistory: List<DailyStudyHistory>,
-    studySessions: List<StudySession>
+    studySessions: List<StudySession>,
+    groupMembers: List<GroupMember>
 ) {
     SessionsLineChart(
         filter = ChartFilter.ByUser(userId),
         dailyStudyHistory = dailyStudyHistory,
-        studySessions = studySessions
+        studySessions = studySessions,
+        groupMembers = groupMembers
     )
 }
 
@@ -480,6 +530,7 @@ fun GroupSessionsLineChart(
     SessionsLineChart(
         filter = ChartFilter.ByGroup(groupId, groupMembers),
         dailyStudyHistory = dailyStudyHistory,
-        studySessions = studySessions
+        studySessions = studySessions,
+        groupMembers = groupMembers
     )
 }

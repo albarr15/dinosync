@@ -34,7 +34,6 @@ import com.mobdeve.s18.group9.dinosync.components.BottomNavigationBar
 import com.mobdeve.s18.group9.dinosync.components.NewEggCard
 import com.mobdeve.s18.group9.dinosync.components.TopActionBar
 import com.mobdeve.s18.group9.dinosync.model.Music
-import com.mobdeve.s18.group9.dinosync.model.MusicSession
 import com.mobdeve.s18.group9.dinosync.model.StudySession
 import com.mobdeve.s18.group9.dinosync.ui.theme.*
 import com.mobdeve.s18.group9.dinosync.viewmodel.MusicViewModel

@@ -266,13 +266,17 @@ fun GroupActivityScreen(
 
 
     fun onLeaveGroup(userId: String, groupId: String) {
-        val activeMember = groupMembersState.find {
+
+        val members = groupMemberVM.members.value
+        val activeMember = members.find {
             it.userId == userId && it.groupId == groupId && it.endedAt.isNullOrEmpty()
         }
+        // Instead of basing the startedAt on groupMemberState, get it this directly form firebase from GroupMemberViewModel
 
         val startedAt = activeMember?.startedAt ?: ""
 
         if (startedAt.isNotEmpty()) {
+            Log.d("onLeaveGroup", "Found activeMember with startedAt=$startedAt")
             groupMemberVM.leaveGroup(userId, groupId, startedAt, getCurrentDateTime())
         } else {
             Log.e("onLeaveGroup", "No active group member session found.")
@@ -629,7 +633,7 @@ fun GroupActivityScreen(
                         group?.groupId.toString(),
                         dailyStudyHistory,
                         studySessions,
-                        groupMembers                //groupMembers: List<GroupMember>
+                        groupMembers
                     )
                 }
             }
@@ -809,7 +813,7 @@ fun OnClickGroupStatsActivityBtn(
             // Top Members Section
             Text(
                 text = "Top Members",
-                fontSize = 20.sp,
+                fontSize = 15.sp,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
 
@@ -821,7 +825,7 @@ fun OnClickGroupStatsActivityBtn(
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Box(
                             modifier = Modifier
-                                .size(70.dp)
+                                .size(40.dp)
                                 .clip(CircleShape)
                                 .background(Color.LightGray)
                         ) {
@@ -831,17 +835,17 @@ fun OnClickGroupStatsActivityBtn(
                                 modifier = Modifier.fillMaxSize()
                             )
                         }
-                        Text(user.userName, fontSize = 14.sp)
+                        Text(user.userName, fontSize = 12.sp)
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(5.dp))
 
             // Sessions Section
             Text(
                 text = "Sessions",
-                fontSize = 20.sp,
+                fontSize = 15.sp,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
             GroupSessionsLineChart(selectedGroup, dailyStudyHistory, studySessions, groupMembers)

@@ -91,7 +91,6 @@ import com.mobdeve.s18.group9.dinosync.components.BottomNavigationBar
 import com.mobdeve.s18.group9.dinosync.components.TopActionBar
 import com.mobdeve.s18.group9.dinosync.model.Mood
 import com.mobdeve.s18.group9.dinosync.model.Music
-import com.mobdeve.s18.group9.dinosync.model.MusicSession
 import com.mobdeve.s18.group9.dinosync.model.StudySession
 import com.mobdeve.s18.group9.dinosync.model.TodoDocument
 import com.mobdeve.s18.group9.dinosync.model.TodoItem
