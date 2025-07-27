@@ -192,6 +192,7 @@ class MainActivity : ComponentActivity() {
         val accessToken = prefs.getString("access_token", null)
 
         if (accessToken == null) {
+            Toast.makeText(this, "Logging in to Spotify...", Toast.LENGTH_SHORT).show()
             val request = AuthorizationRequest.Builder(
                 SpotifyConstants.CLIENT_ID,
                 AuthorizationResponse.Type.TOKEN,
@@ -201,8 +202,10 @@ class MainActivity : ComponentActivity() {
                 .build()
 
             AuthorizationClient.openLoginActivity(this, SpotifyConstants.REQUEST_CODE, request)
+
         } else{
             connectToSpotify()
+            //Toast.makeText(this, "Connected to Spotify!", Toast.LENGTH_SHORT).show()
         }
     }
 

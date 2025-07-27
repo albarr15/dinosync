@@ -6,9 +6,6 @@ data class User(
     val createdAt: Timestamp? = null,
     val userBio: String = "",
     val userName: String = "",
-    val userProfileImage: String = "",
-    val userTotalStudyHoursSpent: Int = 0,
-    val userTotalStudyHoursSpentIndividually: Int = 0,
-    val userTotalStudyHoursSpentWithGroup: Int = 0,
+    val userProfileImage: String = ""
 )
 
