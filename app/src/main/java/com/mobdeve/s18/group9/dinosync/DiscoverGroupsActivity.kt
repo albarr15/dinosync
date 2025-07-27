@@ -6,6 +6,7 @@ import android.util.Log
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -67,6 +68,7 @@ import com.mobdeve.s18.group9.dinosync.viewmodel.UniversityViewModel
 class DiscoverGroupsActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
 
         val userId = intent.getStringExtra("userId") ?: "-1"
         Log.d("CurrentUser", "Logged in userId in DiscoverGroupsActivity = $userId")

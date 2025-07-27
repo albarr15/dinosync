@@ -8,6 +8,7 @@ import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -106,6 +107,7 @@ import kotlin.getValue
 class GroupActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
 
         val userId = intent.getStringExtra("userId") ?: ""
         val groupId = intent.getStringExtra("groupId") ?: ""
@@ -321,7 +323,7 @@ fun GroupActivityScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color.White)
-                .padding(16.dp)
+                .padding(20.dp)
         ) {
             TopActionBar(
                 onProfileClick = {
