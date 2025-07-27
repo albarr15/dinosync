@@ -36,7 +36,8 @@
         <activity android:name=".SettingsActivity" />
         <activity android:name=".CompanionActivity" />
         <activity android:name=".spotify.SpotifyAuthorizationActivity"
-            android:exported="true">
+            android:exported="true"
+            android:launchMode="singleTop">
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
