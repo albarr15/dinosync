@@ -32,7 +32,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.firebase.Timestamp
 import com.mobdeve.s18.group9.dinosync.components.AudioPlayerCard
 import com.mobdeve.s18.group9.dinosync.components.BottomNavigationBar
-import com.mobdeve.s18.group9.dinosync.components.NewEggCard
 import com.mobdeve.s18.group9.dinosync.components.TopActionBar
 import com.mobdeve.s18.group9.dinosync.model.Music
 import com.mobdeve.s18.group9.dinosync.model.StudySession
@@ -302,7 +301,6 @@ fun FocusStudyScreen(
     // Log.d("CompanionDebug", "Companions: $companions")
     // Log.d("CompanionDebug", "CurrentCompanion: $currentCompanion")
 
-    var showHatchCard by remember { mutableStateOf(false) }
 
     // Watch for hatching
     /*
@@ -333,18 +331,17 @@ fun FocusStudyScreen(
     }
 
     // FOR COMPANION: HATCH / NEW EGG CARD
-    var showNewEggCard by remember { mutableStateOf(false) }
+    var showHatchCard by remember { mutableStateOf(false) }
 
-
-    var currentCompanionName = currentCompanion?.name
-    var currentCompanionDrawableRes = currentCompanion?.getDrawableRes()
+    var hatchedCompanionName by remember { mutableStateOf<String?>(null) }
+    var hatchedCompanionDrawableRes by remember { mutableStateOf<Int?>(null) }
 
     fun showToast(context: Context, message: String) {
         Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
     }
 
     // ✅ Timer countdown logic
-    LaunchedEffect(isRunning) {
+    LaunchedEffect(isRunning, currentCompanion) {
         //if (isRunning && timeLeft > 0) { //Pause
             while (isRunning && timeLeft > 0) {
                 delay(1000L)
@@ -380,9 +377,10 @@ fun FocusStudyScreen(
                     val newHatchTime = (currentCompanion.remainingHatchTime - sessionDuration).coerceAtLeast(0)
 
                     if (newHatchTime == 0 ) {
+                        hatchedCompanionName = currentCompanion.name
+                        hatchedCompanionDrawableRes = currentCompanion.getDrawableRes()
+
                         showHatchCard = true
-                        delay(5000L)
-                        showNewEggCard = true
                     }
 
                     companionVM.updateCurrentCompanion(
@@ -841,9 +839,12 @@ fun FocusStudyScreen(
                 modifier = Modifier.fillMaxSize().size(500.dp),
                 contentAlignment = Alignment.Center
             ) {
-                if (currentCompanionName != null) {
-                    if (currentCompanionDrawableRes != null) {
-                        HatchCard(currentCompanionName, currentCompanionDrawableRes)
+                if (hatchedCompanionName != null) {
+                    if (hatchedCompanionDrawableRes != null) {
+                        HatchCard(hatchedCompanionName!!,
+                            hatchedCompanionDrawableRes!!, onContinueClick = {
+                            showHatchCard = false
+                        })
                     } else {
                         Log.d("Hatch Card UI:", "current companion drawable is null.")
                     }
@@ -854,21 +855,6 @@ fun FocusStudyScreen(
         }
      else {
         // Log.d("HatchCard", "showHatchCard = false")
-    }
-    if (showNewEggCard) {
-        Box(
-            modifier = Modifier.fillMaxSize().size(500.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            NewEggCard(
-                onContinueClick = {
-                    showHatchCard = false
-                    showNewEggCard = false
-                }
-            )
-        }
-    } else {
-        // Log.d("HatchCard", "showNewEggCard = false")
     }
 }
 
