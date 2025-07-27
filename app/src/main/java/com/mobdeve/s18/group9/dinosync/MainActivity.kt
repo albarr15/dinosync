@@ -59,6 +59,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -161,6 +162,34 @@ class MainActivity : ComponentActivity() {
         val userId = FirebaseAuth.getInstance().currentUser?.uid
             ?: throw IllegalStateException("No authenticated user!")
 
+        spotifyPlaybackManager = SpotifyPlaybackManager(this)
+        playbackManager = LocalPlaybackManager(applicationContext)
+
+        setContent {
+            DinoSyncTheme {
+                var showRequireSpotifyModal by remember { mutableStateOf(!isSpotifyInstalled(this@MainActivity)) }
+
+                MainScreen(userId = userId)
+
+                if (showRequireSpotifyModal) {
+                    requireSpotifyModal {
+                        showRequireSpotifyModal = false
+                    }
+                }
+            }
+        }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        println("MainActivity onStart()")
+
+        if (!isSpotifyInstalled(this)) {
+            return
+        }
+
+        val prefs = getSharedPreferences("spotify_prefs", Context.MODE_PRIVATE)
+        val accessToken = prefs.getString("access_token", null)
         val request = AuthorizationRequest.Builder(
             SpotifyConstants.CLIENT_ID,
             AuthorizationResponse.Type.TOKEN,
@@ -170,57 +199,41 @@ class MainActivity : ComponentActivity() {
             .build()
 
         AuthorizationClient.openLoginActivity(this, SpotifyConstants.REQUEST_CODE, request)
-        spotifyPlaybackManager = SpotifyPlaybackManager(this)
-        playbackManager = LocalPlaybackManager(applicationContext)
-
-        setContent {
-            DinoSyncTheme {
-                MainScreen(
-                    userId = userId)
-            }
         }
-    }
 
-    override fun onStart() {
-        super.onStart()
-        println("MainActivity onStart()")
+    private fun connectToSpotify() {
+            spotifyAppRemote?.let { SpotifyAppRemote.disconnect(it) }
 
-        spotifyAppRemote?.let { SpotifyAppRemote.disconnect(it) }
+            val connectionParams = ConnectionParams.Builder(SpotifyConstants.CLIENT_ID)
+                .setRedirectUri(SpotifyConstants.REDIRECT_URI)
+                .showAuthView(true)
+                .build()
 
-        val connectionParams = ConnectionParams.Builder(SpotifyConstants.CLIENT_ID)
-            .setRedirectUri(SpotifyConstants.REDIRECT_URI)
-            .showAuthView(true)
-            .build()
+            SpotifyAppRemote.connect(this, connectionParams, object : Connector.ConnectionListener {
+                override fun onConnected(remote: SpotifyAppRemote) {
+                    spotifyAppRemote = remote
+                    Log.d("♫ Spotify", "Connected to Spotify App Remote")
+                    connected()
+                }
 
-        SpotifyAppRemote.connect(this, connectionParams, object : Connector.ConnectionListener {
-            override fun onConnected(remote: SpotifyAppRemote) {
-                spotifyAppRemote = remote
-                Log.d("♫ Spotify", "Connected to Spotify App Remote")
-                connected()
-            }
-
-            override fun onFailure(error: Throwable) {
-                Log.e("♫ Spotify", "Connection failed", error)
-                when (error) {
-                    is NotLoggedInException, is UserNotAuthorizedException -> {
-                        Log.e("♫ Spotify", "User not logged in or authorized.")
-                    }
-
-                    is CouldNotFindSpotifyApp -> {
-                        Log.e("♫ Spotify", "Spotify app not found. Prompt to install.")
+                override fun onFailure(error: Throwable) {
+                    Log.e("♫ Spotify", "Connection failed", error)
+                    when (error) {
+                        is NotLoggedInException, is UserNotAuthorizedException -> {
+                            Log.e("♫ Spotify", "User not logged in or authorized.")
+                        }
                     }
                 }
+            })
+            spotifyPlaybackManager.connect { success ->
+                if (success) {
+                    spotifyPlaybackManager.subscribeToPlayerState(
+                        onPlayerStateChanged = { playerState ->
+                            Log.d("Spotify", "${playerState.track.name} by ${playerState.track.artist.name}")
+                        }
+                    )
+                }
             }
-        })
-        spotifyPlaybackManager.connect { success ->
-            if (success) {
-                spotifyPlaybackManager.subscribeToPlayerState(
-                    onPlayerStateChanged = { playerState ->
-                        Log.d("Spotify", "${playerState.track.name} by ${playerState.track.artist.name}")
-                    }
-                )
-            }
-        }
     }
 
     override fun onStop() {
@@ -270,10 +283,17 @@ class MainActivity : ComponentActivity() {
                 AuthorizationResponse.Type.TOKEN -> {
                     val accessToken = response.accessToken
                     Log.d("♫ SpotifyAuth", "Access token received: $accessToken")
+
+                    // Store access token
+                    val prefs = getSharedPreferences("spotify_prefs", Context.MODE_PRIVATE)
+                    prefs.edit().putString("access_token", accessToken).apply()
+
+                    connectToSpotify()
                 }
 
                 AuthorizationResponse.Type.ERROR -> {
                     Log.e("♫ SpotifyAuth", "Auth error: ${response.error}")
+                    Toast.makeText(this, "Spotify authentication failed", Toast.LENGTH_SHORT).show()
                 }
 
                 else -> {
@@ -316,6 +336,11 @@ fun MainScreen(
     userId: String
 ) {
     val context = LocalContext.current
+
+    var showSpotifyRequiredModal by remember { mutableStateOf(false) }
+    if (showSpotifyRequiredModal) {
+       requireSpotifyModal(onDismiss = { showSpotifyRequiredModal = false })
+    }
 
     // Collect ViewModels
     val moodVM: MoodViewModel = viewModel()
@@ -1032,6 +1057,51 @@ fun TodoList(
             }
         }
     }
+}
+
+fun isSpotifyInstalled(context: Context): Boolean {
+    return try {
+        context.packageManager.getPackageInfo("com.spotify.music", 0)
+        true
+    } catch (e: Exception) {
+        false
+    }
+}
+
+
+@Composable
+fun requireSpotifyModal(
+    onDismiss: () -> Unit
+) {
+    val context = LocalContext.current
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Spotify Required") },
+        text = {
+            Text("To use the Spotify feature, please install the Spotify app from the Play Store.")
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    // Launch Spotify on Play Store
+                    val spotifyIntent = Intent(Intent.ACTION_VIEW).apply {
+                        data = android.net.Uri.parse("https://play.google.com/store/apps/details?id=com.spotify.music")
+                        setPackage("com.android.vending") // Optional, opens directly in Play Store
+                    }
+                    context.startActivity(spotifyIntent)
+                }
+            ) {
+                Text("Open Play Store")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        },
+        containerColor = Color.White
+    )
 }
 
 
