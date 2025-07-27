@@ -208,11 +208,9 @@ class MainActivity : ComponentActivity() {
         }
 
         val prefs = getSharedPreferences("spotify_prefs", Context.MODE_PRIVATE)
-        val accessToken = prefs.getString("access_token", null)
+        val authCode = prefs.getString("authorization_code", null)
 
-        if (accessToken == null) {
-            // This AuthorizationRequest.Builder and openLoginActivity keeps launching when i clicked Home button
-            // meaning the access token is not being stored properly
+        if (authCode == null) {
             Toast.makeText(this, "Logging in to Spotify...", Toast.LENGTH_SHORT).show()
             val request = AuthorizationRequest.Builder(
                 SpotifyConstants.CLIENT_ID,
@@ -223,7 +221,7 @@ class MainActivity : ComponentActivity() {
                 .build()
 
             AuthorizationClient.openLoginActivity(this, SpotifyConstants.REQUEST_CODE, request)
-            Toast.makeText(this, "Connected to Spotify!", Toast.LENGTH_SHORT).show()
+            //Toast.makeText(this, "Connected to Spotify!", Toast.LENGTH_SHORT).show()
         } else{
             connectToSpotify()
             //Toast.makeText(this, "Connected to Spotify!", Toast.LENGTH_SHORT).show()
@@ -303,7 +301,7 @@ class MainActivity : ComponentActivity() {
      */
 
     private fun connected() {
-        Toast.makeText(this, "About to play music! connected() ", Toast.LENGTH_SHORT).show()
+        //Toast.makeText(this, "About to play music! connected() ", Toast.LENGTH_SHORT).show()
         spotifyAppRemote?.apply {
             // Uncomment to instantly play 'Sun Bleached Flies' upon logging in to Spotify.
             //playerApi.play("spotify:track:6fKIyDJHZ9m84jRhSmpuwS")
@@ -349,7 +347,7 @@ class MainActivity : ComponentActivity() {
                     val authorizationCode = response.code
                     Log.d("♫ Spotify onActivityResult", "Authorization code received: $authorizationCode")
 
-                    // Store code (optional — usually exchanged server-side or via Web API)
+                    // Store code
                     val prefs = getSharedPreferences("spotify_prefs", Context.MODE_PRIVATE)
                     prefs.edit().putString("authorization_code", authorizationCode).apply()
 
@@ -363,7 +361,7 @@ class MainActivity : ComponentActivity() {
                 }
 
                 else -> {
-                    Log.w("♫ Spotify onActivityResult", "Auth cancelled or unknown response.")
+                    Log.w("♫ SpotifyAuth", "Auth cancelled or unknown response.")
                 }
             }
         }
