@@ -343,7 +343,7 @@ class FirebaseRepository {
         // extract all group ids
         val groupIds = memberSnapshot.documents.mapNotNull {
             it.getString("groupId")
-        }
+        }.distinct()
 
         if (groupIds.isEmpty()) return emptyList()
 
