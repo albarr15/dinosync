@@ -167,13 +167,25 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             DinoSyncTheme {
-                var showRequireSpotifyModal by remember { mutableStateOf(!isSpotifyInstalled(this@MainActivity)) }
+                val prefs = getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+                val isFirstLaunch = prefs.getBoolean("is_first_launch", true)
+                Log.d("MainActivity", "First launch: $isFirstLaunch")
+
+                var showRequireSpotifyModal by remember {
+                    mutableStateOf(isFirstLaunch && !isSpotifyInstalled(this@MainActivity))
+                }
 
                 MainScreen(userId = userId)
 
                 if (showRequireSpotifyModal) {
                     requireSpotifyModal {
                         showRequireSpotifyModal = false
+                        prefs.edit().putBoolean("is_first_launch", false).apply()
+                    }
+                } else if (isFirstLaunch) {
+                    // If Spotify is installed on first launch, still mark as not first launch
+                    LaunchedEffect(Unit) {
+                        prefs.edit().putBoolean("is_first_launch", false).apply()
                     }
                 }
             }
