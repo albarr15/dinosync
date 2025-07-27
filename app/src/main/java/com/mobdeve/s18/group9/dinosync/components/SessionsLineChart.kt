@@ -62,11 +62,12 @@ fun filterDailyHistoryByFilter(
 ): List<DailyStudyHistory> {
     return when (filter) {
         is ChartFilter.ByUser -> {
-            // Only keep histories that match userId AND have a matching completed session on the same date
             dailyStudyHistory.filter { history ->
                 history.userId == filter.userId &&
                         studySessions.any { session ->
-                            session.userId == filter.userId && session.status == "completed"
+                            session.userId == filter.userId &&
+                                    session.status == "completed" &&
+                                    session.sessionDate == history.date
                         }
             }
         }
@@ -290,9 +291,10 @@ fun StudyWeeklyLineChart(
         // Filter only this week's entries
         val thisWeekHistory = filteredHistory.filter { daily ->
             val currentDate = dateFormatter.parse(daily.date)
+            !currentDate.before(startOfWeek) && !currentDate.after(endOfWeek)
 
-            currentDate.after(startOfWeek) && currentDate.before(endOfWeek) ||
-                    currentDate == startOfWeek || currentDate == endOfWeek
+//            currentDate.after(startOfWeek) && currentDate.before(endOfWeek) ||
+//                    currentDate == startOfWeek || currentDate == endOfWeek
         }
         val weeklyData = thisWeekHistory
             .groupBy { daily ->
@@ -302,8 +304,12 @@ fun StudyWeeklyLineChart(
                 dow
             }
             .mapValues { entry ->
-                val totalMins = entry.value.map { it.totalIndividualMinutes }.sum()
-                // Log.d("StudyWeeklyLineChart", "Day ${entry.key} total minutes = $totalMins")
+                val totalMins = when (filter) {
+                    is ChartFilter.ByUser -> entry.value.sumOf { it.totalIndividualMinutes.toDouble() }
+                    is ChartFilter.ByGroup -> entry.value.sumOf { it.totalGroupStudyMinutes.toDouble() }
+                }
+
+                Log.d("StudyWeeklyLineChart", "Day ${entry.key} total minutes = $totalMins")
                 totalMins
             }
             .toSortedMap()
@@ -314,7 +320,7 @@ fun StudyWeeklyLineChart(
         }
 
         val chartData = fullWeekMap.toSortedMap().values.toList()
-        // Log.d("SessionsLineChart", "Weekly full data: $chartData")
+        Log.d("StudyWeeklyLineChart", "Weekly full data: $chartData")
 
         modelProducer.runTransaction {
             lineSeries { series(chartData) }
@@ -375,7 +381,10 @@ fun StudyMonthlyLineChart(
                 month
             }
             .mapValues { entry ->
-                val sum = entry.value.sumOf { it.totalIndividualMinutes.toDouble() }
+                val sum = when (filter) {
+                    is ChartFilter.ByUser -> entry.value.sumOf { it.totalIndividualMinutes.toDouble() }
+                    is ChartFilter.ByGroup -> entry.value.sumOf { it.totalGroupStudyMinutes.toDouble() }
+                }
                 //Log.d("StudyMonthlyLineChart", "Key: ${entry.key}, Sum of minutes: $sum")
                 sum
             }
@@ -452,7 +461,10 @@ fun StudyYearlyLineChart(
                 calendar.get(Calendar.YEAR)
             }
             .mapValues { entry ->
-                entry.value.sumOf { it.totalIndividualMinutes.toDouble() / 60}
+                when (filter) {
+                    is ChartFilter.ByUser -> entry.value.sumOf { it.totalIndividualMinutes.toDouble() }
+                    is ChartFilter.ByGroup -> entry.value.sumOf { it.totalGroupStudyMinutes.toDouble() }
+                }
             }
             .toSortedMap()
 
