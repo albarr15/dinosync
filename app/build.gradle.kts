@@ -60,6 +60,7 @@ dependencies {
     implementation("androidx.appcompat:appcompat:1.7.1")
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.constraintlayout)
+    implementation(files("D:\\Downloads\\spotify-app-remote-release-0.8.0.aar"))
     // implementation(files("/Users/clarissaalbarr/Downloads/dinosync-assets/spotify-app-remote-release-0.8.0.aar"))
     // implementation(files("/Users/clarissaalbarr/Downloads/dinosync-assets/spotify-auth-release-2.1.0.aar"))
     testImplementation(libs.junit)

@@ -454,13 +454,14 @@ fun MainScreen(
             /******** Editable Course Dropdown ********/
             val courseNames = courseList.map { it.name }
             var expanded by remember { mutableStateOf(false) }
+            var inputText by remember { mutableStateOf("") }
             var selectedCourse by remember { mutableStateOf("") }
 
-            val filteredCourses = if (selectedCourse.isBlank()) {
+            val filteredCourses = if (inputText.isBlank()) {
                 courseNames
             } else {
                 courseNames.filter {
-                    it.contains(selectedCourse, ignoreCase = true)
+                    it.contains(inputText, ignoreCase = true)
                 }
             }
 
@@ -472,10 +473,9 @@ fun MainScreen(
                     .padding(horizontal = 16.dp, vertical = 8.dp)
             ) {
                 OutlinedTextField(
-                    value = selectedCourse,
-                    onValueChange = {
-                        selectedCourse = it
-                        expanded = true
+                    value = inputText,
+                    onValueChange = { newValue ->
+                        inputText = newValue
                     },
                     label = { Text("Select or Type Subject") },
                     trailingIcon = {
@@ -502,6 +502,7 @@ fun MainScreen(
                         DropdownMenuItem(
                             text = { Text(courseName) },
                             onClick = {
+                                inputText = courseName
                                 selectedCourse = courseName
                                 expanded = false
                             }
@@ -509,17 +510,19 @@ fun MainScreen(
                     }
                 }
             }
-            if (selectedCourse.isNotBlank() && !courseNames.contains(selectedCourse)) {
+
+            if (inputText.isNotBlank() && !courseNames.contains(inputText)) {
                 Button(
                     onClick = {
-                        courseVM.addCourseIfNew(selectedCourse.trim())
-                        selectedCourse = ""
+                        courseVM.addCourseIfNew(inputText.trim())
+                        selectedCourse = inputText.trim()
+                        inputText = ""
                     },
                     modifier = Modifier
                         .padding(top = 8.dp)
                         .align(Alignment.CenterHorizontally)
                 ) {
-                    Text("Add \"$selectedCourse\" as New Course")
+                    Text("Add \"$inputText\" as New Course")
                 }
             }
 
