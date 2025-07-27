@@ -5,7 +5,9 @@ import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
+import androidx.activity.addCallback
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -22,7 +24,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -63,21 +67,40 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mobdeve.s18.group9.dinosync.model.Mood
+import com.mobdeve.s18.group9.dinosync.ui.theme.DirtyGreen
 import com.mobdeve.s18.group9.dinosync.viewmodel.ProfileViewModel
 
 
 class ProfileActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
+
         val userId = intent.getStringExtra("userId") ?: ""
+        onBackPressedDispatcher.addCallback(this) {
+            navigateToMainActivity(userId)
+        }
+
         setContent {
             DinoSyncTheme {
                 ProfileActivityScreen(userId = userId)
             }
         }
     }
+
+    private fun navigateToMainActivity(userId: String) {
+        val intent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            putExtra("userId", userId)
+        }
+        startActivity(intent)
+        finish()
+    }
+
     /******** ACTIVITY LIFE CYCLE ******** */
     override fun onStart() {
         super.onStart()
@@ -172,6 +195,7 @@ fun ProfileActivityScreen(userId: String) {
                 .background(Color.White)
                 .padding(16.dp)
         ) {
+            Spacer(modifier = Modifier.height(16.dp))
             TopActionBar(
                 onProfileClick = {
                     val intent = Intent(context, ProfileActivity::class.java)
@@ -243,7 +267,24 @@ fun ProfileActivityScreen(userId: String) {
 
 
             if (latestCompanions.isEmpty()) {
-                Text("No companions yet.", color = Color.Gray)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("No companions yet.", color = Color.Gray)
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    Text(
+                        text = "View companions here",
+                        color = DirtyGreen,
+                        style = TextStyle(
+                            textDecoration = TextDecoration.Underline
+                        ),
+                        modifier = Modifier.clickable {
+                            val intent = Intent(context, CompanionActivity::class.java)
+                            intent.putExtra("userId", userId)
+                            context.startActivity(intent)
+                        }
+                    )
+                }
             } else {
                 LazyRow(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -305,7 +346,24 @@ fun ProfileActivityScreen(userId: String) {
                 .take(3)
 
             if (topGroups.isEmpty()) {
-                Text("No groups yet.", color = Color.Gray)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("No groups yet.", color = Color.Gray)
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    Text(
+                        text = "View groups here",
+                        color = DirtyGreen,
+                        style = TextStyle(
+                            textDecoration = TextDecoration.Underline
+                        ),
+                        modifier = Modifier.clickable {
+                            val intent = Intent(context, DiscoverGroupsActivity::class.java)
+                            intent.putExtra("userId", userId)
+                            context.startActivity(intent)
+                        }
+                    )
+                }
             } else {
                 LazyRow(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),

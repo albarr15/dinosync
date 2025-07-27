@@ -6,7 +6,9 @@ import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.addCallback
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -28,6 +30,7 @@ import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.outlined.ManageAccounts
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -67,9 +70,14 @@ import kotlinx.coroutines.launch
 class SettingsActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
 
         val userId = FirebaseAuth.getInstance().currentUser?.uid
             ?: throw IllegalStateException("No authenticated user!")
+
+        onBackPressedDispatcher.addCallback(this) {
+            navigateToMainActivity(userId)
+        }
 
         setContent {
             DinoSyncTheme {
@@ -79,6 +87,16 @@ class SettingsActivity : ComponentActivity() {
             }
         }
     }
+
+    private fun navigateToMainActivity(userId: String) {
+        val intent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            putExtra("userId", userId)
+        }
+        startActivity(intent)
+        finish()
+    }
+
     /******** ACTIVITY LIFE CYCLE ******** */
     override fun onStart() {
         super.onStart()
@@ -299,13 +317,19 @@ fun EditProfileModal(onDismiss: () -> Unit,
                                 Log.e("EditProfileModal", "Error: ${e.message}", e)
                             }
                     }
-                }
+                },
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = DarkGreen
+                )
             ) {
                 Text("Save Changes")
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            TextButton(onClick = onDismiss,
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = DarkGreen
+                )) {
                 Text("Cancel")
             }
         }
@@ -343,13 +367,18 @@ fun LogoutModal(onDismiss: () -> Unit, authVM: AuthViewModel) {
                         intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                         context.startActivity(intent)
                     }
-                }
+                }, colors = ButtonDefaults.textButtonColors(
+                    contentColor = DarkGreen
+                )
             ) {
                 Text("Logout")
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            TextButton(onClick = onDismiss,
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = DarkGreen
+                )) {
                 Text("Cancel")
             }
         }
@@ -404,7 +433,10 @@ fun AppInfoModal(onDismiss: () -> Unit) {
             }
         },
         confirmButton = {
-            TextButton(onClick = onDismiss) {
+            TextButton(onClick = onDismiss,
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = DarkGreen
+                )) {
                 Text("OK")
             }
         }
@@ -481,7 +513,10 @@ fun CreditsModal(onDismiss: () -> Unit) {
             }
         },
         confirmButton = {
-            TextButton(onClick = onDismiss) {
+            TextButton(onClick = onDismiss,
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = DarkGreen
+                )) {
                 Text("Close")
             }
         }

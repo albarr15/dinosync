@@ -10,6 +10,7 @@ import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.addCallback
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Canvas
@@ -92,6 +93,10 @@ class FocusStudyActivity : ComponentActivity() {
         spotifyPlaybackManager = SpotifyPlaybackManager(this)
         localPlaybackManager = LocalPlaybackManager(applicationContext)
 
+        onBackPressedDispatcher.addCallback(this) {
+            navigateToMainActivity(userId)
+        }
+
         setContent {
             DinoSyncTheme {
                 FocusStudyScreen(
@@ -112,6 +117,15 @@ class FocusStudyActivity : ComponentActivity() {
                 )
             }
         }
+    }
+
+    private fun navigateToMainActivity(userId: String) {
+        val intent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            putExtra("userId", userId)
+        }
+        startActivity(intent)
+        finish()
     }
 
 
@@ -330,9 +344,9 @@ fun FocusStudyScreen(
     }
 
     // ✅ Timer countdown logic
-    LaunchedEffect(currentSessionId, currentCompanion) {
-        if (isRunning) {
-            while (timeLeft > 0) {
+    LaunchedEffect(isRunning) {
+        //if (isRunning && timeLeft > 0) { //Pause
+            while (isRunning && timeLeft > 0) {
                 delay(1000L)
                 timeLeft = maxOf(0, timeLeft - 1)
             }
@@ -381,7 +395,7 @@ fun FocusStudyScreen(
                     Log.d("CompanionVM ", "ERROR: no currentCompanion found.")
                 }
             }
-        }
+
     }
 
     var localProgress by remember { mutableStateOf(0f) }

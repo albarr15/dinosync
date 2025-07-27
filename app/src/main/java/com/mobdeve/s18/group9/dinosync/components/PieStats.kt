@@ -19,20 +19,29 @@ import ir.ehsannarmani.compose_charts.models.Pie
 
 fun formatFocusTime(percentage: Double, totalTimeSeconds: Int): String {
     val totalSeconds = (percentage / 100) * totalTimeSeconds
-    val totalMinutes = (totalSeconds / 60).toInt()
 
-    return if (totalMinutes >= 60) {
-        val hours = totalMinutes / 60
-        val remainingMinutes = totalMinutes % 60
-        if (remainingMinutes > 0) {
-            "(${"%.1f".format(hours + remainingMinutes / 60.0)} hrs)"
-        } else {
-            "($hours hrs)"
+    return when {
+        totalSeconds >= 3600 -> {
+            // if > 1hr
+            val hours = totalSeconds / 3600
+            "(${String.format("%.1f", hours)} hrs)"
         }
-    } else {
-        "($totalMinutes mins)"
+        totalSeconds >= 59.5 -> {
+            // if > 1min (set min boundary to 59.5s)
+            val minutes = kotlin.math.round(totalSeconds / 60).toInt()
+            "($minutes mins)"
+        }
+        totalSeconds >= 1 -> {
+            // if < 1 min but > 1 second
+            val seconds = kotlin.math.round(totalSeconds).toInt()
+            "($seconds secs)"
+        }
+        else -> {
+            "(<1 sec)"
+        }
     }
 }
+
 
 @Composable
 fun PieStats(data: List<Pie>, totalTime: Int) {
