@@ -4,6 +4,7 @@
     <selectionStates>
       <SelectionState runConfigName="DinoSync.app">
         <option name="selectionMode" value="DROPDOWN" />
+
         <DropdownSelection timestamp="2025-08-02T06:23:35.334461500Z">
           <Target type="DEFAULT_BOOT">
             <handle>
