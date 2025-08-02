@@ -217,7 +217,7 @@ class MainActivity : ComponentActivity() {
 
         } else{
             connectToSpotify()
-            //Toast.makeText(this, "Connected to Spotify!", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Connected to Spotify!", Toast.LENGTH_SHORT).show()
         }
     }
 
