@@ -21,6 +21,7 @@ import com.google.firebase.firestore.ListenerRegistration
 import com.mobdeve.s18.group9.dinosync.getCurDate
 import com.mobdeve.s18.group9.dinosync.ui.theme.DirtyGreen
 import ir.ehsannarmani.compose_charts.models.Pie
+import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 
 class CompanionViewModel : ViewModel() {
@@ -534,13 +535,33 @@ class StatsViewModel : ViewModel() {
     private val _streakData = MutableStateFlow<Map<String, Float>>(emptyMap())
     val streakData: MutableStateFlow<Map<String, Float>> = _streakData
 
+    private val _isLoading = MutableStateFlow(true)
+    val isLoading: StateFlow<Boolean> = _isLoading
+
+
     fun loadUserStats(userId: String) {
         viewModelScope.launch {
-            _user.value = repository.getUserById(userId)
-            _studySessions.value = repository.getStudySessionsByUserId(userId)
-            _dailyStudyHistory.value = repository.getDailyStudyHistory(userId)
-            _courses.value = repository.getAllUserCourses(userId)
-            _streakData.value = repository.getTotalStudyMinsByUserId(userId)
+            _isLoading.value = true
+
+            try {
+                val user = async { repository.getUserById(userId) }
+                val sessions = async { repository.getStudySessionsByUserId(userId) }
+                val history = async { repository.getDailyStudyHistory(userId) }
+                val courses = async { repository.getAllUserCourses(userId) }
+                val streaks = async { repository.getTotalStudyMinsByUserId(userId) }
+                val pie = async { loadPieData(userId) }
+
+                _user.value = user.await()
+                _studySessions.value = sessions.await()
+                _dailyStudyHistory.value = history.await()
+                _courses.value = courses.await()
+                _streakData.value = streaks.await()
+                _pieData.value = pie.await()
+            } catch (e: Exception) {
+                Log.e("StatsVM", "Error: $e")
+            } finally {
+                _isLoading.value = false
+            }
         }
     }
 
@@ -557,8 +578,7 @@ class StatsViewModel : ViewModel() {
     }
 
 
-    fun loadPieData(userId: String) {
-        viewModelScope.launch {
+    suspend fun loadPieData(userId: String): List<Pie> {
             val courses = repository.getAllUserCourses(userId)
             val sessions = repository.getStudySessionsByUserId(userId)
 
@@ -576,7 +596,7 @@ class StatsViewModel : ViewModel() {
                 Color(0xFFDD6E42)  // Orange
             )
 
-            _pieData.value = allCourseIds.mapIndexed { i, courseId ->
+            return allCourseIds.mapIndexed { i, courseId ->
                 val courseLabel = if (courseId == "Unassigned") "Unassigned"
                 else courses.find { it.courseId == courseId }?.name ?: "Unknown"
 
@@ -591,6 +611,5 @@ class StatsViewModel : ViewModel() {
                     color = pieColors[i % pieColors.size]
                 )
             }
-        }
     }
 }

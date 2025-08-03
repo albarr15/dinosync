@@ -10,6 +10,8 @@ import androidx.activity.addCallback
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -17,6 +19,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -32,14 +35,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import com.google.firebase.auth.FirebaseAuth
 import com.mobdeve.s18.group9.dinosync.components.BottomNavigationBar
+import com.mobdeve.s18.group9.dinosync.components.LoadingScreen
 import com.mobdeve.s18.group9.dinosync.components.PieStats
 import com.mobdeve.s18.group9.dinosync.components.TopActionBar
 import com.mobdeve.s18.group9.dinosync.components.UserSessionsLineChart
 // import com.mobdeve.s18.group9.dinosync.components.SessionsLineChart
 import com.mobdeve.s18.group9.dinosync.ui.theme.DinoSyncTheme
 import com.mobdeve.s18.group9.dinosync.viewmodel.StatsViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 
 
 class StatisticsActivity : ComponentActivity() {
@@ -114,22 +121,20 @@ fun StatsActivityScreen(userId : String){
 
     val statsVM: StatsViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
 
-//    LaunchedEffect(userId) {
-//        studySessionVM.loadStudySessions(userId)
-//        dailyStudyHistoryVM.loadDailyHistory(userId)
-//        courseVM.loadCourses()
-//        statsVM.loadPieData(userId)
-//    }
     LaunchedEffect(userId) {
         statsVM.loadUserStats(userId)
-        statsVM.loadPieData(userId)
     }
+    val isLoading by statsVM.isLoading.collectAsState()
 
     val streakData by statsVM.streakData.collectAsState()
     val pieData by statsVM.pieData.collectAsState()
     val studySessions by statsVM.studySessions.collectAsState()
     val courseList by statsVM.courses.collectAsState()
     val dailyStudyHistory by statsVM.dailyStudyHistory.collectAsState()
+
+    if (isLoading) {
+        LoadingScreen()
+    }
 
     val subjects = courseList.map { it.name }
 
