@@ -514,15 +514,30 @@ class UniversityViewModel : ViewModel() {
     private val _universityList = mutableStateOf<List<String>>(emptyList())
     val universityList: State<List<String>> = _universityList
 
+    private var isLoaded = false
+
     init {
+        loadUniversities()
+    }
+
+    private fun loadUniversities() {
+        if (isLoaded) return
+        isLoaded = true
+
         viewModelScope.launch {
-            val universities = RetrofitClient.universityApi
-                .getUniversities("Philippines")
-                .map { it.name }
-            _universityList.value = universities
+            try {
+                val universities = RetrofitClient.universityApi
+                    .getUniversities("Philippines")
+                    .map { it.name }
+                _universityList.value = universities
+                Log.d("UniversityViewModel", "Fetched universities: $universities")
+            } catch (e: Exception) {
+                Log.e("UniversityViewModel", "Failed to fetch universities", e)
+            }
         }
     }
 }
+
 
 class StatsViewModel : ViewModel() {
     private val repository = FirebaseRepository()
