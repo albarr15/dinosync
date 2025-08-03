@@ -55,6 +55,7 @@ import com.spotify.android.appremote.api.error.UserNotAuthorizedException
 import com.spotify.sdk.android.auth.AuthorizationClient
 import com.spotify.sdk.android.auth.AuthorizationResponse
 import androidx.constraintlayout.compose.ConstraintLayout
+import com.google.firebase.auth.FirebaseAuth
 import com.mobdeve.s18.group9.dinosync.viewmodel.CompanionViewModel
 import com.mobdeve.s18.group9.dinosync.viewmodel.DailyStudyHistoryViewModel
 import java.text.SimpleDateFormat
@@ -82,7 +83,9 @@ class FocusStudyActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        val userId = intent.getStringExtra("userId") ?: ""
+        val userId = FirebaseAuth.getInstance().currentUser?.uid
+            ?: throw IllegalStateException("No authenticated user!")
+
         val hours = intent.getIntExtra("hours", 0)
         val minutes = intent.getIntExtra("minutes", 0)
         val selectedSubject = intent.getStringExtra("selected_subject") ?: ""

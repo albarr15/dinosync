@@ -74,6 +74,7 @@ import androidx.compose.ui.zIndex
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil3.compose.rememberAsyncImagePainter
+import com.google.firebase.auth.FirebaseAuth
 import com.mobdeve.s18.group9.dinosync.components.BottomNavigationBar
 import com.mobdeve.s18.group9.dinosync.components.GroupSessionsLineChart
 import com.mobdeve.s18.group9.dinosync.components.TopActionBar
@@ -109,7 +110,9 @@ class GroupActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        val userId = intent.getStringExtra("userId") ?: ""
+        val userId = FirebaseAuth.getInstance().currentUser?.uid
+            ?: throw IllegalStateException("No authenticated user!")
+
         val groupId = intent.getStringExtra("groupId") ?: ""
 
         val userVM: UserViewModel by viewModels()
