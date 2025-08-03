@@ -82,7 +82,7 @@ fun filterDailyHistoryByFilter(
                         groupMembers.any { member ->
                             member.userId == history.userId &&
                                     member.groupId == filter.groupId &&
-                                    member.startedAt.isNotEmpty() && member.endedAt == ""
+                                    member.startedAt.isNotEmpty() && member.endedAt.isNotEmpty()
                         }
             }
         }
