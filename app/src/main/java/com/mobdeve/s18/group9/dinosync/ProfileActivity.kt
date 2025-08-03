@@ -70,6 +70,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.mobdeve.s18.group9.dinosync.components.LoadingScreen
 import com.mobdeve.s18.group9.dinosync.model.Mood
 import com.mobdeve.s18.group9.dinosync.ui.theme.DirtyGreen
 import com.mobdeve.s18.group9.dinosync.viewmodel.ProfileViewModel
@@ -138,16 +139,20 @@ fun ProfileActivityScreen(userId: String) {
     val context = LocalContext.current
     val profileVM: ProfileViewModel = viewModel()
 
-    // Observe state from ViewModel
+    // Load data on first composition
+    LaunchedEffect(userId) {
+        profileVM.loadUserProfile(userId)
+    }
+
+    val isLoading by profileVM.isLoading.collectAsState()
     val user by profileVM.user.collectAsState()
 
     val companions by profileVM.companions.collectAsState()
     val userGroups by profileVM.groups.collectAsState()
     val moodHistory by profileVM.moodHistory.collectAsState()
 
-    // Load data on first composition
-    LaunchedEffect(userId) {
-        profileVM.loadUserProfile(userId)
+    if (isLoading) {
+        LoadingScreen()
     }
 
     val provider = GoogleFont.Provider(

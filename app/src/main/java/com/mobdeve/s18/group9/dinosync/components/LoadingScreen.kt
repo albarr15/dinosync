@@ -8,6 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.zIndex
 import com.mobdeve.s18.group9.dinosync.ui.theme.DarkGreen
 import com.mobdeve.s18.group9.dinosync.ui.theme.YellowGreen
@@ -18,7 +19,16 @@ fun LoadingScreen() {
         modifier = Modifier
             .fillMaxSize()
             .background(Color.White.copy(alpha = 0.7f))
-            .zIndex(1f),
+            .zIndex(1f)
+            .pointerInput(Unit) {
+                // Consume all touch events
+                awaitPointerEventScope {
+                    while (true) {
+                        awaitPointerEvent()
+                        // do nothing, just to block ui interactions while onload
+                    }
+                }
+            },
         contentAlignment = Alignment.Center
     ) {
         CircularProgressIndicator(

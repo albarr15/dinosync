@@ -489,13 +489,30 @@ class ProfileViewModel : ViewModel() {
     private val _moodHistory = MutableStateFlow<List<Mood>>(emptyList())
     val moodHistory: StateFlow<List<Mood>> = _moodHistory
 
+    private val _isLoading = MutableStateFlow(true)
+    val isLoading: StateFlow<Boolean> = _isLoading
+
     fun loadUserProfile(userId: String) {
         viewModelScope.launch {
-            _user.value = repository.getUserById(userId)
-            _companions.value = repository.getCompanionsByUserId(userId)
-            _groups.value = repository.getUserGroups(userId)
-            _moodHistory.value = repository.getUserMoodHistory(userId)
-            Log.d("Profile", "Mood History: ${_moodHistory.value}")
+            _isLoading.value = true
+
+            try {
+                val user = async { repository.getUserById(userId) }
+                val companions = async { repository.getCompanionsByUserId(userId) }
+                val groups = async { repository.getUserGroups(userId) }
+                val moods = async { repository.getUserMoodHistory(userId) }
+
+                _user.value = user.await()
+                _companions.value = companions.await()
+                _groups.value = groups.await()
+                _moodHistory.value = moods.await()
+
+                //Log.d("Profile", "Mood History: ${_moodHistory.value}")
+            } catch (e: Exception) {
+                Log.e("StatsVM", "Error: $e")
+            } finally {
+                _isLoading.value = false
+            }
         }
     }
 }
