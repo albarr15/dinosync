@@ -1,7 +1,6 @@
 package com.mobdeve.s18.group9.dinosync.viewmodel
 
 import android.util.Log
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -10,19 +9,13 @@ import com.mobdeve.s18.group9.dinosync.repository.FirebaseRepository
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import com.google.firebase.Timestamp
-import kotlinx.coroutines.tasks.await
 import com.mobdeve.s18.group9.dinosync.network.RetrofitClient
-import java.text.SimpleDateFormat
-import java.util.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
-import androidx.lifecycle.viewModelScope
 import com.google.firebase.firestore.ListenerRegistration
 import com.mobdeve.s18.group9.dinosync.getCurDate
-import com.mobdeve.s18.group9.dinosync.ui.theme.DirtyGreen
 import ir.ehsannarmani.compose_charts.models.Pie
 import kotlinx.coroutines.async
-import kotlinx.coroutines.launch
 
 class CompanionViewModel : ViewModel() {
     private val repository = FirebaseRepository()
