@@ -472,7 +472,7 @@ fun CreateStudyGroupDialog(
     var textFieldSize by remember { mutableStateOf(Size.Zero) }
 
     val icon = if (expanded) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown
-    val universityViewModel  = remember { UniversityViewModel() }
+    val universityViewModel: UniversityViewModel = viewModel()
     val universityOptions by universityViewModel.universityList
 
     var selectedCourseName by remember { mutableStateOf("") }
