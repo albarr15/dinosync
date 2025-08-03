@@ -1,7 +1,6 @@
 package com.mobdeve.s18.group9.dinosync.viewmodel
 
 import android.util.Log
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -10,19 +9,13 @@ import com.mobdeve.s18.group9.dinosync.repository.FirebaseRepository
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import com.google.firebase.Timestamp
-import kotlinx.coroutines.tasks.await
 import com.mobdeve.s18.group9.dinosync.network.RetrofitClient
-import java.text.SimpleDateFormat
-import java.util.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
-import androidx.lifecycle.viewModelScope
 import com.google.firebase.firestore.ListenerRegistration
 import com.mobdeve.s18.group9.dinosync.getCurDate
-import com.mobdeve.s18.group9.dinosync.ui.theme.DirtyGreen
 import ir.ehsannarmani.compose_charts.models.Pie
 import kotlinx.coroutines.async
-import kotlinx.coroutines.launch
 
 class CompanionViewModel : ViewModel() {
     private val repository = FirebaseRepository()
@@ -489,13 +482,30 @@ class ProfileViewModel : ViewModel() {
     private val _moodHistory = MutableStateFlow<List<Mood>>(emptyList())
     val moodHistory: StateFlow<List<Mood>> = _moodHistory
 
+    private val _isLoading = MutableStateFlow(true)
+    val isLoading: StateFlow<Boolean> = _isLoading
+
     fun loadUserProfile(userId: String) {
         viewModelScope.launch {
-            _user.value = repository.getUserById(userId)
-            _companions.value = repository.getCompanionsByUserId(userId)
-            _groups.value = repository.getUserGroups(userId)
-            _moodHistory.value = repository.getUserMoodHistory(userId)
-            Log.d("Profile", "Mood History: ${_moodHistory.value}")
+            _isLoading.value = true
+
+            try {
+                val user = async { repository.getUserById(userId) }
+                val companions = async { repository.getCompanionsByUserId(userId) }
+                val groups = async { repository.getUserGroups(userId) }
+                val moods = async { repository.getUserMoodHistory(userId) }
+
+                _user.value = user.await()
+                _companions.value = companions.await()
+                _groups.value = groups.await()
+                _moodHistory.value = moods.await()
+
+                //Log.d("Profile", "Mood History: ${_moodHistory.value}")
+            } catch (e: Exception) {
+                Log.e("StatsVM", "Error: $e")
+            } finally {
+                _isLoading.value = false
+            }
         }
     }
 }

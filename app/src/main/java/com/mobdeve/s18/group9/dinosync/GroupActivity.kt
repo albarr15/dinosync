@@ -77,6 +77,7 @@ import coil3.compose.rememberAsyncImagePainter
 import com.google.firebase.auth.FirebaseAuth
 import com.mobdeve.s18.group9.dinosync.components.BottomNavigationBar
 import com.mobdeve.s18.group9.dinosync.components.GroupSessionsLineChart
+import com.mobdeve.s18.group9.dinosync.components.LoadingScreen
 import com.mobdeve.s18.group9.dinosync.components.TopActionBar
 import com.mobdeve.s18.group9.dinosync.model.Course
 import com.mobdeve.s18.group9.dinosync.model.DailyStudyHistory
@@ -96,6 +97,8 @@ import com.mobdeve.s18.group9.dinosync.viewmodel.MoodViewModel
 import com.mobdeve.s18.group9.dinosync.viewmodel.StudyGroupViewModel
 import com.mobdeve.s18.group9.dinosync.viewmodel.StudySessionViewModel
 import com.mobdeve.s18.group9.dinosync.viewmodel.UserViewModel
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -133,16 +136,22 @@ class GroupActivity : ComponentActivity() {
             val studySessionList = studySessionVM.studySessions.collectAsState()
             val moods by moodVM.moods.collectAsState()
             val allCourses by courseVM.courses.collectAsState()
-
+            val isLoading = remember { mutableStateOf(true) }
 
             LaunchedEffect(Unit) {
-                userVM.loadAllUsers()
-                groupVM.loadStudyGroups()
-                memberVM.loadAllMembers()
-                historyVM.loadDailyHistory(userId)
-                studySessionVM.loadStudySessions(userId)
-                moodVM.loadMoods()
-                courseVM.loadCourses()
+                isLoading.value = true
+
+                awaitAll(
+                    async { userVM.loadAllUsers() },
+                    async { groupVM.loadStudyGroups() },
+                    async { memberVM.loadAllMembers() },
+                    async { historyVM.loadDailyHistory(userId) },
+                    async { studySessionVM.loadStudySessions(userId) },
+                    async { moodVM.loadMoods() },
+                    async { courseVM.loadCourses() }
+                )
+
+                isLoading.value = false
             }
 
             val selectedGroup = allGroups.find { it.groupId == groupId }
@@ -150,6 +159,10 @@ class GroupActivity : ComponentActivity() {
             val groupMembers = allMembers.filter { it.groupId == groupId }
             val groupHistory = allHistory.filter { member ->
                 groupMembers.any { it.userId == member.userId }
+            }
+
+            if (isLoading.value) {
+                LoadingScreen()
             }
 
             DinoSyncTheme {
