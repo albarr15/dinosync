@@ -8,7 +8,7 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.os.Bundle
 import android.util.Log
-import android.widget.Toast
+//import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.addCallback
 import androidx.activity.compose.setContent
@@ -336,9 +336,9 @@ fun FocusStudyScreen(
     var hatchedCompanionName by remember { mutableStateOf<String?>(null) }
     var hatchedCompanionDrawableRes by remember { mutableStateOf<Int?>(null) }
 
-    fun showToast(context: Context, message: String) {
-        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-    }
+    //fun showToast(context: Context, message: String) {
+    //    Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+    //}
 
     // ✅ Timer countdown logic
     LaunchedEffect(isRunning, currentCompanion) {
@@ -411,7 +411,7 @@ fun FocusStudyScreen(
 
     // ✅ Load music
     LaunchedEffect(Unit) {
-        Toast.makeText(context, "totalTime: $totalTime seconds", Toast.LENGTH_SHORT).show()
+        //Toast.makeText(context, "totalTime: $totalTime seconds", Toast.LENGTH_SHORT).show()
         musicVM.loadMusic() }
 
     LaunchedEffect(musicList) {
@@ -555,7 +555,7 @@ fun FocusStudyScreen(
                                 val updates = mapOf("endedAt" to endTimestamp, "status" to "completed")
                                 studySessionVM.updateStudySession(currentSessionId, updates)
 
-                                Toast.makeText(context, "Stopped! timeLeft: $timeLeftBeforeStop", Toast.LENGTH_SHORT).show()
+                                //Toast.makeText(context, "Stopped! timeLeft: $timeLeftBeforeStop", Toast.LENGTH_SHORT).show()
                                 Log.d("OnStop Button", "Stopped! timeLeft: $timeLeftBeforeStop")
 
                                 val elapsedMinutes = calculateActualElapsedSeconds(
@@ -567,7 +567,7 @@ fun FocusStudyScreen(
                                 val secondsPart = (elapsedMinutes % 60)
                                 val elapsedTimeOnStop = (minutesPart*60) + secondsPart
 
-                                Toast.makeText(context,  "Elapsed (actual): ${elapsedMinutes}, ${minutesPart}m ${secondsPart}s", Toast.LENGTH_SHORT).show()
+                                //Toast.makeText(context,  "Elapsed (actual): ${elapsedMinutes}, ${minutesPart}m ${secondsPart}s", Toast.LENGTH_SHORT).show()
                                 Log.d("OnStop Button", "Elapsed (actual): ${elapsedMinutes}, ${elapsedTimeOnStop}, ${minutesPart}m ${secondsPart}s")
 
                                 dailyStudyHistoryVM.updateDailyHistory(
@@ -611,7 +611,7 @@ fun FocusStudyScreen(
                                   //elapsedTimeInSeconds%3600)/60
                                     val minutesPart = (elapsedMinutes % 3600) / 60
                                     val secondsPart = elapsedMinutes % 60
-                                    Toast.makeText(context, "Elapsed: ${minutesPart}m ${secondsPart}s", Toast.LENGTH_SHORT).show()
+                                    //Toast.makeText(context, "Elapsed: ${minutesPart}m ${secondsPart}s", Toast.LENGTH_SHORT).show()
                                     Log.d("Repeat/Pause/Resume", "Elapsed: ${minutesPart}m ${secondsPart}s")
 
                                     val currentDate = getCurDate()
@@ -646,7 +646,7 @@ fun FocusStudyScreen(
                                         if (isRunning) {
                                             val nowInSeconds = timeLeft
                                             resumeTimestamps.add(System.currentTimeMillis() / 1000)
-                                            Toast.makeText(context, "Resumed at: $nowInSeconds ", Toast.LENGTH_SHORT).show()
+                                            //Toast.makeText(context, "Resumed at: $nowInSeconds ", Toast.LENGTH_SHORT).show()
                                             Log.d("Repeat/Pause/Resume", "Resumed at: $nowInSeconds")
                                             val pairedCount =
                                                 minOf(pauseTimestamps.size, resumeTimestamps.size)
@@ -654,14 +654,14 @@ fun FocusStudyScreen(
                                                 .zip(resumeTimestamps.take(pairedCount))
                                                 .forEachIndexed { index, (pausedAt, resumedAt) ->
                                                     val duration = resumedAt - pausedAt
-                                                    Toast.makeText(context, "Pause[$index] duration: ${(duration % 3600) / 60} min, ${duration % 60} seconds", Toast.LENGTH_SHORT).show()
+                                                    //Toast.makeText(context, "Pause[$index] duration: ${(duration % 3600) / 60} min, ${duration % 60} seconds", Toast.LENGTH_SHORT).show()
                                                     Log.d("Repeat/Pause/Resume", "Pause[$index] duration: ${(duration % 3600) / 60} min, ${duration % 60} seconds")
                                                 }
 
                                         } else {
                                             val nowInSeconds = timeLeft
                                             pauseTimestamps.add(System.currentTimeMillis() / 1000)
-                                            Toast.makeText(context, "Paused  at: $nowInSeconds ", Toast.LENGTH_SHORT).show()
+                                            //Toast.makeText(context, "Paused  at: $nowInSeconds ", Toast.LENGTH_SHORT).show()
                                             Log.d("Repeat/Pause/Resume", "Paused at: $nowInSeconds")
                                         }
                                     }
@@ -867,7 +867,7 @@ fun calculateActualElapsedSeconds(
 
     val elapsedTimeInSeconds = (totalTime - timeLeft).toFloat() //- totalPausedSeconds
 
-    Toast.makeText(context, "Actual elapsed: ${(elapsedTimeInSeconds%3600)/60} min, ${elapsedTimeInSeconds%60} secs", Toast.LENGTH_SHORT).show()
+    //Toast.makeText(context, "Actual elapsed: ${(elapsedTimeInSeconds%3600)/60} min, ${elapsedTimeInSeconds%60} secs", Toast.LENGTH_SHORT).show()
     return elapsedTimeInSeconds
 }
 
