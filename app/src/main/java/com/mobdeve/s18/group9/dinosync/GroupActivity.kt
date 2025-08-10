@@ -648,12 +648,11 @@ fun GroupActivityScreen(
                 when (selectedTab) {
                     "Group Activity" -> OnClickGroupActivityBtn(memberUsers, dailyHistoryVM, groupVM)
                     "Stats" -> OnClickGroupStatsActivityBtn(
-                        topMembers = ArrayList(topMembers),
+                        allGroupMembers = ArrayList(topMembers),
                         group?.groupId.toString(),
                         dailyStudyHistory,
                         studySessions,
-                        groupMembers,
-                        groupVM
+                        groupMembers
                     )
                 }
             }
@@ -733,9 +732,6 @@ fun UserCard(user: User, groupMember: GroupMember, dailyHistoryVM : DailyStudyHi
 
 @Composable
 fun OnClickGroupActivityBtn(memberUsers: List<Pair<User, GroupMember>>, dailyHistoryVM : DailyStudyHistoryViewModel, groupVM : GroupMemberViewModel) {
-    fun onClickEndSession(member: GroupMember) {
-        groupVM.triggerRefresh()
-    }
 
     LaunchedEffect(memberUsers) {
         Log.d("OnClickGroupActivityBtn", "memberUsers size: ${memberUsers.size}")
@@ -765,7 +761,7 @@ fun OnClickGroupActivityBtn(memberUsers: List<Pair<User, GroupMember>>, dailyHis
         ) {
             items(memberUsers.size) { index ->
                 val (user, groupMember) = memberUsers[index]
-                UserCard(user, groupMember, dailyHistoryVM, groupVM, onSessionEnd = { onClickEndSession(it) })
+                UserCard(user, groupMember, dailyHistoryVM, groupVM, onSessionEnd = { })
             }
         }
 
@@ -807,12 +803,11 @@ fun calculateGroupRanking(
 
 @Composable
 fun OnClickGroupStatsActivityBtn(
-    topMembers: ArrayList<User>,
+    allGroupMembers: ArrayList<User>,
     selectedGroup: String,
     dailyStudyHistory: List<DailyStudyHistory>,
     studySessions: List<StudySession>,
-    groupMembers: List<GroupMember>,
-    groupVM : GroupMemberViewModel
+    groupMembers: List<GroupMember>
 ) {
     Column(
         modifier = Modifier
@@ -843,11 +838,29 @@ fun OnClickGroupStatsActivityBtn(
                 modifier = Modifier.padding(bottom = 8.dp)
             )
 
+            val selectedGroupMemberIds = groupMembers
+                .filter { it.groupId == selectedGroup }
+                .map { it.userId }
+                .distinct()
+
+            val sortedTopMembers = allGroupMembers
+                .filter { it.userId in selectedGroupMemberIds }
+                .map { user ->
+                    val totalMinutes = dailyStudyHistory
+                        .filter { it.userId == user.userId }
+                        .sumOf { (it.totalGroupStudyMinutes + it.totalIndividualMinutes).toDouble() }
+                        .toFloat()
+                    user to totalMinutes
+                }
+                .sortedByDescending { it.second }
+                .map { it.first }
+
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                topMembers.take(2).forEach { user ->
+                sortedTopMembers.take(2).forEach { user ->
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Box(
                             modifier = Modifier

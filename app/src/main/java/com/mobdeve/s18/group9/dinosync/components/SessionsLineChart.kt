@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.DatePickerDefaults.dateFormatter
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -94,7 +95,8 @@ fun aggregateHourlyChartData(
     sessions: List<StudySession>,
     targetDate: Date,
     filter: ChartFilter,
-    groupMembers: List<GroupMember>
+    groupMembers: List<GroupMember>,
+    dailyStudyHistory: List<DailyStudyHistory>
 ): Map<Int, Int> {
     val formatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
     val targetDateStr = formatter.format(targetDate)
@@ -122,40 +124,45 @@ fun aggregateHourlyChartData(
         }
 
         is ChartFilter.ByGroup -> {
-            val groupUserIds = filter.groupMembers
+            // 1. Get ALL user IDs who have ever been part of the group
+            val groupUserIds = groupMembers
                 .filter { it.groupId == filter.groupId }
                 .map { it.userId }
                 .toSet()
 
-            val targetDateOnly = formatter.parse(targetDateStr)!!
-
-            groupMembers.filter { member ->
-                member.userId in groupUserIds &&
-                        member.groupId == filter.groupId &&
-                        member.startedAt.isNotEmpty() // && member.endedAt.isNotEmpty()
-            }.forEach { member ->
-                try {
-                    val start = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault()).parse(member.startedAt)
-                    val end = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault()).parse(member.endedAt)
-
-                    if (start != null && end != null) {
-                        val cal = Calendar.getInstance(TimeZone.getTimeZone("Asia/Manila"))
-                        cal.time = end
-                        val endHour = cal.get(Calendar.HOUR_OF_DAY)
-
-                        val memberDateStr = formatter.format(start)
-                        val isSameDate = memberDateStr == targetDateStr
-
-                        if (isSameDate) {
-                            val durationInMinutes = ((end.time - start.time) / 60000).toInt()
-                            hourlyMap[endHour] = (hourlyMap[endHour] ?: 0) + durationInMinutes
-                        }
-                    }
-                } catch (e: Exception) {
-                    Log.e("HourlyChart", "Date parse error for member: ${member.userId}", e)
+            // 2. Aggregate from DailyStudyHistory
+            dailyStudyHistory
+                .filter { it.userId in groupUserIds && it.date == targetDateStr }
+                .forEach { history ->
+                    val defaultHour = 0
+                    val totalMinutes = history.totalGroupStudyMinutes.toInt()
+                    hourlyMap[defaultHour] = (hourlyMap[defaultHour] ?: 0) + totalMinutes
                 }
-            }
+
+            groupMembers
+                .filter { it.userId in groupUserIds && it.groupId == filter.groupId && it.startedAt.isNotEmpty() }
+                .forEach { member ->
+                    try {
+                        val start = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault()).parse(member.startedAt)
+                        val end = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault()).parse(member.endedAt)
+
+                        if (start != null && end != null) {
+                            val cal = Calendar.getInstance(TimeZone.getTimeZone("Asia/Manila"))
+                            cal.time = end
+                            val endHour = cal.get(Calendar.HOUR_OF_DAY)
+
+                            val memberDateStr = formatter.format(start)
+                            if (memberDateStr == targetDateStr) {
+                                val durationInMinutes = ((end.time - start.time) / 60000).toInt()
+                                hourlyMap[endHour] = (hourlyMap[endHour] ?: 0) + durationInMinutes
+                            }
+                        }
+                    } catch (e: Exception) {
+                        Log.e("HourlyChart", "Date parse error for member: ${member.userId}", e)
+                    }
+                }
         }
+
     }
 
     return hourlyMap.toSortedMap()
@@ -221,9 +228,9 @@ fun StudyDayLineChart(
         label
     }
 
-    LaunchedEffect(filter, dailyStudyHistory, studySessions) {
+    LaunchedEffect(filter, dailyStudyHistory, studySessions, groupMembers) {
         val todayDate = Date()
-        val chartData = aggregateHourlyChartData(studySessions, todayDate, filter, groupMembers)
+        val chartData = aggregateHourlyChartData(studySessions, todayDate, filter, groupMembers, dailyStudyHistory)
         val fullSeries = (0..23).map { hour -> chartData[hour] ?: 0 }
         modelProducer.runTransaction {
             lineSeries { series(fullSeries) }
@@ -262,71 +269,84 @@ fun StudyWeeklyLineChart(
 ) {
     val modelProducer = remember { CartesianChartModelProducer() }
     val daysOfWeek = listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
-    val bottomAxisValueFormatter = CartesianValueFormatter { context, value, _ ->
-        val index = value.toInt()
-        val label = daysOfWeek[index]
-        label
+    val bottomAxisValueFormatter = CartesianValueFormatter { _, value, _ ->
+        val index = value.toInt().coerceIn(0, daysOfWeek.lastIndex)
+        daysOfWeek[index]
     }
 
     val dateFormatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+    val dateTimeFormatter = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
 
-    LaunchedEffect(dailyStudyHistory, studySessions, filter) {
-        val filteredHistory = filterDailyHistoryByFilter(
-            filter,
-            dailyStudyHistory,
-            studySessions,
-            groupMembers
-        )
-
-        val calendar = Calendar.getInstance(TimeZone.getTimeZone("Asia/Manila"))
-        val today = calendar.time
-
-        // Set calendar to the start of the week (Sunday)
-        calendar.set(Calendar.HOUR_OF_DAY, 0)
-        calendar.set(Calendar.MINUTE, 0)
-        calendar.set(Calendar.SECOND, 0)
-        calendar.set(Calendar.MILLISECOND, 0)
-        calendar.set(Calendar.DAY_OF_WEEK, calendar.firstDayOfWeek) // Usually Sunday
-
+    LaunchedEffect(dailyStudyHistory, studySessions, filter, groupMembers) {
+        // Start and end of this week
+        val calendar = Calendar.getInstance(TimeZone.getTimeZone("Asia/Manila")).apply {
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+            set(Calendar.DAY_OF_WEEK, firstDayOfWeek) // Sunday
+        }
         val startOfWeek = calendar.time
-
-        // End of week (Saturday)
         calendar.add(Calendar.DAY_OF_WEEK, 6)
         val endOfWeek = calendar.time
 
+        // Prepare a mutable map for Sunday (1) to Saturday (7)
+        val weeklyMap = (1..7).associateWith { 0f }.toMutableMap()
 
-        // Filter only this week's entries
-        val thisWeekHistory = filteredHistory.filter { daily ->
-            val currentDate = dateFormatter.parse(daily.date)
-            !currentDate.before(startOfWeek) && !currentDate.after(endOfWeek)
+        when (filter) {
+            is ChartFilter.ByGroup -> {
+                val groupUserIds = groupMembers
+                    .filter { it.groupId == filter.groupId }
+                    .map { it.userId }
+                    .toSet()
 
-//            currentDate.after(startOfWeek) && currentDate.before(endOfWeek) ||
-//                    currentDate == startOfWeek || currentDate == endOfWeek
-        }
-        val weeklyData = thisWeekHistory
-            .groupBy { daily ->
-                calendar.setTime(daily.parsedDate)
-                val dow = calendar.get(Calendar.DAY_OF_WEEK) // 1 = Sunday, 7 = Sat
-                // Log.d("StudyWeeklyLineChart", "Grouping ${daily.parsedDate} into dayIndex = $dow")
-                dow
+                dailyStudyHistory
+                    .filter { it.userId in groupUserIds }
+                    .filter { dateFormatter.parse(it.date) in startOfWeek..endOfWeek }
+                    .forEach { history ->
+                        val dayIndex = Calendar.getInstance(TimeZone.getTimeZone("Asia/Manila")).apply {
+                            time = dateFormatter.parse(history.date)!!
+                        }.get(Calendar.DAY_OF_WEEK)
+                        weeklyMap[dayIndex] = (weeklyMap[dayIndex] ?: 0f) + history.totalGroupStudyMinutes.toFloat()
+                    }
+
+                groupMembers
+                    .filter { it.userId in groupUserIds && !it.startedAt.isNullOrBlank() && !it.endedAt.isNullOrBlank() }
+                    .forEach { member ->
+                        try {
+                            val start = dateTimeFormatter.parse(member.startedAt)
+                            val end = dateTimeFormatter.parse(member.endedAt)
+                            if (start != null && end != null) {
+                                val isSameWeek = !start.before(startOfWeek) && !start.after(endOfWeek)
+                                if (isSameWeek) {
+                                    val durationMins = ((end.time - start.time) / 60000).toInt()
+                                    val dayIndex = Calendar.getInstance(TimeZone.getTimeZone("Asia/Manila")).apply {
+                                        time = start
+                                    }.get(Calendar.DAY_OF_WEEK)
+                                    weeklyMap[dayIndex] = (weeklyMap[dayIndex] ?: 0f) + durationMins
+                                }
+                            }
+                        } catch (e: Exception) {
+                            Log.e("WeeklyChart", "Date parse error for member: ${member.userId}", e)
+                        }
+                    }
             }
-            .mapValues { entry ->
-                val totalMins = when (filter) {
-                    is ChartFilter.ByUser -> entry.value.sumOf { it.totalIndividualMinutes.toDouble() }
-                    is ChartFilter.ByGroup -> entry.value.sumOf { it.totalGroupStudyMinutes.toDouble() }
-                }
 
-                Log.d("StudyWeeklyLineChart", "Day ${entry.key} total minutes = $totalMins")
-                totalMins
+            is ChartFilter.ByUser -> {
+                dailyStudyHistory
+                    .filter { it.userId == filter.userId }
+                    .filter { dateFormatter.parse(it.date) in startOfWeek..endOfWeek }
+                    .forEach { history ->
+                        val dayIndex = Calendar.getInstance(TimeZone.getTimeZone("Asia/Manila")).apply {
+                            time = dateFormatter.parse(history.date)!!
+                        }.get(Calendar.DAY_OF_WEEK)
+                        weeklyMap[dayIndex] = (weeklyMap[dayIndex] ?: 0f) +
+                                history.totalIndividualMinutes.toFloat()
+                    }
             }
-            .toSortedMap()
-
-        val fullWeekMap = (1..7).associateWith { 0f }.toMutableMap()
-        weeklyData.forEach { (dayIndex, value) ->
-            fullWeekMap[dayIndex] = value.toFloat()
         }
 
-        val chartData = fullWeekMap.toSortedMap().values.toList()
+        val chartData = weeklyMap.toSortedMap().values.toList()
         Log.d("StudyWeeklyLineChart", "Weekly full data: $chartData")
 
         modelProducer.runTransaction {
@@ -357,6 +377,7 @@ fun StudyWeeklyLineChart(
     }
 }
 
+
 @Composable
 fun StudyMonthlyLineChart(
     dailyStudyHistory: List<DailyStudyHistory>,
@@ -366,49 +387,72 @@ fun StudyMonthlyLineChart(
 ) {
     val modelProducer = remember { CartesianChartModelProducer() }
     val months = listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
-    val bottomAxisValueFormatter = CartesianValueFormatter { context, value, _ ->
-        val index = value.toInt()
-        val label = months[index]
-        label
+    val bottomAxisValueFormatter = CartesianValueFormatter { _, value, _ ->
+        months.getOrNull(value.toInt()) ?: ""
     }
 
-    LaunchedEffect(dailyStudyHistory, studySessions, filter) {
-        val filteredHistory = filterDailyHistoryByFilter(
-            filter,
-            dailyStudyHistory,
-            studySessions,
-            groupMembers
-        )
+    LaunchedEffect(dailyStudyHistory, studySessions, filter, groupMembers) {
+        val monthlyMap = (0..11).associateWith { 0f }.toMutableMap()
 
-        val calendar = Calendar.getInstance()
-        val monthlyData = filteredHistory
-            .groupBy { daily ->
-                calendar.time = daily.parsedDate
-                val month = calendar.get(Calendar.MONTH)
-                month
-            }
-            .mapValues { entry ->
-                val sum = when (filter) {
-                    is ChartFilter.ByUser -> entry.value.sumOf { it.totalIndividualMinutes.toDouble() }
-                    is ChartFilter.ByGroup -> entry.value.sumOf { it.totalGroupStudyMinutes.toDouble() }
-                }
-                //Log.d("StudyMonthlyLineChart", "Key: ${entry.key}, Sum of minutes: $sum")
-                sum
-            }
-            .toSortedMap()
+        val dateFormatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        val dateTimeFormatter = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
 
-        val fullMonthMap = (0..11).associateWith { 0f }.toMutableMap()
-        monthlyData.forEach { (monthIndex, value) ->
-            fullMonthMap[monthIndex] = value.toFloat()
+        when (filter) {
+            is ChartFilter.ByUser -> {
+                // Sum from DailyStudyHistory (individual minutes)
+                dailyStudyHistory
+                    .filter { it.userId == filter.userId }
+                    .forEach { history ->
+                        val monthIndex = Calendar.getInstance().apply {
+                            time = dateFormatter.parse(history.date)!!
+                        }.get(Calendar.MONTH)
+
+                        monthlyMap[monthIndex] = (monthlyMap[monthIndex] ?: 0f) + history.totalIndividualMinutes.toFloat()
+                    }
+            }
+
+            is ChartFilter.ByGroup -> {
+                val groupUserIds = groupMembers
+                    .filter { it.groupId == filter.groupId }
+                    .map { it.userId }
+                    .toSet()
+
+                // 1. Sum from DailyStudyHistory (group minutes)
+                dailyStudyHistory
+                    .filter { it.userId in groupUserIds }
+                    .forEach { history ->
+                        val monthIndex = Calendar.getInstance(TimeZone.getTimeZone("Asia/Manila")).apply {
+                            time = dateFormatter.parse(history.date)!!
+                        }.get(Calendar.MONTH)
+
+                        monthlyMap[monthIndex] = (monthlyMap[monthIndex] ?: 0f) + history.totalGroupStudyMinutes.toFloat()
+                    }
+
+                // 2. Add from GroupMember session times
+                groupMembers
+                    .filter { it.userId in groupUserIds && !it.startedAt.isNullOrBlank() && !it.endedAt.isNullOrBlank() }
+                    .forEach { member ->
+                        try {
+                            val start = dateTimeFormatter.parse(member.startedAt)
+                            val end = dateTimeFormatter.parse(member.endedAt)
+                            if (start != null && end != null) {
+                                val monthIndex = Calendar.getInstance(TimeZone.getTimeZone("Asia/Manila")).apply {
+                                    time = start
+                                }.get(Calendar.MONTH)
+
+                                val durationMins = ((end.time - start.time) / 60000).toInt()
+                                monthlyMap[monthIndex] = (monthlyMap[monthIndex] ?: 0f) + durationMins
+                            }
+                        } catch (e: Exception) {
+                            Log.e("MonthlyChart", "Date parse error for member: ${member.userId}", e)
+                        }
+                    }
+            }
         }
 
-        val chartData = fullMonthMap.toSortedMap().values.toList()
-
-        // val chartData = monthlyData.values.map { it.toFloat() }
-        //og.d("StudyMonthlyLineChart", "Final chartData: $chartData")
+        val chartData = monthlyMap.toSortedMap().values.toList()
 
         modelProducer.runTransaction {
-            //Log.d("StudyMonthlyLineChart", "Updating chart model with data")
             lineSeries { series(chartData) }
         }
     }
@@ -454,7 +498,7 @@ fun StudyYearlyLineChart(
         years.getOrNull(index) ?: ""
     }
 
-    LaunchedEffect(dailyStudyHistory, studySessions, filter) {
+    LaunchedEffect(dailyStudyHistory, studySessions, filter, groupMembers) {
         val filteredHistory = filterDailyHistoryByFilter(
             filter,
             dailyStudyHistory,
