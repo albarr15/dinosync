@@ -53,6 +53,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -100,6 +101,7 @@ import com.mobdeve.s18.group9.dinosync.viewmodel.UserViewModel
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -172,6 +174,7 @@ class GroupActivity : ComponentActivity() {
                     group = selectedGroup,
                     allGroupMembers = allMembers,
                     groupMembers = groupMembers,
+                    groupVM = memberVM,
                     allUsers = allUsers,
                     dailyStudyHistory = groupHistory,
                     dailyHistoryVM = historyVM,
@@ -215,6 +218,7 @@ fun GroupActivityScreen(
     group: StudyGroup?,
     allGroupMembers : List<GroupMember>,
     groupMembers: List<GroupMember>,
+    groupVM: GroupMemberViewModel,
     allUsers: List<User>,
     dailyStudyHistory: List<DailyStudyHistory>,
     dailyHistoryVM : DailyStudyHistoryViewModel,
@@ -228,7 +232,6 @@ fun GroupActivityScreen(
     var selectedTab by remember { mutableStateOf("Group Activity") }
     val groupMemberVM: GroupMemberViewModel = viewModel()
 
-    // Observe StateFlow using collectAsState (this is reactive!)
     val realTimeMembers by groupMemberVM.members.collectAsState()
 
     LaunchedEffect(Unit) {
@@ -289,8 +292,6 @@ fun GroupActivityScreen(
         val activeMember = members.find {
             it.userId == userId && it.groupId == groupId && it.endedAt.isNullOrEmpty()
         }
-        // Instead of basing the startedAt on groupMemberState, get it this directly form firebase from GroupMemberViewModel
-
         val startedAt = activeMember?.startedAt ?: ""
 
         if (startedAt.isNotEmpty()) {
@@ -645,51 +646,51 @@ fun GroupActivityScreen(
             // Render content based on selected tab
             Box(modifier = Modifier.fillMaxWidth()) {
                 when (selectedTab) {
-                    "Group Activity" -> OnClickGroupActivityBtn(memberUsers, dailyHistoryVM)
+                    "Group Activity" -> OnClickGroupActivityBtn(memberUsers, dailyHistoryVM, groupVM)
                     "Stats" -> OnClickGroupStatsActivityBtn(
                         topMembers = ArrayList(topMembers),
                         group?.groupId.toString(),
                         dailyStudyHistory,
                         studySessions,
-                        groupMembers
+                        groupMembers,
+                        groupVM
                     )
                 }
             }
         }
     }
 }
+
 @Composable
-fun UserCard(user: User, groupMember: GroupMember, dailyHistoryVM : DailyStudyHistoryViewModel, onSessionEnd: (GroupMember) -> Unit) {
+fun UserCard(user: User, groupMember: GroupMember, dailyHistoryVM : DailyStudyHistoryViewModel, groupVM: GroupMemberViewModel, onSessionEnd: (GroupMember) -> Unit) {
 
     val currentDate = fetchCurDate()
-    val studyMinutes by dailyHistoryVM.getTotalGroupStudyMinutes(user.userId, currentDate).collectAsState(initial = 0f)
+    val studyMinutes by dailyHistoryVM.getTotalGroupStudyMinutes(user.userId, currentDate)
+        .collectAsState(initial = 0f)
     val initialTimeInSeconds = (groupMember.currentGroupStudyMinutes * 60).toInt()
-    var remainingSeconds by remember { mutableStateOf(initialTimeInSeconds) }
 
-    var isRunning = groupMember.endedAt.isNullOrEmpty() && !groupMember.onBreak && remainingSeconds > 0
+    val remainingSeconds by groupVM.remainingTimes
+        .map { it[groupMember.userId] ?: initialTimeInSeconds }
+        .collectAsState(initial = initialTimeInSeconds)
 
-    // To reset the timer upon session restart
-    LaunchedEffect(groupMember.startedAt, studyMinutes) {
-        remainingSeconds = initialTimeInSeconds
-        isRunning = true
+    val isRunning = remember(groupMember.userId, groupMember.startedAt, remainingSeconds) {
+        groupMember.endedAt.isNullOrEmpty() && !groupMember.onBreak && remainingSeconds > 0
+    }
 
-        while (isRunning && remainingSeconds > 0) {
-            delay(1000L)
-            remainingSeconds--
+    // Start timer in ViewModel if not already running
+    LaunchedEffect(groupMember.userId, groupMember.startedAt) {
+        if (isRunning && groupVM.remainingTimes.value[groupMember.userId] == null) {
+            groupVM.startTimer(groupMember.userId, initialTimeInSeconds)
         }
+    }
 
-        if (remainingSeconds == 0) {
-            isRunning = false
+    // Trigger session end when timer hits zero
+    LaunchedEffect(remainingSeconds) {
+        if (remainingSeconds <= 0 && isRunning) {
             onSessionEnd(groupMember)
         }
     }
 
-    val imageRes = when {
-        groupMember.onBreak || remainingSeconds == 0 -> R.drawable.inactive
-        studyMinutes >= 240 -> R.drawable.greaterthanequal4hr
-        studyMinutes >= 60 -> R.drawable.greaterthanequal1hr
-        else -> R.drawable.lessthan1hr
-    }
 
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Box(
@@ -731,7 +732,11 @@ fun UserCard(user: User, groupMember: GroupMember, dailyHistoryVM : DailyStudyHi
 }
 
 @Composable
-fun OnClickGroupActivityBtn(memberUsers: List<Pair<User, GroupMember>>, dailyHistoryVM : DailyStudyHistoryViewModel) {
+fun OnClickGroupActivityBtn(memberUsers: List<Pair<User, GroupMember>>, dailyHistoryVM : DailyStudyHistoryViewModel, groupVM : GroupMemberViewModel) {
+    fun onClickEndSession(member: GroupMember) {
+        groupVM.triggerRefresh()
+    }
+
     LaunchedEffect(memberUsers) {
         Log.d("OnClickGroupActivityBtn", "memberUsers size: ${memberUsers.size}")
         memberUsers.forEachIndexed { index, (user, groupMember) ->
@@ -760,9 +765,11 @@ fun OnClickGroupActivityBtn(memberUsers: List<Pair<User, GroupMember>>, dailyHis
         ) {
             items(memberUsers.size) { index ->
                 val (user, groupMember) = memberUsers[index]
-                UserCard(user, groupMember, dailyHistoryVM, onSessionEnd = {})
+                UserCard(user, groupMember, dailyHistoryVM, groupVM, onSessionEnd = { onClickEndSession(it) })
             }
         }
+
+
     }
 }
 
@@ -804,7 +811,8 @@ fun OnClickGroupStatsActivityBtn(
     selectedGroup: String,
     dailyStudyHistory: List<DailyStudyHistory>,
     studySessions: List<StudySession>,
-    groupMembers: List<GroupMember>
+    groupMembers: List<GroupMember>,
+    groupVM : GroupMemberViewModel
 ) {
     Column(
         modifier = Modifier
@@ -869,6 +877,5 @@ fun OnClickGroupStatsActivityBtn(
             GroupSessionsLineChart(selectedGroup, dailyStudyHistory, studySessions, groupMembers)
         }
     }
-
 }
 

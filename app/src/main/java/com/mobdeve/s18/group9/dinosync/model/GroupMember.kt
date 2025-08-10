@@ -8,4 +8,5 @@ data class GroupMember(
     val groupId:String = "",
     val onBreak: Boolean = false,
     val userId: String = "",
+    val sessionEndedAt : String = ""
 )

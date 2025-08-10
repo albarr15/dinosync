@@ -224,7 +224,7 @@ class MainActivity : ComponentActivity() {
             //Toast.makeText(this, "Connected to Spotify!", Toast.LENGTH_SHORT).show()
         } else {
             connectToSpotify()
-            Toast.makeText(this, "Connected to Spotify!", Toast.LENGTH_SHORT).show()
+            //Toast.makeText(this, "Connected to Spotify!", Toast.LENGTH_SHORT).show()
         }
 
     }
@@ -396,341 +396,341 @@ class MainActivity : ComponentActivity() {
     /******** MAIN SCREEN *********/
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreen(
-    userId: String
-) {
-    val context = LocalContext.current
+    fun MainScreen(
+        userId: String
+    ) {
+        val context = LocalContext.current
 
-    var showSpotifyRequiredModal by remember { mutableStateOf(false) }
-    if (showSpotifyRequiredModal) {
-       requireSpotifyModal(onDismiss = { showSpotifyRequiredModal = false })
-    }
-
-    // Collect ViewModels
-    val moodVM: MoodViewModel = viewModel()
-    val studySessionVM: StudySessionViewModel = viewModel()
-    val dailyHistoryVM: DailyStudyHistoryViewModel = viewModel()
-    val userVM: UserViewModel = viewModel()
-    val courseVM: CourseViewModel = viewModel()
-    val musicVM: MusicViewModel = viewModel()
-
-    val musicList by musicVM.musicList.collectAsState()
-    var currentMusic by remember { mutableStateOf<Music?>(null) }
-
-    val todoVM: TodoViewModel = viewModel()
-    val todoDocs by todoVM.todos.collectAsState()
-
-    LaunchedEffect(musicList) {
-        if (musicList.isNotEmpty() && currentMusic == null) {
-            currentMusic = musicList.first()
+        var showSpotifyRequiredModal by remember { mutableStateOf(false) }
+        if (showSpotifyRequiredModal) {
+            requireSpotifyModal(onDismiss = { showSpotifyRequiredModal = false })
         }
-    }
 
-    LaunchedEffect(Unit) {
-        moodVM.loadMoods()
-        studySessionVM.loadStudySessions(userId)
-        dailyHistoryVM.loadDailyHistory(userId)
-        userVM.loadUser(userId)
-        courseVM.loadCourses()
-        musicVM.loadMusic()
-    }
+        // Collect ViewModels
+        val moodVM: MoodViewModel = viewModel()
+        val studySessionVM: StudySessionViewModel = viewModel()
+        val dailyHistoryVM: DailyStudyHistoryViewModel = viewModel()
+        val userVM: UserViewModel = viewModel()
+        val courseVM: CourseViewModel = viewModel()
+        val musicVM: MusicViewModel = viewModel()
 
-    val moods by moodVM.moods.collectAsState()
-    var hoursSet by remember { mutableStateOf("") }
-    var minutesSet by remember { mutableStateOf("") }
-    var showMoodDialog by remember { mutableStateOf(false) }
-    var selectedMood by remember { mutableStateOf<Mood?>(null) }
-    val courseList by courseVM.courses.collectAsState()
+        val musicList by musicVM.musicList.collectAsState()
+        var currentMusic by remember { mutableStateOf<Music?>(null) }
 
-    Scaffold(
-        bottomBar = {
-            BottomNavigationBar(
-                selectedItem = "Home",
-                onGroupsClick = {
-                    //Log.d("CurrentUser", "Logged in userId in onGroupsClick = $userId")
-                    val intent = Intent(context, DiscoverGroupsActivity::class.java)
-                    intent.putExtra("userId", userId)
-                    context.startActivity(intent)
-                },
-                onHomeClick = {
-                    val intent = Intent(context, MainActivity::class.java).apply {
-                        flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
-                        putExtra("userId", userId)
-                    }
-                    context.startActivity(intent)
+        val todoVM: TodoViewModel = viewModel()
+        val todoDocs by todoVM.todos.collectAsState()
 
-                },
-                onStatsClick = {
-                    val intent = Intent(context, StatisticsActivity::class.java)
-                    intent.putExtra("userId", userId)
-                    context.startActivity(intent)
-                }
-            )
-        },
-        containerColor = Color.White
-    ) { padding ->
-        Column(
-            modifier = Modifier.padding(padding).fillMaxSize().padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-
-            TopActionBar(
-                onProfileClick = {
-                    val intent = Intent(context, ProfileActivity::class.java)
-                    intent.putExtra("userId", userId)
-                    context.startActivity(intent)
-                },
-                onSettingsClick = {
-                    val intent = Intent(context, SettingsActivity::class.java)
-                    intent.putExtra("userId", userId)
-                    context.startActivity(intent)
-                }
-            )
-
-            Text(
-                text = "Home",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                color = Color.Black,
-                modifier = Modifier.align(Alignment.Start)
-            )
-
-            /******** Editable Course Dropdown ********/
-            val courseNames = courseList.map { it.name }
-            var expanded by remember { mutableStateOf(false) }
-            var inputText by remember { mutableStateOf("") }
-            var selectedCourse by remember { mutableStateOf("") }
-
-            val filteredCourses = if (inputText.isBlank()) {
-                courseNames
-            } else {
-                courseNames.filter {
-                    it.contains(inputText, ignoreCase = true)
-                }
+        LaunchedEffect(musicList) {
+            if (musicList.isNotEmpty() && currentMusic == null) {
+                currentMusic = musicList.first()
             }
+        }
 
-            ExposedDropdownMenuBox(
-                expanded = expanded,
-                onExpandedChange = { expanded = !expanded },
-                modifier = Modifier
-                    .width(350.dp)
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
+        LaunchedEffect(Unit) {
+            moodVM.loadMoods()
+            studySessionVM.loadStudySessions(userId)
+            dailyHistoryVM.loadDailyHistory(userId)
+            userVM.loadUser(userId)
+            courseVM.loadCourses()
+            musicVM.loadMusic()
+        }
+
+        val moods by moodVM.moods.collectAsState()
+        var hoursSet by remember { mutableStateOf("") }
+        var minutesSet by remember { mutableStateOf("") }
+        var showMoodDialog by remember { mutableStateOf(false) }
+        var selectedMood by remember { mutableStateOf<Mood?>(null) }
+        val courseList by courseVM.courses.collectAsState()
+
+        Scaffold(
+            bottomBar = {
+                BottomNavigationBar(
+                    selectedItem = "Home",
+                    onGroupsClick = {
+                        //Log.d("CurrentUser", "Logged in userId in onGroupsClick = $userId")
+                        val intent = Intent(context, DiscoverGroupsActivity::class.java)
+                        intent.putExtra("userId", userId)
+                        context.startActivity(intent)
+                    },
+                    onHomeClick = {
+                        val intent = Intent(context, MainActivity::class.java).apply {
+                            flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+                            putExtra("userId", userId)
+                        }
+                        context.startActivity(intent)
+
+                    },
+                    onStatsClick = {
+                        val intent = Intent(context, StatisticsActivity::class.java)
+                        intent.putExtra("userId", userId)
+                        context.startActivity(intent)
+                    }
+                )
+            },
+            containerColor = Color.White
+        ) { padding ->
+            Column(
+                modifier = Modifier.padding(padding).fillMaxSize().padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                OutlinedTextField(
-                    value = inputText,
-                    onValueChange = { newValue ->
-                        inputText = newValue
+
+                TopActionBar(
+                    onProfileClick = {
+                        val intent = Intent(context, ProfileActivity::class.java)
+                        intent.putExtra("userId", userId)
+                        context.startActivity(intent)
                     },
-                    label = { Text("Select or Type Subject") },
-                    trailingIcon = {
-                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
-                    },
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = Color.Transparent,
-                        unfocusedContainerColor = Color.Transparent,
-                        unfocusedIndicatorColor = DarkGreen,
-                        focusedLeadingIconColor = DarkGreen,
-                        focusedIndicatorColor = DarkGreen,
-                        focusedLabelColor = DarkGreen
-                    ),
-                    modifier = Modifier
-                        .menuAnchor()
-                        .fillMaxWidth()
+                    onSettingsClick = {
+                        val intent = Intent(context, SettingsActivity::class.java)
+                        intent.putExtra("userId", userId)
+                        context.startActivity(intent)
+                    }
                 )
 
-                ExposedDropdownMenu(
-                    expanded = expanded && filteredCourses.isNotEmpty(),
-                    onDismissRequest = { expanded = false }
-                ) {
-                    filteredCourses.forEach { courseName ->
-                        DropdownMenuItem(
-                            text = { Text(courseName) },
-                            onClick = {
-                                inputText = courseName
-                                selectedCourse = courseName
-                                expanded = false
-                            }
-                        )
+                Text(
+                    text = "Home",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black,
+                    modifier = Modifier.align(Alignment.Start)
+                )
+
+                /******** Editable Course Dropdown ********/
+                val courseNames = courseList.map { it.name }
+                var expanded by remember { mutableStateOf(false) }
+                var inputText by remember { mutableStateOf("") }
+                var selectedCourse by remember { mutableStateOf("") }
+
+                val filteredCourses = if (inputText.isBlank()) {
+                    courseNames
+                } else {
+                    courseNames.filter {
+                        it.contains(inputText, ignoreCase = true)
                     }
                 }
-            }
 
-            if (inputText.isNotBlank() && !courseNames.contains(inputText)) {
-                Button(
-                    onClick = {
-                        courseVM.addCourseIfNew(inputText.trim())
-                        selectedCourse = inputText.trim()
-                        inputText = ""
-                    },
+                ExposedDropdownMenuBox(
+                    expanded = expanded,
+                    onExpandedChange = { expanded = !expanded },
                     modifier = Modifier
-                        .padding(top = 8.dp)
-                        .align(Alignment.CenterHorizontally)
+                        .width(350.dp)
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
                 ) {
-                    Text("Add \"$inputText\" as New Course")
+                    OutlinedTextField(
+                        value = inputText,
+                        onValueChange = { newValue ->
+                            inputText = newValue
+                        },
+                        label = { Text("Select or Type Subject") },
+                        trailingIcon = {
+                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+                        },
+                        colors = TextFieldDefaults.colors(
+                            focusedContainerColor = Color.Transparent,
+                            unfocusedContainerColor = Color.Transparent,
+                            unfocusedIndicatorColor = DarkGreen,
+                            focusedLeadingIconColor = DarkGreen,
+                            focusedIndicatorColor = DarkGreen,
+                            focusedLabelColor = DarkGreen
+                        ),
+                        modifier = Modifier
+                            .menuAnchor()
+                            .fillMaxWidth()
+                    )
+
+                    ExposedDropdownMenu(
+                        expanded = expanded && filteredCourses.isNotEmpty(),
+                        onDismissRequest = { expanded = false }
+                    ) {
+                        filteredCourses.forEach { courseName ->
+                            DropdownMenuItem(
+                                text = { Text(courseName) },
+                                onClick = {
+                                    inputText = courseName
+                                    selectedCourse = courseName
+                                    expanded = false
+                                }
+                            )
+                        }
+                    }
                 }
-            }
+
+                if (inputText.isNotBlank() && !courseNames.contains(inputText)) {
+                    Button(
+                        onClick = {
+                            courseVM.addCourseIfNew(inputText.trim())
+                            selectedCourse = inputText.trim()
+                            inputText = ""
+                        },
+                        modifier = Modifier
+                            .padding(top = 8.dp)
+                            .align(Alignment.CenterHorizontally)
+                    ) {
+                        Text("Add \"$inputText\" as New Course")
+                    }
+                }
 
 
-            Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
-            /******** Timer Activity *********/
-            TimerInput(
-                hoursSet = hoursSet,
-                onHoursChange = { hoursSet = it },
-                minutesSet = minutesSet,
-                onMinutesChange = { minutesSet = it },
-                onReset = {
-                    hoursSet = ""
-                    minutesSet = ""
-                },
-                onStartClicked = { showMoodDialog = true }
-            )
+                /******** Timer Activity *********/
+                TimerInput(
+                    hoursSet = hoursSet,
+                    onHoursChange = { hoursSet = it },
+                    minutesSet = minutesSet,
+                    onMinutesChange = { minutesSet = it },
+                    onReset = {
+                        hoursSet = ""
+                        minutesSet = ""
+                    },
+                    onStartClicked = { showMoodDialog = true }
+                )
 
-            if (showMoodDialog) {
-                AlertDialog(
-                    onDismissRequest = { showMoodDialog = false },
-                    confirmButton = {
-                        Button(
-                            onClick = {
+                if (showMoodDialog) {
+                    AlertDialog(
+                        onDismissRequest = { showMoodDialog = false },
+                        confirmButton = {
+                            Button(
+                                onClick = {
+                                    showMoodDialog = false
+                                    val hourInt = hoursSet.toIntOrNull() ?: 0
+                                    val minuteInt = minutesSet.toIntOrNull() ?: 0
+                                    if (hourInt == 0 && minuteInt == 0) return@Button
+
+                                    val moodId = selectedMood?.imageKey ?: return@Button
+                                    val sessionDate = getCurrentDate()
+                                    val startedAt = getCurrentDateTime()
+
+                                    val session = StudySession(
+                                        userId = userId,
+                                        courseId = selectedCourse,
+                                        hourSet = hourInt,
+                                        minuteSet = minuteInt,
+                                        moodId = moodId,
+                                        sessionDate = fetchCurDate(),
+                                        startedAt = getCurrentTimestamp(),
+                                        endedAt = null,
+                                        status = "active" // active,pause, reset, completed
+                                    )
+                                    studySessionVM.createStudySessionAndGetId(session) { sessionId ->
+                                        Toast.makeText(context, "Session logged successfully!", Toast.LENGTH_SHORT).show()
+
+                                        // Reset fields
+                                        hoursSet = ""
+                                        minutesSet = ""
+                                        selectedMood = null
+                                        showMoodDialog = false
+
+                                        // Start FocusStudyActivity with sessionId
+                                        val intent =
+                                            Intent(context, FocusStudyActivity::class.java).apply {
+                                                putExtra("userId", userId)
+                                                putExtra("hours", hourInt)
+                                                putExtra("minutes", minuteInt)
+                                                putExtra("selected_subject", selectedCourse)
+                                                putExtra("study_session_id", sessionId)
+                                                putExtra("moodId", moodId)
+                                            }
+                                        context.startActivity(intent)
+                                    }
+
+                                },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = DarkGreen,
+                                    contentColor = Color.Black
+                                )
+                            ) {
+                                Text("Log", color = Color.White)
+                            }
+                        },
+                        dismissButton = {
+                            OutlinedButton(onClick = {
                                 showMoodDialog = false
                                 val hourInt = hoursSet.toIntOrNull() ?: 0
                                 val minuteInt = minutesSet.toIntOrNull() ?: 0
-                                if (hourInt == 0 && minuteInt == 0) return@Button
+                                if (hourInt == 0 && minuteInt == 0) return@OutlinedButton
 
-                                val moodId = selectedMood?.imageKey ?: return@Button
                                 val sessionDate = getCurrentDate()
-                                val startedAt = getCurrentDateTime()
+                                val startedAt = getCurrentTimestamp()
 
-                                val session = StudySession(
+                                val skippedSession = StudySession(
                                     userId = userId,
                                     courseId = selectedCourse,
                                     hourSet = hourInt,
                                     minuteSet = minuteInt,
-                                    moodId = moodId,
+                                    moodId = "",
                                     sessionDate = fetchCurDate(),
-                                    startedAt = getCurrentTimestamp(),
+                                    startedAt = startedAt,
                                     endedAt = null,
-                                    status = "active" // active,pause, reset, completed
+                                    status = "active"
                                 )
-                                studySessionVM.createStudySessionAndGetId(session) { sessionId ->
-                                    Toast.makeText(context, "Session logged successfully!", Toast.LENGTH_SHORT).show()
 
-                                    // Reset fields
+                                studySessionVM.createStudySessionAndGetId(skippedSession) { sessionId ->
+                                    val intent = Intent(context, FocusStudyActivity::class.java).apply {
+                                        putExtra("userId", userId)
+                                        putExtra("hours", hourInt)
+                                        putExtra("minutes", minuteInt)
+                                        putExtra("selected_subject", selectedCourse)
+                                        putExtra("study_session_id", sessionId)
+                                        putExtra("moodId", "")
+                                    }
+                                    context.startActivity(intent)
+
+                                    // Reset state after skip
                                     hoursSet = ""
                                     minutesSet = ""
                                     selectedMood = null
                                     showMoodDialog = false
-
-                                    // Start FocusStudyActivity with sessionId
-                                    val intent =
-                                        Intent(context, FocusStudyActivity::class.java).apply {
-                                            putExtra("userId", userId)
-                                            putExtra("hours", hourInt)
-                                            putExtra("minutes", minuteInt)
-                                            putExtra("selected_subject", selectedCourse)
-                                            putExtra("study_session_id", sessionId)
-                                            putExtra("moodId", moodId)
-                                        }
-                                    context.startActivity(intent)
                                 }
-
-                            },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = DarkGreen,
-                                contentColor = Color.Black
-                            )
-                        ) {
-                            Text("Log", color = Color.White)
-                        }
-                    },
-                    dismissButton = {
-                        OutlinedButton(onClick = {
-                            showMoodDialog = false
-                            val hourInt = hoursSet.toIntOrNull() ?: 0
-                            val minuteInt = minutesSet.toIntOrNull() ?: 0
-                            if (hourInt == 0 && minuteInt == 0) return@OutlinedButton
-
-                            val sessionDate = getCurrentDate()
-                            val startedAt = getCurrentTimestamp()
-
-                            val skippedSession = StudySession(
-                                userId = userId,
-                                courseId = selectedCourse,
-                                hourSet = hourInt,
-                                minuteSet = minuteInt,
-                                moodId = "",
-                                sessionDate = fetchCurDate(),
-                                startedAt = startedAt,
-                                endedAt = null,
-                                status = "active"
-                            )
-
-                            studySessionVM.createStudySessionAndGetId(skippedSession) { sessionId ->
-                                val intent = Intent(context, FocusStudyActivity::class.java).apply {
-                                    putExtra("userId", userId)
-                                    putExtra("hours", hourInt)
-                                    putExtra("minutes", minuteInt)
-                                    putExtra("selected_subject", selectedCourse)
-                                    putExtra("study_session_id", sessionId)
-                                    putExtra("moodId", "")
-                                }
-                                context.startActivity(intent)
-
-                                // Reset state after skip
-                                hoursSet = ""
-                                minutesSet = ""
-                                selectedMood = null
-                                showMoodDialog = false
+                            }) {
+                                Text("Skip")
                             }
-                        }) {
-                            Text("Skip")
-                        }
-                    },
-                    text = {
-                        MoodInput(
-                            moods = moods,
-                            selectedMood = selectedMood,
-                            onMoodSelected = { selectedMood = it }
-                        )
-                    },
-                    containerColor = Color.White,
-                    shape = RoundedCornerShape(15.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(30.dp))
-            HorizontalDivider(modifier = Modifier, thickness = 1.dp, color = Color.Gray)
-            Spacer(modifier = Modifier.height(20.dp))
-
-            /******** TodoList *********/
-            TodoList(
-                todoItems = todoDocs,
-                onAddItem = { title ->
-                    val newItem = TodoItem(
-                        title = title,
-                        userId = userId,
-                        isChecked = false
+                        },
+                        text = {
+                            MoodInput(
+                                moods = moods,
+                                selectedMood = selectedMood,
+                                onMoodSelected = { selectedMood = it }
+                            )
+                        },
+                        containerColor = Color.White,
+                        shape = RoundedCornerShape(15.dp)
                     )
-                    todoVM.addTodo(newItem)
-                },
-                onToggleCheck = { id, item ->
-                    val updated = item.copy(isChecked = !item.isChecked)
-                    todoVM.updateTodo(id, updated)
-                },
-                onEditTitle = { id, newTitle ->
-                    val item = todoDocs.find { it.id == id }?.item ?: return@TodoList
-                    todoVM.updateTodo(id, item.copy(title = newTitle))
-                },
-                onDelete = { id ->
-                    todoVM.deleteTodo(id, userId)
                 }
-            )
 
-            Spacer(modifier = Modifier.height(5.dp))
+                Spacer(modifier = Modifier.height(30.dp))
+                HorizontalDivider(modifier = Modifier, thickness = 1.dp, color = Color.Gray)
+                Spacer(modifier = Modifier.height(20.dp))
 
+                /******** TodoList *********/
+                TodoList(
+                    todoItems = todoDocs,
+                    onAddItem = { title ->
+                        val newItem = TodoItem(
+                            title = title,
+                            userId = userId,
+                            isChecked = false
+                        )
+                        todoVM.addTodo(newItem)
+                    },
+                    onToggleCheck = { id, item ->
+                        val updated = item.copy(isChecked = !item.isChecked)
+                        todoVM.updateTodo(id, updated)
+                    },
+                    onEditTitle = { id, newTitle ->
+                        val item = todoDocs.find { it.id == id }?.item ?: return@TodoList
+                        todoVM.updateTodo(id, item.copy(title = newTitle))
+                    },
+                    onDelete = { id ->
+                        todoVM.deleteTodo(id, userId)
+                    }
+                )
+
+                Spacer(modifier = Modifier.height(5.dp))
+
+            }
         }
     }
-}
 
 fun getCurrentDate(): String {
     val sdf = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
@@ -793,7 +793,7 @@ fun MoodInput(
             .padding(20.dp).background(Color.White)
     ) {
         Column (modifier = Modifier.align(Alignment.Center),
-                horizontalAlignment = Alignment.CenterHorizontally){
+            horizontalAlignment = Alignment.CenterHorizontally){
             Text(
                 "Log your pre-task mood",
                 fontFamily = fontFamily,
@@ -1100,10 +1100,10 @@ fun TodoList(
                                 modifier = Modifier
                                     .weight(1f)
                                     .onFocusChanged { focusState ->
-                                    if (!focusState.isFocused && localTitle != item.title) {
-                                        onEditTitle(doc.id, localTitle)
+                                        if (!focusState.isFocused && localTitle != item.title) {
+                                            onEditTitle(doc.id, localTitle)
+                                        }
                                     }
-                                }
                             )
                             IconButton(onClick = {
                                 onToggleCheck(doc.id, item)

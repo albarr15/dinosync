@@ -288,6 +288,7 @@ class FirebaseRepository {
 
 
 
+
     // MOODS ✔️
     suspend fun getAllMoods(): List<Mood> {
         val snapshot = db.collection("mood").get().await()

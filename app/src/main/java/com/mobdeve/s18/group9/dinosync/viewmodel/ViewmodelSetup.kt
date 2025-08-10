@@ -16,6 +16,7 @@ import com.google.firebase.firestore.ListenerRegistration
 import com.mobdeve.s18.group9.dinosync.getCurDate
 import ir.ehsannarmani.compose_charts.models.Pie
 import kotlinx.coroutines.async
+import kotlinx.coroutines.delay
 
 class CompanionViewModel : ViewModel() {
     private val repository = FirebaseRepository()
@@ -208,6 +209,17 @@ class GroupMemberViewModel : ViewModel() {
     private val _members = MutableStateFlow<List<GroupMember>>(emptyList())
     val members: StateFlow<List<GroupMember>> = _members
 
+    // Track remaining time for active members
+    private val _remainingTimes = MutableStateFlow<Map<String, Int>>(emptyMap())
+    val remainingTimes: StateFlow<Map<String, Int>> = _remainingTimes
+
+    private val _refreshTrigger = mutableStateOf(0)
+    val refreshTrigger: State<Int> = _refreshTrigger
+
+    fun triggerRefresh() {
+        _refreshTrigger.value++
+    }
+
     fun loadAllMembers() {
         listenerRegistration?.remove()
         listenerRegistration = repository.observeAllGroupMembers { members ->
@@ -233,6 +245,7 @@ class GroupMemberViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 repository.updateGroupMemberEndedAt(userId, groupId, startedAt, endedAt)
+                _remainingTimes.update { it - userId }
                 Log.d("leaveGroup", "Successfully updated endedAt in repository.")
             } catch (e: Exception) {
                 Log.e("leaveGroup", "Failed to update endedAt", e)
@@ -267,8 +280,21 @@ class GroupMemberViewModel : ViewModel() {
                 minutes = additionalMinutes,
                 startedAt = startedAt
             )
+            startTimer(userId, (additionalMinutes * 60).toInt())
         }
     }
+    fun startTimer(userId: String, startSeconds: Int) {
+        _remainingTimes.update { it + (userId to startSeconds) }
+        viewModelScope.launch {
+            var seconds = startSeconds
+            while (seconds > 0) {
+                delay(1000L)
+                seconds--
+                _remainingTimes.update { it + (userId to seconds) }
+            }
+        }
+    }
+
     override fun onCleared() {
         super.onCleared()
         listenerRegistration?.remove()
