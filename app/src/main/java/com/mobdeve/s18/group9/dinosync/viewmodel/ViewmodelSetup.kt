@@ -643,6 +643,7 @@ class StatsViewModel : ViewModel() {
                 val roundedPercentage = String.format("%.2f", percentage * 100).toDouble()
                 Triple(courseLabel, roundedPercentage, courseSeconds)
             }
+                .filter { it.third > 0.0 }
                 .sortedByDescending { it.third}
                 .mapIndexed {i, (courseLabel, roundedPercentage, _) ->
                     Pie(
