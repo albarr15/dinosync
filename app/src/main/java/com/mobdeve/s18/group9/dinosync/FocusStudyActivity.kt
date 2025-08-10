@@ -11,6 +11,7 @@ import android.util.Log
 //import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.addCallback
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Canvas
@@ -94,10 +95,6 @@ class FocusStudyActivity : ComponentActivity() {
 
         spotifyPlaybackManager = SpotifyPlaybackManager(this)
         localPlaybackManager = LocalPlaybackManager(applicationContext)
-
-        onBackPressedDispatcher.addCallback(this) {
-            navigateToMainActivity(userId)
-        }
 
         setContent {
             DinoSyncTheme {
@@ -342,6 +339,54 @@ fun FocusStudyScreen(
     //fun showToast(context: Context, message: String) {
     //    Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
     //}
+
+    var showExitDialog by remember { mutableStateOf(false) }
+
+    BackHandler {
+        if (isRunning) {
+            showExitDialog = true
+        } else {
+            val intent = Intent(context, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+                putExtra("userId", userId)
+            }
+            context.startActivity(intent)
+            (context as Activity).finish()
+        }
+    }
+
+    if (showExitDialog) {
+        AlertDialog(
+            onDismissRequest = { showExitDialog = false },
+            title = { Text("Session in Progress!") },
+            text = {
+                Text("You'll lose your companion reward if you leave now. Continue studying?")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = { showExitDialog = false }
+                ) {
+                    Text("Keep Studying",
+                        color = DarkGreen)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    showExitDialog = false
+                    val intent = Intent(context, MainActivity::class.java).apply {
+                        flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+                        putExtra("userId", userId)
+                    }
+                    context.startActivity(intent)
+                    (context as Activity).finish()
+                }) {
+                    Text("Leave Anyway",
+                        color = Color.Gray)
+                }
+            },
+            containerColor = Color.White
+        )
+    }
 
     // ✅ Timer countdown logic
     LaunchedEffect(isRunning, currentCompanion) {
