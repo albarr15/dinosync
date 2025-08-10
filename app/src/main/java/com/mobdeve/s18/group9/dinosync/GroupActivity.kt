@@ -240,7 +240,37 @@ fun GroupActivityScreen(
 
     // Local stateful list mirroring current group members for recomposition
     val groupMembersState = remember { mutableStateListOf<GroupMember>() }
+    LaunchedEffect(realTimeMembers) {
+        groupMembersState.clear()
+        groupMembersState.addAll(realTimeMembers)
+    }
 
+    val memberUserPairs = remember(groupMembersState, allUsers, group) {
+        derivedStateOf {
+            groupMembersState
+                .filter { it.groupId == group?.groupId }
+                .mapNotNull { gm ->
+                    val user = allUsers.find { it.userId == gm.userId }
+                    user?.let { user -> user to gm }
+                }
+        }
+    }
+
+    val topMemberPair = remember(memberUserPairs.value) {
+        memberUserPairs.value.maxByOrNull { it.second.currentGroupStudyMinutes }
+    }
+
+    val activeMembersExcludingTop = remember(memberUserPairs.value, topMemberPair) {
+        memberUserPairs.value
+            .filter { it.second.endedAt.isNullOrEmpty() }
+            .filter { it.first.userId != topMemberPair?.first?.userId }
+            .sortedByDescending { it.second.currentGroupStudyMinutes }
+            .map { it.first }
+    }
+
+    val stableTopMembersList = remember(topMemberPair, activeMembersExcludingTop) {
+        listOfNotNull(topMemberPair?.first) + activeMembersExcludingTop
+    }
     // Compose derived list of users currently in this group (not left yet)
     val memberUsers by remember(groupMembersState, allUsers, group) {
         derivedStateOf {
@@ -648,11 +678,11 @@ fun GroupActivityScreen(
                 when (selectedTab) {
                     "Group Activity" -> OnClickGroupActivityBtn(memberUsers, dailyHistoryVM, groupVM)
                     "Stats" -> OnClickGroupStatsActivityBtn(
-                        allGroupMembers = ArrayList(topMembers),
-                        group?.groupId.toString(),
-                        dailyStudyHistory,
-                        studySessions,
-                        groupMembers
+                        allGroupMembers = stableTopMembersList,
+                        selectedGroup = group?.groupId.toString(),
+                        dailyStudyHistory = dailyStudyHistory,
+                        studySessions = studySessions,
+                        groupMembers = groupMembers
                     )
                 }
             }
@@ -675,6 +705,8 @@ fun UserCard(user: User, groupMember: GroupMember, dailyHistoryVM : DailyStudyHi
     val isRunning = remember(groupMember.userId, groupMember.startedAt, remainingSeconds) {
         groupMember.endedAt.isNullOrEmpty() && !groupMember.onBreak && remainingSeconds > 0
     }
+
+
 
     // Start timer in ViewModel if not already running
     LaunchedEffect(groupMember.userId, groupMember.startedAt) {
@@ -803,7 +835,7 @@ fun calculateGroupRanking(
 
 @Composable
 fun OnClickGroupStatsActivityBtn(
-    allGroupMembers: ArrayList<User>,
+    allGroupMembers: List<User>,
     selectedGroup: String,
     dailyStudyHistory: List<DailyStudyHistory>,
     studySessions: List<StudySession>,
@@ -838,23 +870,7 @@ fun OnClickGroupStatsActivityBtn(
                 modifier = Modifier.padding(bottom = 8.dp)
             )
 
-            val selectedGroupMemberIds = groupMembers
-                .filter { it.groupId == selectedGroup }
-                .map { it.userId }
-                .distinct()
-
             val sortedTopMembers = allGroupMembers
-                .filter { it.userId in selectedGroupMemberIds }
-                .map { user ->
-                    val totalMinutes = dailyStudyHistory
-                        .filter { it.userId == user.userId }
-                        .sumOf { (it.totalGroupStudyMinutes + it.totalIndividualMinutes).toDouble() }
-                        .toFloat()
-                    user to totalMinutes
-                }
-                .sortedByDescending { it.second }
-                .map { it.first }
-
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
