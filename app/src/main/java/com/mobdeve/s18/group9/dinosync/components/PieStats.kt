@@ -5,8 +5,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -45,6 +48,8 @@ fun formatFocusTime(percentage: Double, totalTimeSeconds: Int): String {
 
 @Composable
 fun PieStats(data: List<Pie>, totalTime: Int) {
+    val scrollState = rememberScrollState()
+
     Row (modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center,
@@ -57,7 +62,11 @@ fun PieStats(data: List<Pie>, totalTime: Int) {
             style = Pie.Style.Fill
         )
 
-        Column{
+        Column(
+            modifier = Modifier
+                .height(150.dp)
+                .verticalScroll(scrollState)
+        ){
             for (pie in data) {
                 Row(modifier = Modifier.padding(vertical = 2.dp),
                     verticalAlignment = Alignment.CenterVertically) {

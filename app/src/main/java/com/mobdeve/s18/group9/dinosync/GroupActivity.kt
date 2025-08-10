@@ -898,11 +898,23 @@ fun OnClickGroupStatsActivityBtn(
             Spacer(modifier = Modifier.height(5.dp))
 
             // Sessions Section
-            Text(
-                text = "Sessions",
-                fontSize = 15.sp,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Sessions",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = Color.Gray,
+                    modifier = Modifier.padding(start = 0.dp, top = 8.dp, end = 4.dp, bottom = 8.dp)
+                )
+                Text(
+                    text = "(in minutes)",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color.Gray
+                )
+            }
             GroupSessionsLineChart(selectedGroup, dailyStudyHistory, studySessions, groupMembers)
         }
     }

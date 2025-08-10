@@ -215,15 +215,21 @@ fun StatsActivityScreen(userId : String){
             }
 
             // Streak Section
-            Column(
+            Row(
                 modifier = Modifier
-                    .fillMaxWidth()
+                    .fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     text = "Streak",
                     style = MaterialTheme.typography.titleMedium,
                     color = Color.Gray,
-                    modifier = Modifier.padding(vertical = 8.dp)
+                    modifier = Modifier.padding(start = 0.dp, top = 8.dp, end = 4.dp, bottom = 8.dp)
+                )
+                Text(
+                    text = "(darker = longer session)",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color.Gray
                 )
             }
 
@@ -232,15 +238,21 @@ fun StatsActivityScreen(userId : String){
             StreakGrid(Modifier, streakData)
 
             // Sessions Section
-            Column(
+            Row(
                 modifier = Modifier
-                    .fillMaxWidth()
+                    .fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     text = "Sessions",
                     style = MaterialTheme.typography.titleMedium,
                     color = Color.Gray,
-                    modifier = Modifier.padding(vertical = 8.dp)
+                    modifier = Modifier.padding(start = 0.dp, top = 8.dp, end = 4.dp, bottom = 8.dp)
+                )
+                Text(
+                    text = "(in minutes)",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color.Gray
                 )
             }
             UserSessionsLineChart(userId, dailyStudyHistory, studySessions, emptyList())

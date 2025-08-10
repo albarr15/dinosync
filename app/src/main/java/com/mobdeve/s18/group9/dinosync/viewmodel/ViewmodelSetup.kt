@@ -626,14 +626,14 @@ class StatsViewModel : ViewModel() {
             val allCourseIds = (courses.map { it.courseId } + "Unassigned").distinct()
 
             val pieColors = listOf(
-                Color(0xFF388E3C), // Green
-                Color(0xFFA7C957), // Light green
-                Color(0xFFF9C74F), // Yellow
-                Color(0xFF577590), // Blue-gray
-                Color(0xFFDD6E42)  // Orange
+                Color(0xFF0392cf),
+                Color(0xFF7bc043),
+                Color(0xFFfdf498),
+                Color(0xFFf37736),
+                Color(0xFFee4035),
             )
 
-            return allCourseIds.mapIndexed { i, courseId ->
+            return allCourseIds.map { courseId ->
                 val courseLabel = if (courseId == "Unassigned") "Unassigned"
                 else courses.find { it.courseId == courseId }?.name ?: "Unknown"
 
@@ -641,8 +641,11 @@ class StatsViewModel : ViewModel() {
                 // Log.d("Load Pie Data", "$courseSeconds / $totalSeconds")
                 val percentage = courseSeconds / totalSeconds
                 val roundedPercentage = String.format("%.2f", percentage * 100).toDouble()
-
-                Pie(
+                Triple(courseLabel, roundedPercentage, courseSeconds)
+            }
+                .sortedByDescending { it.third}
+                .mapIndexed {i, (courseLabel, roundedPercentage, _) ->
+                    Pie(
                     label = courseLabel,
                     data = roundedPercentage,
                     color = pieColors[i % pieColors.size]
