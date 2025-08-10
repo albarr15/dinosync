@@ -82,7 +82,7 @@ fun filterDailyHistoryByFilter(
                         groupMembers.any { member ->
                             member.userId == history.userId &&
                                     member.groupId == filter.groupId &&
-                                    member.startedAt.isNotEmpty() && member.endedAt.isNotEmpty()
+                                    member.startedAt.isNotEmpty() // && member.endedAt.isNotEmpty()
                         }
             }
         }
@@ -132,7 +132,7 @@ fun aggregateHourlyChartData(
             groupMembers.filter { member ->
                 member.userId in groupUserIds &&
                         member.groupId == filter.groupId &&
-                        member.startedAt.isNotEmpty() && member.endedAt.isNotEmpty()
+                        member.startedAt.isNotEmpty() // && member.endedAt.isNotEmpty()
             }.forEach { member ->
                 try {
                     val start = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault()).parse(member.startedAt)

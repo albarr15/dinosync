@@ -83,8 +83,8 @@ class CompanionViewModel : ViewModel() {
                 // 2. Create new egg
                 val newEgg = Companion(
                     userId = userId,
-                    requiredHatchTime = 120,
-                    remainingHatchTime = 120,
+                    requiredHatchTime = 60,
+                    remainingHatchTime = 60,
                     current = true,
                     dateCreated = now
                 )
